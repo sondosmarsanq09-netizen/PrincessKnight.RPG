@@ -24,15 +24,15 @@ function gameLoop() {
     y += speed;
     moving = true;
   }
-  if (keys['arrowleft'] || keys['a']) {
+ if (keys['arrowleft'] || keys['a']) {
     x -= speed;
     moving = true;
-    princess.classList.add('facing-left');
+    princess.classList.remove('facing-left'); // Faces natural left
   }
   if (keys['arrowright'] || keys['d']) {
     x += speed;
     moving = true;
-    princess.classList.remove('facing-left');
+    princess.classList.add('facing-left'); // Flips to face right
   }
 
   princess.style.left = x + 'px';
