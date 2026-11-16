@@ -92,3 +92,32 @@ body {
 .controls-hint p {
   margin: 4px 0;
 }
+/* --- KNIGHT --- */
+.knight {
+  width: 120px;
+  height: 80px;
+  position: absolute;
+  top: 215px;
+  left: 200px;
+  image-rendering: pixelated;
+  transform: scale(3);
+  background-image: url('_Idle.png');
+  background-size: 1000% 100%;
+  background-repeat: no-repeat;
+  animation: knight-anim 0.9s steps(9) infinite;
+  z-index: 1;
+}
+
+.knight.facing-left {
+  transform: scale(-3, 3);
+}
+
+.knight.running {
+  background-image: url('_Run.png');
+  animation: knight-anim 0.7s steps(9) infinite;
+}
+
+@keyframes knight-anim {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 0%; }
+}
