@@ -1,0 +1,34 @@
+body {
+  background-color: #2b2d42;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.princess {
+  width: 96px;
+  height: 96px;
+  position: relative;
+  image-rendering: pixelated;
+  transform: scale(3);
+}
+
+.princess .layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Scales the 10-column x 7-row grid cleanly to each 96x96 frame */
+  background-size: 1000% 700%; 
+  background-repeat: no-repeat;
+  animation: idle 0.8s steps(5) infinite;
+}
+
+@keyframes idle {
+  from { background-position: 0% 0%; }
+  /* Moves across the 5 idle frames in Row 1 */
+  to { background-position: 55.55% 0%; } 
+}
