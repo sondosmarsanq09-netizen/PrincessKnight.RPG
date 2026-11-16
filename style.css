@@ -1,18 +1,23 @@
 body {
   background-color: #2b2d42;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
   margin: 0;
+  overflow: hidden;
+  height: 100vh;
 }
 
 .princess {
   width: 96px;
   height: 96px;
-  position: relative;
+  position: absolute;
+  top: 200px;
+  left: 300px;
   image-rendering: pixelated;
   transform: scale(3);
+}
+
+/* Flips her when walking left */
+.princess.facing-left {
+  transform: scale(-3, 3);
 }
 
 .princess .layer {
@@ -21,14 +26,22 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  /* Scales the 10-column x 7-row grid cleanly to each 96x96 frame */
   background-size: 1000% 700%; 
   background-repeat: no-repeat;
   animation: idle 0.8s steps(5) infinite;
 }
 
+/* Switches to Row 2 walking animation when moving */
+.princess.walking .layer {
+  animation: walk 0.8s steps(8) infinite;
+}
+
 @keyframes idle {
   from { background-position: 0% 0%; }
-  /* Moves across the 5 idle frames in Row 1 */
   to { background-position: 55.55% 0%; } 
+}
+
+@keyframes walk {
+  from { background-position: 0% 16.66%; }
+  to { background-position: 88.88% 16.66%; } 
 }
