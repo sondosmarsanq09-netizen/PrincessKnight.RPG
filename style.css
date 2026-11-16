@@ -75,3 +75,20 @@ body {
   from { background-position: 0% 0%; }
   to { background-position: 100% 0%; }
 }
+.controls-hint {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  font-family: monospace;
+  font-size: 14px;
+  z-index: 10;
+}
+
+.controls-hint p {
+  margin: 4px 0;
+}
