@@ -80,21 +80,7 @@ function gameLoop() {
     if (keys['a']) {
       kX -= speed;
       kMoving = true;
-      knight.classList.add('facing-left');
-      knight.classList.remove('facing-right');
-    }
-    if (keys['d']) {
-      kX += speed;
-      kMoving = true;
-      knight.classList.remove('facing-left');
-      knight.classList.add('facing-right');
-    }
-
-    // Vertical boundary limits
-    kY = Math.max(350, Math.min(550, kY));
-    kX = Math.max(0, Math.min(window.innerWidth - 100, kX));
-
-    // --- SC1 QUEST & SCENE PROGRESSION ---
+     // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
@@ -105,20 +91,35 @@ function gameLoop() {
         currentScene = 2;
         gameBody.style.backgroundImage = "url('image_54e525.png')";
         
-        // Princess waits on the left-center side, facing right toward incoming knight
-        pX = 350; 
+        // Position Princess further to the RIGHT, facing RIGHT
+        pX = window.innerWidth / 2 + 100; 
         pY = 400;
         princess.classList.remove('hidden');
-        princess.classList.remove('facing-left');
         princess.classList.add('facing-right'); // Faces right
         princess.style.left = pX + 'px';
         princess.style.top = pY + 'px';
 
-        // Knight enters from the far right side, walking left toward her
-        kX = window.innerWidth - 150; 
+        // Knight enters from the far left, walking right toward her
+        kX = 50; 
         kY = 400;
-        knight.classList.add('facing-left');
-        knight.classList.remove('facing-right');
+        knight.classList.remove('facing-left');
+        knight.classList.add('facing-right');
+
+        objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
+      }
+    } 
+    else if (currentScene === 2) {
+      // Check if knight walks up to her from the left side
+      let distance = Math.abs(kX - pX);
+      if (kX >= pX - 120 && kX < pX) {
+        // Snap knight cleanly to her LEFT side, facing RIGHT toward her face!
+        kX = pX - 90; 
+        kY = pY;
+        knight.classList.remove('facing-left');
+        knight.classList.add('facing-right'); // Faces right at her
+        startEncounter();
+      }
+    }
 
         objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
       }
