@@ -287,23 +287,34 @@ body {
   z-index: 10;
   pointer-events: none;
 }
-/* --- BLACKSMITH CORRECTED SPRITE SHEET --- */
+/* --- BLACKSMITH LOCKED FRAME ANIMATION --- */
 .blacksmith {
   position: absolute;
-  width: 90px;  /* Width of a single frame */
-  height: 64px; /* Height of a single frame */
+  width: 90px;
+  height: 64px;
   top: 420px;
   right: 180px;
   image-rendering: pixelated;
   transform: scale(2.8);
   background-image: url('BLACKSMITH.png');
-  background-size: 700% 100%; /* Spreads 7 frames horizontally across the sheet */
+  background-size: 700% 100%;
   background-repeat: no-repeat;
-  animation: blacksmith-anim 1.2s steps(7) infinite;
+  /* Remove steps from here, handle it with precise background positions in keyframes */
+  animation: blacksmith-anim 1.2s steps(7, start) infinite;
   z-index: 3;
 }
 
 @keyframes blacksmith-anim {
   0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+@keyframes blacksmith-anim {
+  0%   { background-position: 0% 0%; }
+  14.28% { background-position: 16.66% 0%; }
+  28.56% { background-position: 33.33% 0%; }
+  42.84% { background-position: 50% 0%; }
+  57.12% { background-position: 66.66% 0%; }
+  71.40% { background-position: 83.33% 0%; }
+  85.68% { background-position: 100% 0%; }
   100% { background-position: 100% 0%; }
 }
