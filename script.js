@@ -104,6 +104,25 @@ function gameLoop() {
       knight.classList.remove('facing-left');
       knight.classList.add('facing-right');
     }
+    function initCrowd() {
+  // Spawn Boy
+  let boy = document.createElement('div');
+  boy.className = 'pedestrian pedestrian-boy';
+  document.body.appendChild(boy);
+
+  // Spawn Girl
+  let girl = document.createElement('div');
+  girl.className = 'pedestrian pedestrian-girl';
+  document.body.appendChild(girl);
+
+  // Spawn Old Man
+  let oldMan = document.createElement('div');
+  oldMan.className = 'pedestrian pedestrian-oldman';
+  document.body.appendChild(oldMan);
+}
+
+// Call initCrowd() when Scene 1 loads
+initCrowd();
 
     // Vertical & Horizontal boundary limits
     kY = Math.max(350, Math.min(550, kY));
