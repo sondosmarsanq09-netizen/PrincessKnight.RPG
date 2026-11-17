@@ -291,13 +291,13 @@ body {
 .blacksmith {
   position: absolute;
   width: 139px;
-  height: 108px;   /* Increased height to give him full vertical room */
-  top: 425px;      /* Pushed down lower to sit right on the street floor */
+  height: 108px;
+  top: 515px;      /* Pushed down much further to hit the street floor */
   right: 170px;
   image-rendering: pixelated;
   transform: scale(2.8);
   background-image: url('BLACKSMITH.png');
-  background-size: 980px 104px; /* Matches the new 104px height */
+  background-size: 973px 108px; /* 7 frames * 139px = 973px width, matching 108px height */
   background-repeat: no-repeat;
   animation: blacksmith-anim 1s steps(7) infinite;
   z-index: 3;
@@ -305,5 +305,5 @@ body {
 
 @keyframes blacksmith-anim {
   from { background-position: 0px 0px; }
-  to   { background-position: -980px 0px; }
+  to   { background-position: -973px 0px; }
 }
