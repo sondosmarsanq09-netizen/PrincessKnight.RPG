@@ -121,8 +121,8 @@ function gameLoop() {
         sceneVignette.classList.add('fountain-atmosphere');
         locationBanner.textContent = "📍 Outer Gates — Moonlit Fountain";
         
-       // Position Princess to the left of the fountain, facing right
-        pX = window.innerWidth / 3 - 50; 
+      // Position Princess further left, completely off the fountain
+        pX = 220; 
         pY = 400;
         if (princess) {
           princess.classList.remove('hidden');
