@@ -59,7 +59,7 @@ body {
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
-  transform-origin: bottom center; /* Keeps his feet anchored to the ground */
+  transform-origin: bottom center; /* Keeps his feet locked to the floor */
   filter: none !important;
   mix-blend-mode: normal !important;
   background-color: transparent !important;
@@ -78,9 +78,6 @@ body {
 .knight.facing-right {
   transform: scale(4.8, 4.8);
   transform-origin: bottom center;
-}
-.knight.facing-right {
-  transform: scale(4.8, 4.8);
 }
 
 .knight.running {
