@@ -4,7 +4,7 @@ body {
   width: 100vw;
   height: 100vh;
   background-image: url('AlleysTask.png');
-  background-size: cover;
+  background-size: 100% 100%; /* Keeps the street floor line at the exact same screen percentage in full-screen */
   background-position: center;
   background-repeat: no-repeat;
   overflow: hidden;
@@ -15,24 +15,27 @@ body {
   display: none !important;
 }
 
-/* --- PRINCESS & KNIGHT PROPORTIONS --- */
+/* --- PRINCESS --- */
 .princess {
   width: 96px;
   height: 96px;
   position: absolute;
-  top: 400px;
+  bottom: 10vh; /* Anchored to the street plane */
   left: 300px;
   image-rendering: pixelated;
   transform: scale(3);
+  transform-origin: bottom center;
   z-index: 2;
 }
 
 .princess.facing-right {
   transform: scale(3, 3);
+  transform-origin: bottom center;
 }
 
 .princess.facing-left {
   transform: scale(-3, 3);
+  transform-origin: bottom center;
 }
 
 .princess .layer {
@@ -48,18 +51,19 @@ body {
 
 @keyframes idle {
   from { background-position: 0% 0%; }
-  to { background-position: 55.55% 0%; } 
+  to   { background-position: 55.55% 0%; } 
 }
 
+/* --- KNIGHT --- */
 .knight {
   width: 120px;
   height: 80px;
   position: absolute;
-  bottom: 120px;      /* Distance from the bottom of the screen */
+  bottom: 4vh; /* Anchored to the street floor; adjust vh slightly if his boots have transparent padding */
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
-  transform-origin: bottom center; /* Scales upward from his feet */
+  transform-origin: bottom center;
   filter: none !important;
   mix-blend-mode: normal !important;
   background-color: transparent !important;
@@ -89,6 +93,30 @@ body {
   0%   { background-position: 0% 0%; }
   100% { background-position: 100% 0%; }
 }
+
+/* --- BLACKSMITH --- */
+.blacksmith {
+  position: absolute;
+  width: 139px;
+  height: 108px;
+  bottom: 8vh; /* Anchored to the street floor */
+  right: 170px;
+  image-rendering: pixelated;
+  transform: scale(2.8);
+  transform-origin: bottom right;
+  background-image: url('BLACKSMITH.png');
+  background-size: 973px 108px;
+  background-repeat: no-repeat;
+  animation: blacksmith-anim 1s steps(7) infinite;
+  z-index: 3;
+}
+
+@keyframes blacksmith-anim {
+  from { background-position: 0px 0px; }
+  to   { background-position: -973px 0px; }
+}
+
+/* --- UI & HUD --- */
 .controls-hint {
   position: absolute;
   top: 15px;
@@ -101,6 +129,24 @@ body {
   z-index: 10;
   border-radius: 6px;
   border: 1px solid #444;
+}
+
+#location-banner {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  color: #fdf6e2;
+  background: rgba(15, 17, 26, 0.75);
+  backdrop-filter: blur(4px);
+  padding: 8px 16px;
+  font-family: monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid rgba(253, 246, 226, 0.25);
+  z-index: 10;
+  pointer-events: none;
 }
 
 /* --- TRANSLUCENT CREAM DIALOGUE BOX & ARROWS --- */
@@ -248,19 +294,20 @@ body {
 }
 
 @keyframes pop-fade {
-  0% { transform: translateY(0px) scale(0.5); opacity: 0; }
-  25% { transform: translateY(-10px) scale(1.2); opacity: 1; }
-  75% { transform: translateY(-15px) scale(1); opacity: 1; }
+  0%   { transform: translateY(0px) scale(0.5); opacity: 0; }
+  25%  { transform: translateY(-10px) scale(1.2); opacity: 1; }
+  75%  { transform: translateY(-15px) scale(1); opacity: 1; }
   100% { transform: translateY(-25px) scale(1); opacity: 0; }
 }
 
+/* --- ATMOSPHERE & VIGNETTE --- */
 #scene-vignette {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  pointer-events: none; /* Fixed: allows clicks to pass through to the game canvas */
+  pointer-events: none;
   z-index: 1;
   transition: background 1.2s ease, box-shadow 1.2s ease;
   background: radial-gradient(circle at 85% 60%, rgba(255, 140, 40, 0.14), transparent 55%);
@@ -271,46 +318,3 @@ body {
   background: radial-gradient(circle at 55% 45%, rgba(130, 180, 255, 0.15), transparent 65%);
   box-shadow: inset 0 0 130px rgba(8, 12, 24, 0.85);
 }
-
-#location-banner {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  color: #fdf6e2;
-  background: rgba(15, 17, 26, 0.75);
-  backdrop-filter: blur(4px);
-  padding: 8px 16px;
-  font-family: monospace;
-  font-size: 13px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  border-radius: 6px;
-  border: 1px solid rgba(253, 246, 226, 0.25);
-  z-index: 10;
-  pointer-events: none;
-}
-/* --- BLACKSMITH LOWERED TO STREET FLOOR --- */
-.blacksmith {
-  position: absolute;
-  width: 139px;
-  height: 108px;
-  top: 580px;      /* Lowered further down to match the street */
-  right: 170px;
-  image-rendering: pixelated;
-  transform: scale(2.8);
-  background-image: url('BLACKSMITH.png');
-  background-size: 973px 108px;
-  background-repeat: no-repeat;
-  animation: blacksmith-anim 1s steps(7) infinite;
-  z-index: 3;
-}
-
-@keyframes blacksmith-anim {
-  from { background-position: 0px 0px; }
-  to   { background-position: -973px 0px; }
-}
-@keyframes blacksmith-anim {
-  from { background-position: 0px 0px; }
-  to   { background-position: -973px 0px; }
-}
-
