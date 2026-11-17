@@ -104,29 +104,29 @@ function gameLoop() {
       knight.classList.remove('facing-left');
       knight.classList.add('facing-right');
     }
-    function initCrowd() {
-  // Spawn Boy
+function initCrowd() {
+  // Spawn exactly one boy
   let boy = document.createElement('div');
   boy.className = 'pedestrian pedestrian-boy';
   document.body.appendChild(boy);
 
-  // Spawn Girl
-  let girl = document.createElement('div');
-  girl.className = 'pedestrian pedestrian-girl';
-  document.body.appendChild(girl);
+  // Spawn exactly one girl with a brief offset
+  setTimeout(() => {
+    let girl = document.createElement('div');
+    girl.className = 'pedestrian pedestrian-girl';
+    document.body.appendChild(girl);
+  }, 2000);
 
-  // Spawn Old Man
-  let oldMan = document.createElement('div');
-  oldMan.className = 'pedestrian pedestrian-oldman';
-  document.body.appendChild(oldMan);
+  // Spawn exactly one old man
+  setTimeout(() => {
+    let oldMan = document.createElement('div');
+    oldMan.className = 'pedestrian pedestrian-oldman';
+    document.body.appendChild(oldMan);
+  }, 4000);
 }
 
-// Call initCrowd() when Scene 1 loads
+// Call it once when Scene 1 loads
 initCrowd();
-
-    // Vertical & Horizontal boundary limits
-    kY = Math.max(350, Math.min(550, kY));
-    kX = Math.max(0, Math.min(window.innerWidth - 100, kX));
 
     // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
