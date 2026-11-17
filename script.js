@@ -142,7 +142,7 @@ function gameLoop() {
         }
       }
     } 
-   else if (currentScene === 2) {
+  else if (currentScene === 2) {
       // Check if knight walks up to her from the left side
       let distance = Math.abs(kX - pX);
       if (kX <= pX && distance <= 90) {
