@@ -121,17 +121,16 @@ function gameLoop() {
         sceneVignette.classList.add('fountain-atmosphere');
         locationBanner.textContent = "📍 Outer Gates — Moonlit Fountain";
         
-        // Position Princess towards the right-center, facing left toward him
-        pX = window.innerWidth / 2 + 100; 
+       // Position Princess to the left of the fountain, facing right
+        pX = window.innerWidth / 3 - 50; 
         pY = 400;
         if (princess) {
           princess.classList.remove('hidden');
-          princess.classList.add('facing-left'); 
-          princess.classList.remove('facing-right');
+          princess.classList.remove('facing-left'); 
+          princess.classList.add('facing-right');
           princess.style.left = pX + 'px';
           princess.style.top = pY + 'px';
         }
-
         // Place Knight safely on the right side walking left
         kX = window.innerWidth - 150; 
         kY = 400;
@@ -143,15 +142,15 @@ function gameLoop() {
         }
       }
     } 
-    else if (currentScene === 2) {
-      // Check if knight walks up to her from the right side
+   else if (currentScene === 2) {
+      // Check if knight walks up to her from the left side
       let distance = Math.abs(kX - pX);
-      if (kX >= pX && distance <= 90) {
-        // Snap knight cleanly to her right side, facing left toward her face
-        kX = pX + 70; 
+      if (kX <= pX && distance <= 90) {
+        // Snap knight cleanly to her left side, facing right toward her face
+        kX = pX - 70; 
         kY = pY;
-        knight.classList.add('facing-left');
-        knight.classList.remove('facing-right');
+        knight.classList.remove('facing-left');
+        knight.classList.add('facing-right');
         startEncounter();
       }
     }
