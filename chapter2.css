@@ -8,24 +8,27 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  /* Starts in the Chambers on the left */
-  background-image: url('Chambers.png');
+  /* Starts in the middle: PolishDragon.png */
+  background-image: url('PolishDragon.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   position: relative;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Knight Sprite */
 #knight {
   position: absolute;
-  width: 80px;
-  height: 120px;
-  background-image: url('Idle.png'); /* Swap to Run.png when moving */
+  width: 120px;
+  height: 160px;
   background-size: contain;
   background-repeat: no-repeat;
-  z-index: 10;
+  background-position: bottom;
+  background-image: url('Idle.png');
+}
+
+#knight.running {
+  background-image: url('Run.png');
 }
 
 #knight.facing-left {
@@ -36,49 +39,72 @@ body {
   transform: scaleX(1);
 }
 
-/* Princess Sprite (Stealthy / Catwoman vibes) */
+/* Princess Sprite (for when she sneaks in later) */
 #princess {
   position: absolute;
-  width: 80px;
-  height: 120px;
-  background-image: url('Idle.png'); /* Update to princess sprite if available */
+  width: 120px;
+  height: 160px;
   background-size: contain;
   background-repeat: no-repeat;
-  z-index: 10;
+  background-position: bottom;
+  background-image: url('Idle.png'); /* Swap to Princess asset when ready */
 }
 
 .hidden {
   display: none !important;
 }
 
-/* UI Elements */
+/* UI Banner & Objectives */
 #location-banner {
-  position: fixed;
+  position: absolute;
   top: 20px;
   left: 20px;
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  padding: 8px 16px;
+  padding: 10px 18px;
+  font-family: monospace;
+  font-size: 16px;
   border-radius: 4px;
-  font-size: 14px;
-  letter-spacing: 1px;
-  z-index: 100;
+  z-index: 10;
 }
 
 #objective {
-  position: fixed;
-  top: 65px;
+  position: absolute;
+  top: 70px;
   left: 20px;
-  background: rgba(20, 20, 20, 0.85);
-  color: #f39c12;
-  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffeb3b;
+  padding: 8px 14px;
+  font-family: sans-serif;
+  font-size: 14px;
   border-radius: 4px;
-  font-size: 13px;
-  z-index: 100;
-  border-left: 3px solid #f39c12;
+  z-index: 10;
 }
 
-/* Fade Transition Overlay */
+/* Dialogue Box styling */
+#dialogue-box {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  background: rgba(15, 15, 20, 0.95);
+  border: 2px solid #b8860b;
+  border-radius: 8px;
+  padding: 20px;
+  color: #fff;
+  font-family: serif;
+  z-index: 100;
+}
+
+#speaker-name {
+  font-weight: bold;
+  color: #ffdf00;
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+/* Fade Overlay */
 .fade-overlay {
   position: fixed;
   top: 0;
