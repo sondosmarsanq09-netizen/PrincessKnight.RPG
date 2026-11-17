@@ -82,26 +82,47 @@ function gameLoop() {
       kMoving = true;
       knight.classList.add('facing-left');
       knight.classList.remove('facing-right');
-  // Step 2: Walk left to transition to Fountain Scene
+    }
+    if (keys['d']) {
+      kX += speed;
+      kMoving = true;
+      knight.classList.remove('facing-left');
+      knight.classList.add('facing-right');
+    }
+
+    // Vertical & Horizontal boundary limits
+    kY = Math.max(350, Math.min(550, kY));
+    kX = Math.max(0, Math.min(window.innerWidth - 100, kX));
+
+    // --- SC1 QUEST & SCENE PROGRESSION ---
+    if (currentScene === 1) {
+      if (!hasRing && kX >= window.innerWidth - 200) {
+        hasRing = true;
+        if (objectiveText) {
+          objectiveText.textContent = "Objective: Got the King's ring! Walk left across town to the fountain gates.";
+        }
+      }
+
+      // Trigger transition to Scene 2 when walking to the far left
       if (hasRing && kX <= 10) {
         currentScene = 2;
         if (gameBody) {
           gameBody.style.backgroundImage = "url('image_54e525.png')";
         }
         
-        // Position Princess towards the right side, facing right
+        // Position Princess towards the right-center, facing left toward him
         pX = window.innerWidth / 2 + 100; 
         pY = 400;
         if (princess) {
           princess.classList.remove('hidden');
-          princess.classList.remove('facing-left');
-          princess.classList.add('facing-right');
+          princess.classList.add('facing-left'); // Faces left toward incoming knight
+          princess.classList.remove('facing-right');
           princess.style.left = pX + 'px';
           princess.style.top = pY + 'px';
         }
 
-        // TWEAK: Knight enters from the RIGHT side walking left toward her!
-        kX = window.innerWidth - 100; 
+        // Place Knight just a bit to the right so he enters naturally from the right side walking left
+        kX = window.innerWidth - 150; 
         kY = 400;
         knight.classList.add('facing-left');
         knight.classList.remove('facing-right');
@@ -112,28 +133,14 @@ function gameLoop() {
       }
     } 
     else if (currentScene === 2) {
-      // TWEAK: Check if knight walks up to her from the right side
+      // Check if knight walks up to her from the right side
       let distance = Math.abs(kX - pX);
-      if (kX >= pX && kX <= pX + 110) {
+      if (kX >= pX && distance <= 90) {
         // Snap knight cleanly to her right side, facing left toward her face
-        kX = pX + 90; 
+        kX = pX + 70; 
         kY = pY;
         knight.classList.add('facing-left');
         knight.classList.remove('facing-right');
-        startEncounter();
-      }
-    }
-        }
-      }
-    } 
-    else if (currentScene === 2) {
-      // Check if knight walks up to her from the left side
-      if (kX >= pX - 120 && kX < pX) {
-        // Snap knight cleanly to her LEFT side, facing RIGHT toward her face
-        kX = pX - 90; 
-        kY = pY;
-        knight.classList.remove('facing-left');
-        knight.classList.add('facing-right');
         startEncounter();
       }
     }
