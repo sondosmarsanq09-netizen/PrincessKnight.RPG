@@ -55,7 +55,7 @@ body {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 400px;
+  top: 540px;
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
@@ -287,22 +287,26 @@ body {
   z-index: 10;
   pointer-events: none;
 }
-/* --- BLACKSMITH GROUNDED & PROPORTIONED --- */
+/* --- BLACKSMITH LOWERED TO STREET FLOOR --- */
 .blacksmith {
   position: absolute;
   width: 139px;
   height: 108px;
-  top: 515px;      /* Pushed down much further to hit the street floor */
+  top: 560px;      /* Lowered further down to match the street */
   right: 170px;
   image-rendering: pixelated;
   transform: scale(2.8);
   background-image: url('BLACKSMITH.png');
-  background-size: 973px 108px; /* 7 frames * 139px = 973px width, matching 108px height */
+  background-size: 973px 108px;
   background-repeat: no-repeat;
   animation: blacksmith-anim 1s steps(7) infinite;
   z-index: 3;
 }
 
+@keyframes blacksmith-anim {
+  from { background-position: 0px 0px; }
+  to   { background-position: -973px 0px; }
+}
 @keyframes blacksmith-anim {
   from { background-position: 0px 0px; }
   to   { background-position: -973px 0px; }
