@@ -287,23 +287,23 @@ body {
   z-index: 10;
   pointer-events: none;
 }
-/* --- BLACKSMITH LOCKED SPRITE SHEET --- */
+/* --- BLACKSMITH FIXED FRAME-BY-FRAME ANIMATION --- */
 .blacksmith {
   position: absolute;
-  width: 128px;  /* Clean width per full frame unit */
-  height: 64px;
+  width: 128px;     /* Exact width of one single frame */
+  height: 64px;    /* Exact height of the frame */
   top: 420px;
-  right: 160px;
+  right: 180px;
   image-rendering: pixelated;
   transform: scale(2.5);
   background-image: url('BLACKSMITH.png');
-  background-size: 700% 100%;
+  background-size: 896px 64px; /* Total image dimensions: width of all 7 frames combined x height */
   background-repeat: no-repeat;
-  animation: blacksmith-anim 1.0s steps(7) infinite;
+  animation: blacksmith-anim 1s steps(7) infinite;
   z-index: 3;
 }
 
 @keyframes blacksmith-anim {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 100% 0%; }
+  from { background-position: 0px 0px; }
+  to   { background-position: -896px 0px; /* Shifts the background precisely by the total width of all frames */ }
 }
