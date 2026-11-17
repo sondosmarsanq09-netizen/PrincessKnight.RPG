@@ -27,12 +27,10 @@ body {
   z-index: 2;
 }
 
-/* Default princess faces right */
 .princess.facing-right {
   transform: scale(3, 3);
 }
 
-/* Flipped to face left if needed */
 .princess.facing-left {
   transform: scale(-3, 3);
 }
@@ -110,7 +108,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: 720px;
-  background: rgba(253, 246, 226, 0.88); /* Translucent vintage cream */
+  background: rgba(253, 246, 226, 0.88);
   backdrop-filter: blur(4px);
   border: 2px solid rgba(59, 47, 47, 0.8);
   border-radius: 8px;
@@ -130,21 +128,20 @@ body {
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 6px;
-  color: #8b4513; /* Rich brown for Knight */
+  color: #8b4513;
 }
 
 #speaker-name.princess-speak {
-  color: #b22222; /* Crimson red for Princess */
+  color: #b22222;
 }
 
 #dialogue-text {
-  color: #1a1a1a; /* Dark crisp text */
+  color: #1a1a1a;
   font-size: 15px;
   line-height: 1.4;
   margin: 0 30px 0 0;
 }
 
-/* Clickable Navigation Arrows */
 .nav-arrow {
   position: absolute;
   background: rgba(59, 47, 47, 0.9);
@@ -175,7 +172,6 @@ body {
   right: 20px;
 }
 
-/* Translucent Subtle Inner Monologue */
 .subtle-thought {
   position: absolute;
   bottom: 130px;
@@ -186,7 +182,7 @@ body {
   font-family: monospace;
   font-size: 13px;
   font-style: italic;
-  background: rgba(20, 24, 38, 0.75); /* Translucent dark slate */
+  background: rgba(20, 24, 38, 0.75);
   backdrop-filter: blur(4px);
   padding: 8px 14px;
   border-radius: 4px;
@@ -201,7 +197,6 @@ body {
   display: none !important;
 }
 
-/* Branching Choice Menu */
 #choice-container {
   position: absolute;
   bottom: 160px;
@@ -238,7 +233,6 @@ body {
   transform: scale(1.01);
 }
 
-/* Pop and Fade Emotes */
 .emote-bubble {
   position: absolute;
   font-size: 22px;
@@ -257,28 +251,25 @@ body {
   75% { transform: translateY(-15px) scale(1); opacity: 1; }
   100% { transform: translateY(-25px) scale(1); opacity: 0; }
 }
-/* --- ATMOSPHERIC BACKGROUND DETAILS --- */
+
 #scene-vignette {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  pointer-events: none; /* Ensures clicks and movement pass straight through */
+  pointer-events: none; /* Fixed: allows clicks to pass through to the game canvas */
   z-index: 1;
   transition: background 1.2s ease, box-shadow 1.2s ease;
-  /* Scene 1 Default: Warm town square & blacksmith forge glow on the right */
   background: radial-gradient(circle at 85% 60%, rgba(255, 140, 40, 0.14), transparent 55%);
   box-shadow: inset 0 0 110px rgba(10, 12, 20, 0.75);
 }
 
-/* Scene 2: Cool moonlit mist by the Outer Gates Fountain */
 #scene-vignette.fountain-atmosphere {
   background: radial-gradient(circle at 55% 45%, rgba(130, 180, 255, 0.15), transparent 65%);
   box-shadow: inset 0 0 130px rgba(8, 12, 24, 0.85);
 }
 
-/* Subtle environmental flavor banner */
 #location-banner {
   position: absolute;
   top: 15px;
