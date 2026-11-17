@@ -48,8 +48,8 @@ body {
 
 /* --- KNIGHT --- */
 .knight {
-  width: 96px;
-  height: 96px;
+  width: 64px;
+  height: 64px;
   position: absolute;
   top: 200px;
   left: 200px;
@@ -71,13 +71,13 @@ body {
   animation: knight-run 0.7s steps(10) infinite;
 }
 
-/* Precise frame locking so he doesn't slide around */
+/* Steps animation makes it snap frame-by-frame instead of sliding */
 @keyframes knight-idle {
-  from { background-position: 0% 0%; }
-  to { background-position: 100% 0%; }
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
 }
 
 @keyframes knight-run {
-  from { background-position: 0% 0%; }
-  to { background-position: 100% 0%; }
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
 }
