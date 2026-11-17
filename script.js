@@ -116,7 +116,7 @@ function gameLoop() {
       if (hasRing && kX <= 10) {
         currentScene = 2;
         if (gameBody) {
-          gameBody.style.backgroundImage = "url('OutsideFOUNTAIN.png')";
+          gameBody.style.backgroundImage = "url('DangerFOUNTAIN.png')";
         }
         sceneVignette.classList.add('fountain-atmosphere');
         locationBanner.textContent = "📍 Outer Gates — Moonlit Fountain";
