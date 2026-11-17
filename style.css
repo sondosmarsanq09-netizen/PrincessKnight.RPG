@@ -200,3 +200,20 @@ body {
   border-color: #cbd5e1;
   transform: scale(1.01);
 }
+/* --- FLOATING CHARACTER EMOTES --- */
+.emote-bubble {
+  position: absolute;
+  font-size: 20px;
+  z-index: 50;
+  pointer-events: none;
+  animation: float-emote 1.5s ease-in-out infinite alternate;
+}
+
+.emote-bubble.hidden {
+  display: none !important;
+}
+
+@keyframes float-emote {
+  0% { transform: translateY(0px) scale(1); }
+  100% { transform: translateY(-8px) scale(1.1); }
+}
