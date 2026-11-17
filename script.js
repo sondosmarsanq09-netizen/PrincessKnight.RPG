@@ -42,7 +42,7 @@ document.body.appendChild(princessEmote);
 // Coordinates & State
 let kX = 200;
 let kY = 400;
-let pX = 350; 
+let pX = 500; 
 let pY = 400;
 
 const speed = 6;
@@ -80,24 +80,45 @@ function gameLoop() {
     if (keys['a']) {
       kX -= speed;
       kMoving = true;
-     // --- SC1 QUEST & SCENE PROGRESSION ---
+      knight.classList.add('facing-left');
+      knight.classList.remove('facing-right');
+    }
+    if (keys['d']) {
+      kX += speed;
+      kMoving = true;
+      knight.classList.remove('facing-left');
+      knight.classList.add('facing-right');
+    }
+
+    // Vertical & Horizontal boundary limits
+    kY = Math.max(350, Math.min(550, kY));
+    kX = Math.max(0, Math.min(window.innerWidth - 100, kX));
+
+    // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
-        objectiveText.textContent = "Objective: Got the King's ring! Walk left across town to the fountain gates.";
+        if (objectiveText) {
+          objectiveText.textContent = "Objective: Got the King's ring! Walk left across town to the fountain gates.";
+        }
       }
 
       if (hasRing && kX <= 10) {
         currentScene = 2;
-        gameBody.style.backgroundImage = "url('image_54e525.png')";
+        if (gameBody) {
+          gameBody.style.backgroundImage = "url('image_54e525.png')";
+        }
         
         // Position Princess further to the RIGHT, facing RIGHT
         pX = window.innerWidth / 2 + 100; 
         pY = 400;
-        princess.classList.remove('hidden');
-        princess.classList.add('facing-right'); // Faces right
-        princess.style.left = pX + 'px';
-        princess.style.top = pY + 'px';
+        if (princess) {
+          princess.classList.remove('hidden');
+          princess.classList.remove('facing-left');
+          princess.classList.add('facing-right');
+          princess.style.left = pX + 'px';
+          princess.style.top = pY + 'px';
+        }
 
         // Knight enters from the far left, walking right toward her
         kX = 50; 
@@ -105,57 +126,46 @@ function gameLoop() {
         knight.classList.remove('facing-left');
         knight.classList.add('facing-right');
 
-        objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
+        if (objectiveText) {
+          objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
+        }
       }
     } 
     else if (currentScene === 2) {
       // Check if knight walks up to her from the left side
-      let distance = Math.abs(kX - pX);
       if (kX >= pX - 120 && kX < pX) {
-        // Snap knight cleanly to her LEFT side, facing RIGHT toward her face!
+        // Snap knight cleanly to her LEFT side, facing RIGHT toward her face
         kX = pX - 90; 
         kY = pY;
         knight.classList.remove('facing-left');
-        knight.classList.add('facing-right'); // Faces right at her
-        startEncounter();
-      }
-    }
-
-        objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
-      }
-    } 
-    else if (currentScene === 2) {
-      // Check if knight walks up to her from the right side
-      let distance = Math.abs(kX - pX);
-      if (kX <= pX + 110 && kX > pX) {
-        // Snap knight cleanly to her right side, facing left toward her face
-        kX = pX + 90; 
-        kY = pY;
-        knight.classList.add('facing-left');
-        knight.classList.remove('facing-right');
+        knight.classList.add('facing-right');
         startEncounter();
       }
     }
   }
 
   // Update DOM positions & Emote bubble coordinates
-  knight.style.left = kX + 'px';
-  knight.style.top = kY + 'px';
+  if (knight) {
+    knight.style.left = kX + 'px';
+    knight.style.top = kY + 'px';
 
-  princess.style.left = pX + 'px';
-  princess.style.top = pY + 'px';
+    if (kMoving) {
+      knight.classList.add('running');
+    } else {
+      knight.classList.remove('running');
+    }
+  }
+
+  if (princess) {
+    princess.style.left = pX + 'px';
+    princess.style.top = pY + 'px';
+  }
 
   knightEmote.style.left = (kX + 35) + 'px';
   knightEmote.style.top = (kY - 35) + 'px';
 
   princessEmote.style.left = (pX + 25) + 'px';
   princessEmote.style.top = (pY - 35) + 'px';
-
-  if (kMoving) {
-    knight.classList.add('running');
-  } else {
-    knight.classList.remove('running');
-  }
 
   requestAnimationFrame(gameLoop);
 }
@@ -173,7 +183,9 @@ function triggerEmote(element, symbol) {
 function startEncounter() {
   inDialogue = true;
   knight.classList.remove('running');
-  objectiveText.textContent = "Event: Unexpected Encounter by the Fountain";
+  if (objectiveText) {
+    objectiveText.textContent = "Event: Unexpected Encounter by the Fountain";
+  }
   
   dialogueIndex = 0;
   showDialogueStep();
@@ -286,11 +298,13 @@ function resolveChoice(type) {
     setTimeout(() => {
       dialogueBox.classList.add('hidden');
       inDialogue = false;
-      objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
+      if (objectiveText) {
+        objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
+      }
     }, 4500);
 
   }, 4000);
 }
 
-// game loop
+// Start game loop
 gameLoop();
