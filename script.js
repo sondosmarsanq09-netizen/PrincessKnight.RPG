@@ -117,10 +117,15 @@ function gameLoop() {
           objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
-
-      // Trigger transition to Scene 2 when walking to the far left
+// Trigger transition to Scene 2 when walking to the far left
       if (hasRing && kX <= 10) {
         currentScene = 2;
+        
+        // Hide the blacksmith when leaving Scene 1
+        if (blacksmith) {
+          blacksmith.classList.add('hidden');
+        }
+
         if (gameBody) {
           gameBody.style.backgroundImage = "url('DangerFOUNTAIN.png')";
         }
