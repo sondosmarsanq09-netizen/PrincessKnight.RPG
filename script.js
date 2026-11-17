@@ -115,13 +115,13 @@ function gameLoop() {
         pY = 400;
         if (princess) {
           princess.classList.remove('hidden');
-          princess.classList.add('facing-left'); // Faces left toward incoming knight
+          princess.classList.add('facing-left'); 
           princess.classList.remove('facing-right');
           princess.style.left = pX + 'px';
           princess.style.top = pY + 'px';
         }
 
-        // Place Knight just a bit to the right so he enters naturally from the right side walking left
+        // Place Knight safely on the right side walking left
         kX = window.innerWidth - 150; 
         kY = 400;
         knight.classList.add('facing-left');
