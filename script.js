@@ -335,3 +335,12 @@ function resolveChoice(type) {
 
 // Start game loop
 gameLoop();
+// === TRANSITION TO NEXT CHAPTER ===
+function transitionToNextChapter(nextChapterFilename) {
+  const overlay = document.getElementById('transition-overlay');
+  overlay.classList.add('active');
+  
+  setTimeout(() => {
+    window.location.href = nextChapterFilename;
+  }, 1000);
+}
