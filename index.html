@@ -2,27 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Princess & Knight</title>
+  <title>RPG - SC1: Town Square & Fountain</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  
+<body id="game-body">
 
   <div class="controls-hint">
-    <p><strong>Princess:</strong> Arrow Keys</p>
     <p><strong>Knight:</strong> W A S D</p>
+    <p id="objective">Objective: Go to the Blacksmith shop to pick up the King's ring.</p>
   </div>
 
-  <div class="princess" id="princess">
+  <!-- Knight Element -->
+  <div class="knight" id="knight"></div>
+
+  <!-- Princess Element (Hidden until Fountain Scene) -->
+  <div class="princess hidden" id="princess">
     <div class="layer" style="background-image: url('Female%20Skin1.png');"></div>
     <div class="layer" style="background-image: url('Boots.png');"></div>
     <div class="layer" style="background-image: url('Skirt.png');"></div>
     <div class="layer" style="background-image: url('Corset%20v2.png');"></div>
     <div class="layer" style="background-image: url('Female%20Hair3.png');"></div>
   </div>
-
-  <!-- This adds the knight to the screen -->
-  <div class="knight" id="knight"></div>
 
   <script src="script.js"></script>
 </body>
