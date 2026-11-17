@@ -99,6 +99,11 @@ function gameLoop() {
       kY += speed;
       kMoving = true;
     }
+    
+    // 🛑 BOUNDARY CLAMPS (Prevents walking off screen)
+    if (kY < 300) kY = 300; // Stops him from walking too high up (adjust if needed)
+    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120; // Stops him from walking off the bottom
+
     if (keys['a']) {
       kX -= speed;
       kMoving = true;
@@ -111,7 +116,6 @@ function gameLoop() {
       knight.classList.remove('facing-left');
       knight.classList.add('facing-right');
     }
-
 
     // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
