@@ -6,17 +6,24 @@
   <title>Chapter 2 - Palace Grounds</title>
   <link rel="stylesheet" href="chapter2.css">
 </head>
-<body>
+<body id="game-body">
   <div id="transition-overlay" class="fade-overlay active"></div>
 
   <!-- UI Elements -->
-  <div id="location-banner">📍 Palace Chambers</div>
-  <div id="objective">Objective: Explore the palace chambers and head to the workshop.</div>
+  <div id="location-banner">📍 Palace — Workshop</div>
+  <div id="objective">Objective: Work on your gear in the workshop.</div>
 
-  <!-- Characters & Interactive Elements -->
+  <!-- Characters & Elements -->
   <div id="knight" class="facing-right"></div>
   <div id="princess" class="hidden"></div>
-  <div id="thought-box" class="subtle-thought hidden"></div>
+  <div id="work-station"></div>
+
+  <div id="dialogue-box" class="hidden">
+    <div id="speaker-name">Knight</div>
+    <p id="dialogue-text"></p>
+    <button id="prev-arrow" class="nav-arrow" title="Previous Line">◀</button>
+    <button id="next-arrow" class="nav-arrow" title="Next Line">▶</button>
+  </div>
 
   <script src="chapter2.js"></script>
 </body>
