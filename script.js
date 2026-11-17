@@ -87,3 +87,6 @@ function gameLoop() {
 }
 
 gameLoop();
+// Keep them locked within the street pathway (e.g., between Y: 150px and Y: 600px)
+kY = Math.max(150, Math.min(600, kY));
+pY = Math.max(150, Math.min(600, pY));
