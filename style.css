@@ -311,3 +311,60 @@ body {
   from { background-position: 0px 0px; }
   to   { background-position: -973px 0px; }
 }
+/* --- AMBIENT CROWD PEDESTRIANS --- */
+.pedestrian {
+  position: absolute;
+  bottom: 80px; /* Grounded level with the street */
+  image-rendering: pixelated;
+  transform: scale(2.5);
+  transform-origin: bottom center;
+  background-repeat: no-repeat;
+  z-index: 2;
+}
+
+/* 1. Boy */
+.pedestrian-boy {
+  width: 48px;
+  height: 32px;
+  background-image: url('Boy_walk.png');
+  background-size: 288px 32px; /* 6 frames * 48px = 288px */
+  animation: walk-left-to-right 16s linear infinite, walk-anim-6 0.8s steps(6) infinite;
+}
+
+/* 2. Girl */
+.pedestrian-girl {
+  width: 48px;
+  height: 32px;
+  background-image: url('Girl_walk.png');
+  background-size: 288px 32px;
+  animation: walk-right-to-left 14s linear infinite, walk-anim-6 0.8s steps(6) infinite;
+}
+
+/* 3. Old Man */
+.pedestrian-oldman {
+  width: 48px;
+  height: 32px;
+  background-image: url('Old_man_walk.png');
+  background-size: 288px 32px;
+  animation: walk-left-to-right 20s linear infinite, walk-anim-6 1.2s steps(6) infinite; /* Slower walk cycle */
+}
+
+/* Animations */
+@keyframes walk-anim-6 {
+  from { background-position: 0px 0px; }
+  to   { background-position: -288px 0px; }
+}
+
+@keyframes walk-left-to-right {
+  0%   { left: -100px; transform: scale(2.5) scaleX(1); }
+  50%  { left: 105vw; transform: scale(2.5) scaleX(1); }
+  50.1% { left: 105vw; transform: scale(2.5) scaleX(-1); }
+  100% { left: -100px; transform: scale(2.5) scaleX(-1); }
+}
+
+@keyframes walk-right-to-left {
+  0%   { left: 105vw; transform: scale(2.5) scaleX(-1); }
+  50%  { left: -100px; transform: scale(2.5) scaleX(-1); }
+  50.1% { left: -100px; transform: scale(2.5) scaleX(1); }
+  100% { left: 105vw; transform: scale(2.5) scaleX(1); }
+}
