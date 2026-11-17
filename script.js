@@ -3,7 +3,7 @@ const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const objectiveText = document.getElementById('objective');
 
-// --- BUILD DYNAMIC UI ELEMENTS ---
+// --- BUILD UI & EMOTE ELEMENTS ---
 let thoughtBox = document.createElement('div');
 thoughtBox.id = 'thought-box';
 thoughtBox.className = 'subtle-thought hidden';
@@ -26,10 +26,19 @@ choiceContainer.id = 'choice-container';
 choiceContainer.classList.add('hidden');
 document.body.appendChild(choiceContainer);
 
+// Floating Emote Bubbles for Knight and Princess
+let knightEmote = document.createElement('div');
+knightEmote.className = 'emote-bubble hidden';
+document.body.appendChild(knightEmote);
+
+let princessEmote = document.createElement('div');
+princessEmote.className = 'emote-bubble hidden';
+document.body.appendChild(princessEmote);
+
 // Coordinates & State
 let kX = 200;
 let kY = 400;
-let pX = window.innerWidth - 300; // Princess waits by the fountain
+let pX = 500; 
 let pY = 400;
 
 const speed = 4;
@@ -91,31 +100,47 @@ function gameLoop() {
         currentScene = 2;
         gameBody.style.backgroundImage = "url('image_54e525.png')";
         
-        // FIX: Instead of teleporting in front of her, the knight enters from the RIGHT side and walks in!
-        kX = window.innerWidth - 150; 
-        knight.classList.add('facing-left'); // Face left as he jogs in
-
-        // Position Princess by the fountain towards the left-center
-        pX = 300; 
+        // Position Princess in the middle-right of the screen, facing left toward the knight
+        pX = window.innerWidth / 2 + 100; 
+        pY = 400;
         princess.classList.remove('hidden');
+        princess.classList.add('facing-right'); // Flips her sprite to face left!
         princess.style.left = pX + 'px';
         princess.style.top = pY + 'px';
+
+        // Knight enters from the right side jogging left
+        kX = window.innerWidth - 150; 
+        kY = 400;
+        knight.classList.add('facing-left');
 
         objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
       }
     } 
     else if (currentScene === 2) {
-      // Check if knight has walked close enough to the princess to trigger the encounter organically!
+      // Check if knight walks close to her from the right
       let distance = Math.abs(kX - pX);
-      if (distance < 120) {
+      if (kX < pX + 150 && distance < 100) {
+        // SNAP KNIGHT into position to the left of the princess, facing RIGHT toward her!
+        kX = pX - 90; 
+        kY = pY;
+        knight.classList.remove('facing-left'); // Forces Knight to face right toward her!
         startEncounter();
       }
     }
   }
 
-  // Update DOM positions
+  // Update DOM positions & Emote bubble coordinates
   knight.style.left = kX + 'px';
   knight.style.top = kY + 'px';
+
+  princess.style.left = pX + 'px';
+  princess.style.top = pY + 'px';
+
+  knightEmote.style.left = (kX + 35) + 'px';
+  knightEmote.style.top = (kY - 30) + 'px';
+
+  princessEmote.style.left = (pX + 25) + 'px';
+  princessEmote.style.top = (pY - 30) + 'px';
 
   if (kMoving) {
     knight.classList.add('running');
@@ -126,12 +151,16 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// --- ENCOUNTER & DIALOGUE SEQUENCING ---
+// --- ENCOUNTER & DIALOGUE SEQUENCING WITH EMOTES ---
 function startEncounter() {
   inDialogue = true;
   knight.classList.remove('running');
   objectiveText.textContent = "Event: Unexpected Encounter by the Fountain";
   
+  // EMOTE: Knight is startled/confused
+  knightEmote.textContent = "❓";
+  knightEmote.classList.remove('hidden');
+
   // Step A: Subtle Inner Monologue + Spoken dialogue
   thoughtBox.classList.remove('hidden');
   thoughtBox.textContent = "...Royalty shouldn't be outside the palace. It's dangerous—they could easily be waylaid or robbed. Why is Her Highness out here alone?";
@@ -142,12 +171,26 @@ function startEncounter() {
   dialogueTextEl.textContent = "“Your Highness?! What are you doing out here by the outer gates?!”";
 
   setTimeout(() => {
+    knightEmote.classList.add('hidden');
     thoughtBox.classList.add('hidden');
+    
+    // EMOTE: Princess is annoyed/reactive
+    princessEmote.textContent = "💢";
+    princessEmote.classList.remove('hidden');
+
     speakerNameEl.className = 'princess-speak';
     speakerNameEl.textContent = "Princess";
     dialogueTextEl.textContent = "“Keep your voice down, you fool! I didn't slip past the guards just to have the town watch alerted by my own personal knight.”";
 
     setTimeout(() => {
+      princessEmote.classList.add('hidden');
+      
+      // EMOTE: Princess teasing / Knight sweating
+      princessEmote.textContent = "✨";
+      princessEmote.classList.remove('hidden');
+      knightEmote.textContent = "💧";
+      knightEmote.classList.remove('hidden');
+
       dialogueTextEl.textContent = "“I need to get to the old gate road, and I cannot do it alone. Will you assist me, or must I find someone less... cowardly?”";
       presentChoices();
     }, 4500);
@@ -171,6 +214,8 @@ function presentChoices() {
     btn.textContent = opt.text;
     btn.onclick = () => {
       choiceContainer.classList.add('hidden');
+      princessEmote.classList.add('hidden');
+      knightEmote.classList.add('hidden');
       resolveChoice(opt.responseType);
     };
     choiceContainer.appendChild(btn);
@@ -185,16 +230,21 @@ function resolveChoice(type) {
   if (type === 1) {
     dialogueTextEl.textContent = "“I am not cowardly! I am professionally concerned for your safety!”";
     thoughtBox.textContent = "(Internal) For a year I've admired her from afar... I never imagined she was this boldly teasing up close.";
+    knightEmote.textContent = "😳";
   } else if (type === 2) {
     dialogueTextEl.textContent = "“I—uh... that is to say... protocol dictates—oh, by the gods.”";
     thoughtBox.textContent = "(Internal) She's actually flirting with me. My entire nervous system is short-circuiting.";
+    knightEmote.textContent = "⚡";
   } else if (type === 3) {
     dialogueTextEl.textContent = "“If the King finds out, he will have my head on a spike!”";
     thoughtBox.textContent = "(Internal) She's glaring at me now... but gods, even when she's furious, she's breathtaking.";
+    knightEmote.textContent = "💓";
   }
+  knightEmote.classList.remove('hidden');
 
   setTimeout(() => {
     thoughtBox.classList.add('hidden');
+    knightEmote.classList.add('hidden');
     speakerNameEl.className = 'princess-speak';
     speakerNameEl.textContent = "Princess";
     
@@ -210,7 +260,6 @@ function resolveChoice(type) {
       dialogueBox.classList.add('hidden');
       inDialogue = false;
       objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
-      // Next objective milestone: Walk further left to exit toward the old gate road!
     }, 4500);
 
   }, 4500);
