@@ -290,14 +290,15 @@ body {
 /* --- BLACKSMITH PROPORTIONS & SPRITE ANIMATION --- */
 .blacksmith {
   position: absolute;
-  width: 120px; /* Adjust width per frame */
-  height: 64px; /* Adjust height per frame */
-  top: 405px;
+  /* Exactly one frame's width from your sprite sheet: total width divided by 7 frames */
+  width: 96px; 
+  height: 64px;
+  top: 430px; /* Grounded properly on the street */
   right: 180px;
   image-rendering: pixelated;
-  transform: scale(4);
+  transform: scale(2.8); /* Adjusted to match your scene proportions */
   background-image: url('BLACKSMITH.png');
-  background-size: 700% 100%; /* 7 frames wide */
+  background-size: 700% 100%; /* Exactly 7 frames wide */
   background-repeat: no-repeat;
   animation: blacksmith-anim 1.2s steps(7) infinite;
   z-index: 3;
