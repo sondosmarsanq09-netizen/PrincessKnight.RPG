@@ -1,15 +1,17 @@
-const princess = document.getElementById('princess');
 const knight = document.getElementById('knight');
-
-// Princess starting position
-let pX = 400;
-let pY = 200;
+const princess = document.getElementById('princess');
+const gameBody = document.getElementById('game-body');
+const objectiveText = document.getElementById('objective');
 
 // Knight starting position
 let kX = 200;
-let kY = 215;
-
+let kY = 400;
 const speed = 4;
+
+// Scene & Quest Progression state
+let currentScene = 1; // 1 = Town Square, 2 = Fountain Area
+let hasRing = false;
+
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
@@ -21,40 +23,9 @@ window.addEventListener('keyup', (e) => {
 });
 
 function gameLoop() {
-  // --- 1. PRINCESS CONTROLS (Arrow Keys) ---
-  let pMoving = false;
-
-  if (keys['arrowup']) {
-    pY -= speed;
-    pMoving = true;
-  }
-  if (keys['arrowdown']) {
-    pY += speed;
-    pMoving = true;
-  }
-  if (keys['arrowleft']) {
-    pX -= speed;
-    pMoving = true;
-    princess.classList.remove('facing-right');
-  }
-  if (keys['arrowright']) {
-    pX += speed;
-    pMoving = true;
-    princess.classList.add('facing-right');
-  }
-
-  princess.style.left = pX + 'px';
-  princess.style.top = pY + 'px';
-
-  if (pMoving) {
-    princess.classList.add('walking');
-  } else {
-    princess.classList.remove('walking');
-  }
-
-  // --- 2. KNIGHT CONTROLS (W, A, S, D) ---
   let kMoving = false;
 
+  // Knight Controls (W, A, S, D)
   if (keys['w']) {
     kY -= speed;
     kMoving = true;
@@ -74,6 +45,39 @@ function gameLoop() {
     knight.classList.remove('facing-left');
   }
 
+  // Vertical pathway bounds
+  kY = Math.max(250, Math.min(650, kY));
+  kX = Math.max(0, Math.min(window.innerWidth - 100, kX));
+
+  // --- SC1 QUEST LOGIC ---
+  if (currentScene === 1) {
+    // Check if knight visits the Blacksmith shop area (e.g., right side of town square around X: 700+)
+    if (!hasRing && kX >= 700) {
+      hasRing = true;
+      objectiveText.textContent = "Objective: Picked up the King's ring! Now head left to the outer gates fountain.";
+      console.log("Ring acquired from the blacksmith!");
+    }
+
+    // If he has the ring and walks to the far left edge, transition to the fountain scene
+    if (hasRing && kX <= 10) {
+      currentScene = 2;
+      gameBody.style.backgroundImage = "url('image_54e525.png')"; // Fountain background
+      kX = 100; // Spawn knight on the left side of fountain
+      
+      // Reveal the Princess waiting by the fountain!
+      princess.classList.remove('hidden');
+      objectiveText.textContent = "Objective: Talk to the Princess by the fountain.";
+      console.log("Transitioned to Fountain Scene - Princess appears!");
+    }
+  } else if (currentScene === 2) {
+    // In the fountain scene, if he walks close to the princess, trigger dialogue encounter
+    let distance = Math.abs(kX - parseInt(princess.style.left || 700));
+    if (distance < 80) {
+      objectiveText.textContent = "Event: 'Your Highness?! What are you doing out here?!'";
+    }
+  }
+
+  // Update Knight position on screen
   knight.style.left = kX + 'px';
   knight.style.top = kY + 'px';
 
@@ -86,7 +90,5 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
+// Start the loop
 gameLoop();
-// Keep them locked within the street pathway (e.g., between Y: 150px and Y: 600px)
-kY = Math.max(150, Math.min(600, kY));
-pY = Math.max(150, Math.min(600, pY));
