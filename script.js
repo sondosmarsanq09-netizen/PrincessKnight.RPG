@@ -104,29 +104,7 @@ function gameLoop() {
       knight.classList.remove('facing-left');
       knight.classList.add('facing-right');
     }
-function initCrowd() {
-  // Spawn exactly one boy
-  let boy = document.createElement('div');
-  boy.className = 'pedestrian pedestrian-boy';
-  document.body.appendChild(boy);
 
-  // Spawn exactly one girl with a brief offset
-  setTimeout(() => {
-    let girl = document.createElement('div');
-    girl.className = 'pedestrian pedestrian-girl';
-    document.body.appendChild(girl);
-  }, 2000);
-
-  // Spawn exactly one old man
-  setTimeout(() => {
-    let oldMan = document.createElement('div');
-    oldMan.className = 'pedestrian pedestrian-oldman';
-    document.body.appendChild(oldMan);
-  }, 4000);
-}
-
-// Call it once when Scene 1 loads
-initCrowd();
 
     // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
