@@ -39,6 +39,12 @@ choiceContainer.id = 'choice-container';
 choiceContainer.classList.add('hidden');
 document.body.appendChild(choiceContainer);
 
+// Blacksmith Element
+let blacksmith = document.createElement('div');
+blacksmith.id = 'blacksmith';
+blacksmith.className = 'blacksmith';
+document.body.appendChild(blacksmith);
+
 // Emote Bubbles
 let knightEmote = document.createElement('div');
 knightEmote.className = 'emote-bubble hidden';
