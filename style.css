@@ -287,17 +287,17 @@ body {
   z-index: 10;
   pointer-events: none;
 }
-/* --- BLACKSMITH PROPORTIONS & POSITION FIX --- */
+/* --- BLACKSMITH GROUNDED & PROPORTIONED --- */
 .blacksmith {
   position: absolute;
-  width: 140px;    /* Wider frame to un-squish him */
-  height: 90px;    /* Taller frame to capture his full height */
-  top: 395px;      /* Lowered down to ground him on the street */
+  width: 140px;
+  height: 104px;   /* Increased height to give him full vertical room */
+  top: 425px;      /* Pushed down lower to sit right on the street floor */
   right: 170px;
   image-rendering: pixelated;
-  transform: scale(2.8); /* Slightly larger to match the knight's presence */
+  transform: scale(2.8);
   background-image: url('BLACKSMITH.png');
-  background-size: 980px 90px; /* 7 frames * 140px width = 980px total */
+  background-size: 980px 104px; /* Matches the new 104px height */
   background-repeat: no-repeat;
   animation: blacksmith-anim 1s steps(7) infinite;
   z-index: 3;
