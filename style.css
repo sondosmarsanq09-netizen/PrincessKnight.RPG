@@ -55,6 +55,7 @@ body {
   left: 200px;
   image-rendering: pixelated;
   transform: scale(3);
+  background-color: transparent;
   background-image: url('Idle.png');
   background-size: 1000% 100%;
   background-repeat: no-repeat;
@@ -71,8 +72,12 @@ body {
   animation: knight-run 0.7s steps(10) infinite;
 }
 
-/* Steps animation makes it snap frame-by-frame instead of sliding */
 @keyframes knight-idle {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+@keyframes knight-run {
   0%   { background-position: 0% 0%; }
   100% { background-position: 100% 0%; }
 }
