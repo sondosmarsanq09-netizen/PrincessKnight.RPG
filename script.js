@@ -42,10 +42,10 @@ document.body.appendChild(princessEmote);
 // Coordinates & State
 let kX = 200;
 let kY = 400;
-let pX = 500; 
+let pX = 350; 
 let pY = 400;
 
-const speed = 6; // Increased speed so movement is snappy and less time-consuming
+const speed = 6;
 let currentScene = 1;
 let hasRing = false;
 let inDialogue = false;
@@ -81,11 +81,13 @@ function gameLoop() {
       kX -= speed;
       kMoving = true;
       knight.classList.add('facing-left');
+      knight.classList.remove('facing-right');
     }
     if (keys['d']) {
       kX += speed;
       kMoving = true;
       knight.classList.remove('facing-left');
+      knight.classList.add('facing-right');
     }
 
     // Vertical boundary limits
@@ -103,30 +105,33 @@ function gameLoop() {
         currentScene = 2;
         gameBody.style.backgroundImage = "url('image_54e525.png')";
         
-        // Princess waits on the right side, facing left
-        pX = window.innerWidth / 2 + 150; 
+        // Princess waits on the left-center side, facing right toward incoming knight
+        pX = 350; 
         pY = 400;
         princess.classList.remove('hidden');
-        princess.classList.add('facing-right'); 
+        princess.classList.remove('facing-left');
+        princess.classList.add('facing-right'); // Faces right
         princess.style.left = pX + 'px';
         princess.style.top = pY + 'px';
 
-        // Knight enters from the far left, walking right toward her
-        kX = 50; 
+        // Knight enters from the far right side, walking left toward her
+        kX = window.innerWidth - 150; 
         kY = 400;
-        knight.classList.remove('facing-left');
+        knight.classList.add('facing-left');
+        knight.classList.remove('facing-right');
 
         objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
       }
     } 
     else if (currentScene === 2) {
-      // Check if knight walks up to her from the left side
+      // Check if knight walks up to her from the right side
       let distance = Math.abs(kX - pX);
-      if (kX >= pX - 140 && kX < pX) {
-        // Snap knight cleanly to her left side, facing right toward her face
-        kX = pX - 110; 
+      if (kX <= pX + 110 && kX > pX) {
+        // Snap knight cleanly to her right side, facing left toward her face
+        kX = pX + 90; 
         kY = pY;
-        knight.classList.remove('facing-left');
+        knight.classList.add('facing-left');
+        knight.classList.remove('facing-right');
         startEncounter();
       }
     }
@@ -158,7 +163,6 @@ function gameLoop() {
 function triggerEmote(element, symbol) {
   element.textContent = symbol;
   element.classList.remove('hidden');
-  // Restart animation
   void element.offsetWidth;
   setTimeout(() => {
     element.classList.add('hidden');
@@ -199,13 +203,11 @@ function showDialogueStep() {
     triggerEmote(princessEmote, "✨");
     triggerEmote(knightEmote, "💧");
     
-    // Once we reach the end of opening lines, show choice buttons!
     presentChoices();
     return;
   }
 }
 
-// Hook up arrow click handlers
 nextArrow.onclick = () => {
   if (dialogueIndex < 2) {
     dialogueIndex++;
@@ -266,7 +268,6 @@ function resolveChoice(type) {
     triggerEmote(knightEmote, "💓");
   }
 
-  // After 3 seconds, Princess responds and finishes
   setTimeout(() => {
     thoughtBox.classList.add('hidden');
     speakerNameEl.className = 'princess-speak';
@@ -290,5 +291,5 @@ function resolveChoice(type) {
   }, 4000);
 }
 
-// Start game loop
+// game loop
 gameLoop();
