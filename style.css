@@ -55,7 +55,7 @@ body {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 500px;         /* Position the anchor higher up */
+  top: 550px;         /* Position the anchor higher up */
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
