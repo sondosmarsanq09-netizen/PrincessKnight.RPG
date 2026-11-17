@@ -287,17 +287,17 @@ body {
   z-index: 10;
   pointer-events: none;
 }
-/* --- BLACKSMITH FIXED FRAME-BY-FRAME ANIMATION --- */
+/* --- BLACKSMITH PROPORTIONS & POSITION FIX --- */
 .blacksmith {
   position: absolute;
-  width: 128px;     /* Exact width of one single frame */
-  height: 64px;    /* Exact height of the frame */
-  top: 420px;
-  right: 180px;
+  width: 140px;    /* Wider frame to un-squish him */
+  height: 90px;    /* Taller frame to capture his full height */
+  top: 395px;      /* Lowered down to ground him on the street */
+  right: 170px;
   image-rendering: pixelated;
-  transform: scale(2.5);
+  transform: scale(2.8); /* Slightly larger to match the knight's presence */
   background-image: url('BLACKSMITH.png');
-  background-size: 896px 64px; /* Total image dimensions: width of all 7 frames combined x height */
+  background-size: 980px 90px; /* 7 frames * 140px width = 980px total */
   background-repeat: no-repeat;
   animation: blacksmith-anim 1s steps(7) infinite;
   z-index: 3;
@@ -305,5 +305,5 @@ body {
 
 @keyframes blacksmith-anim {
   from { background-position: 0px 0px; }
-  to   { background-position: -896px 0px; /* Shifts the background precisely by the total width of all frames */ }
+  to   { background-position: -980px 0px; }
 }
