@@ -51,10 +51,10 @@ body {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 210px;
+  top: 180px;
   left: 200px;
   image-rendering: pixelated;
-  transform: scale(4.5);
+  transform: scale(5.5);
   filter: none !important;
   mix-blend-mode: normal !important;
   background-color: transparent !important;
@@ -66,7 +66,7 @@ body {
 }
 
 .knight.facing-left {
-  transform: scale(-4.5, 4.5);
+  transform: scale(-5.5, 5.5);
 }
 
 .knight.running {
