@@ -290,8 +290,8 @@ body {
 /* --- BLACKSMITH GROUNDED & PROPORTIONED --- */
 .blacksmith {
   position: absolute;
-  width: 140px;
-  height: 104px;   /* Increased height to give him full vertical room */
+  width: 139px;
+  height: 108px;   /* Increased height to give him full vertical room */
   top: 425px;      /* Pushed down lower to sit right on the street floor */
   right: 170px;
   image-rendering: pixelated;
