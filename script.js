@@ -328,6 +328,10 @@ function resolveChoice(type) {
       if (objectiveText) {
         objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
       }
+      
+      // 🎬 CHAPTER 1 ENDS HERE -> FADE TO BLACK AND GO TO CHAPTER 2
+      transitionToNextChapter('chapter2.html');
+
     }, 4500);
 
   }, 4000);
@@ -335,6 +339,7 @@ function resolveChoice(type) {
 
 // Start game loop
 gameLoop();
+
 // === TRANSITION TO NEXT CHAPTER ===
 function transitionToNextChapter(nextChapterFilename) {
   const overlay = document.getElementById('transition-overlay');
