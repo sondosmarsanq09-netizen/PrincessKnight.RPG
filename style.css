@@ -55,10 +55,11 @@ body {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 600px;
+  bottom: 80px;  /* Anchored to the floor so full-screen won't move him */
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
+  transform-origin: bottom center; /* Scales upwards from his feet */
   filter: none !important;
   mix-blend-mode: normal !important;
   background-color: transparent !important;
@@ -68,7 +69,6 @@ body {
   animation: knight-anim 0.9s steps(9) infinite;
   z-index: 5;
 }
-
 .knight.facing-left {
   transform: scale(-4.8, 4.8);
 }
