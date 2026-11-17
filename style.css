@@ -55,7 +55,7 @@ body {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 570px;
+  top: 590px;
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
@@ -292,7 +292,7 @@ body {
   position: absolute;
   width: 139px;
   height: 108px;
-  top: 590px;      /* Lowered further down to match the street */
+  top: 580px;      /* Lowered further down to match the street */
   right: 170px;
   image-rendering: pixelated;
   transform: scale(2.8);
