@@ -55,11 +55,11 @@ body {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 620px;         /* Position the anchor higher up */
+  bottom: 120px;      /* Distance from the bottom of the screen */
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
-  transform-origin: top center;  /* Scale downward from the top instead */
+  transform-origin: bottom center; /* Scales upward from his feet */
   filter: none !important;
   mix-blend-mode: normal !important;
   background-color: transparent !important;
@@ -72,12 +72,12 @@ body {
 
 .knight.facing-left {
   transform: scale(-4.8, 4.8);
-  transform-origin: top center;
+  transform-origin: bottom center;
 }
 
 .knight.facing-right {
   transform: scale(4.8, 4.8);
-  transform-origin: top center;
+  transform-origin: bottom center;
 }
 
 .knight.running {
