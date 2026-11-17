@@ -48,17 +48,17 @@ body {
 
 /* --- KNIGHT --- */
 .knight {
-  width: 120px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   position: absolute;
-  top: 250px;
+  top: 200px;
   left: 200px;
   image-rendering: pixelated;
   transform: scale(3);
   background-image: url('Idle.png');
   background-size: 1000% 100%;
   background-repeat: no-repeat;
-  animation: knight-anim 0.9s steps(10) infinite;
+  animation: knight-idle 0.9s steps(10) infinite;
   z-index: 5;
 }
 
@@ -68,10 +68,16 @@ body {
 
 .knight.running {
   background-image: url('Run.png');
-  animation: knight-anim 0.7s steps(10) infinite;
+  animation: knight-run 0.7s steps(10) infinite;
 }
 
-@keyframes knight-anim {
+/* Precise frame locking so he doesn't slide around */
+@keyframes knight-idle {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 0%; }
+}
+
+@keyframes knight-run {
   from { background-position: 0% 0%; }
   to { background-position: 100% 0%; }
 }
