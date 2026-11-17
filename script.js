@@ -29,7 +29,7 @@ document.body.appendChild(choiceContainer);
 // Coordinates & State
 let kX = 200;
 let kY = 400;
-let pX = 500;
+let pX = window.innerWidth - 300; // Princess waits by the fountain
 let pY = 400;
 
 const speed = 4;
@@ -39,7 +39,6 @@ let inDialogue = false;
 
 const keys = {};
 
-// Prevent default key behavior so 's' never sings or scrolls
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', ' '].includes(k)) {
@@ -55,14 +54,13 @@ window.addEventListener('keyup', (e) => {
 function gameLoop() {
   let kMoving = false;
 
-  // Only permit movement when NOT locked in dialogue/choices
   if (!inDialogue) {
     if (keys['w']) {
       kY -= speed;
       kMoving = true;
     }
     if (keys['s']) {
-      kY += speed; // Fixed: strictly moves down now!
+      kY += speed;
       kMoving = true;
     }
     if (keys['a']) {
@@ -76,7 +74,7 @@ function gameLoop() {
       knight.classList.remove('facing-left');
     }
 
-    // Strict vertical walkway bounds (prevents dipping off-screen)
+    // Vertical boundary limits
     kY = Math.max(350, Math.min(550, kY));
     kX = Math.max(0, Math.min(window.innerWidth - 100, kX));
 
@@ -85,21 +83,31 @@ function gameLoop() {
       // Step 1: Visit Blacksmith on the right
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
-        objectiveText.textContent = "Objective: Got the King's ring! Walk left to the outer gates fountain.";
+        objectiveText.textContent = "Objective: Got the King's ring! Now walk left across town to the fountain gates.";
       }
 
-      // Step 2: Walk to far left edge with ring -> triggers Fountain Scene
+      // Step 2: Walk left to transition to Fountain Scene
       if (hasRing && kX <= 10) {
         currentScene = 2;
         gameBody.style.backgroundImage = "url('image_54e525.png')";
-        kX = window.innerWidth / 2 - 100;
-        pX = window.innerWidth / 2 + 50;
         
+        // FIX: Instead of teleporting in front of her, the knight enters from the RIGHT side and walks in!
+        kX = window.innerWidth - 150; 
+        knight.classList.add('facing-left'); // Face left as he jogs in
+
+        // Position Princess by the fountain towards the left-center
+        pX = 300; 
         princess.classList.remove('hidden');
         princess.style.left = pX + 'px';
         princess.style.top = pY + 'px';
 
-        // Trigger opening encounter sequence
+        objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
+      }
+    } 
+    else if (currentScene === 2) {
+      // Check if knight has walked close enough to the princess to trigger the encounter organically!
+      let distance = Math.abs(kX - pX);
+      if (distance < 120) {
         startEncounter();
       }
     }
@@ -121,6 +129,7 @@ function gameLoop() {
 // --- ENCOUNTER & DIALOGUE SEQUENCING ---
 function startEncounter() {
   inDialogue = true;
+  knight.classList.remove('running');
   objectiveText.textContent = "Event: Unexpected Encounter by the Fountain";
   
   // Step A: Subtle Inner Monologue + Spoken dialogue
@@ -132,14 +141,12 @@ function startEncounter() {
   speakerNameEl.textContent = "Knight";
   dialogueTextEl.textContent = "“Your Highness?! What are you doing out here by the outer gates?!”";
 
-  // After 4.5 seconds, clear thought and show Princess response
   setTimeout(() => {
     thoughtBox.classList.add('hidden');
     speakerNameEl.className = 'princess-speak';
     speakerNameEl.textContent = "Princess";
     dialogueTextEl.textContent = "“Keep your voice down, you fool! I didn't slip past the guards just to have the town watch alerted by my own personal knight.”";
 
-    // After another 4.5 seconds, prompt her challenge and show choices
     setTimeout(() => {
       dialogueTextEl.textContent = "“I need to get to the old gate road, and I cannot do it alone. Will you assist me, or must I find someone less... cowardly?”";
       presentChoices();
@@ -186,25 +193,24 @@ function resolveChoice(type) {
     thoughtBox.textContent = "(Internal) She's glaring at me now... but gods, even when she's furious, she's breathtaking.";
   }
 
-  // Princess final quip before ending conversation
   setTimeout(() => {
     thoughtBox.classList.add('hidden');
     speakerNameEl.className = 'princess-speak';
     speakerNameEl.textContent = "Princess";
     
     if (type === 1) {
-      dialogueTextEl.textContent = "“Professional concern? Is that what you call shaking in your greaves? Get moving, Knight.”";
+      dialogueTextEl.textContent = "“Professional concern? Is that what you call shaking in your greaves? Get moving toward the Old Gate Road.”";
     } else if (type === 2) {
-      dialogueTextEl.textContent = "“Protocol doesn't look very steady on its feet right now. Are you coming or not?”";
+      dialogueTextEl.textContent = "“Protocol doesn't look very steady on its feet right now. Lead the way to the Old Gate Road.”";
     } else {
-      dialogueTextEl.textContent = "“Then let's pray he doesn't find out. Well? Lead the way.”";
+      dialogueTextEl.textContent = "“Then let's pray he doesn't find out. To the Old Gate Road, Knight.”";
     }
 
-    // Resume normal gameplay after final line
     setTimeout(() => {
       dialogueBox.classList.add('hidden');
       inDialogue = false;
-      objectiveText.textContent = "Objective: Escort the Princess toward the old gate road.";
+      objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
+      // Next objective milestone: Walk further left to exit toward the old gate road!
     }, 4500);
 
   }, 4500);
