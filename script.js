@@ -1,3 +1,10 @@
+// === FADE IN ON LOAD ===
+window.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('transition-overlay');
+  setTimeout(() => {
+    overlay.classList.remove('active');
+  }, 100);
+});
 const knight = document.getElementById('knight');
 const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
