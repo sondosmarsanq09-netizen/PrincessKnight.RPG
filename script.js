@@ -4,6 +4,15 @@ const gameBody = document.getElementById('game-body');
 const objectiveText = document.getElementById('objective');
 
 // --- BUILD UI & EMOTE ELEMENTS ---
+let sceneVignette = document.createElement('div');
+sceneVignette.id = 'scene-vignette';
+document.body.appendChild(sceneVignette);
+
+let locationBanner = document.createElement('div');
+locationBanner.id = 'location-banner';
+locationBanner.textContent = "📍 Town Square — Alleys";
+document.body.appendChild(locationBanner);
+
 let thoughtBox = document.createElement('div');
 thoughtBox.id = 'thought-box';
 thoughtBox.className = 'subtle-thought hidden';
@@ -99,7 +108,7 @@ function gameLoop() {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
         if (objectiveText) {
-          objectiveText.textContent = "Objective: Got the King's ring! Walk left across town to the fountain gates.";
+          objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
 
@@ -107,8 +116,10 @@ function gameLoop() {
       if (hasRing && kX <= 10) {
         currentScene = 2;
         if (gameBody) {
-          gameBody.style.backgroundImage = "url('image_54e525.png')";
+          gameBody.style.backgroundImage = "url('OutsideFOUNTAIN.png')";[cite: 2]
         }
+        sceneVignette.classList.add('fountain-atmosphere');
+        locationBanner.textContent = "📍 Outer Gates — Moonlit Fountain";
         
         // Position Princess towards the right-center, facing left toward him
         pX = window.innerWidth / 2 + 100; 
