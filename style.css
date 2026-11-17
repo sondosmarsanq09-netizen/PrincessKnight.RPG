@@ -287,18 +287,17 @@ body {
   z-index: 10;
   pointer-events: none;
 }
-/* --- BLACKSMITH PROPORTIONS & SPRITE ANIMATION --- */
+/* --- BLACKSMITH FIXED SPRITE & ANVIL --- */
 .blacksmith {
   position: absolute;
-  /* Exactly one frame's width from your sprite sheet: total width divided by 7 frames */
-  width: 96px; 
+  width: 240px; /* Wide enough to capture both the blacksmith and the anvil */
   height: 64px;
-  top: 430px; /* Grounded properly on the street */
-  right: 180px;
+  top: 420px;
+  right: 150px;
   image-rendering: pixelated;
-  transform: scale(2.8); /* Adjusted to match your scene proportions */
+  transform: scale(2.5);
   background-image: url('BLACKSMITH.png');
-  background-size: 700% 100%; /* Exactly 7 frames wide */
+  background-size: 700% 100%; /* Spreads out the 7 frames across the sheet */
   background-repeat: no-repeat;
   animation: blacksmith-anim 1.2s steps(7) infinite;
   z-index: 3;
@@ -307,4 +306,5 @@ body {
 @keyframes blacksmith-anim {
   0%   { background-position: 0% 0%; }
   100% { background-position: 100% 0%; }
+}
 }
