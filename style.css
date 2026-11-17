@@ -55,11 +55,10 @@ body {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 680px;          /* Adjusted so his scaled feet sit right on the street floor */
+  top: 590px;
   left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
-  transform-origin: bottom center; /* Keeps his feet locked to the ground */
   filter: none !important;
   mix-blend-mode: normal !important;
   background-color: transparent !important;
@@ -72,12 +71,10 @@ body {
 
 .knight.facing-left {
   transform: scale(-4.8, 4.8);
-  transform-origin: bottom center; /* Prevents floating/jumping when turning left */
 }
 
 .knight.facing-right {
   transform: scale(4.8, 4.8);
-  transform-origin: bottom center; /* Prevents floating/jumping when turning right */
 }
 
 .knight.running {
@@ -89,6 +86,21 @@ body {
   0%   { background-position: 0% 0%; }
   100% { background-position: 100% 0%; }
 }
+
+.controls-hint {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 12px 18px;
+  font-family: monospace;
+  font-size: 14px;
+  z-index: 10;
+  border-radius: 6px;
+  border: 1px solid #444;
+}
+
 /* --- TRANSLUCENT CREAM DIALOGUE BOX & ARROWS --- */
 #dialogue-box {
   position: absolute;
