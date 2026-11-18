@@ -15,7 +15,7 @@ body {
   position: relative;
 }
 
-/* --- STABLE PRINCESS SPRITE STYLING --- */
+/* --- CORRECTED FACING DIRECTIONS --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -26,14 +26,14 @@ body {
   z-index: 5;
 }
 
-/* Facing Right (Pressing D) */
+/* When pressing D (walking right), flip her so she faces right --> */
 #princess.facing-right {
-  transform: scale(3.5, 3.5);
+  transform: scaleX(-3.5) scaleY(3.5);
 }
 
-/* Facing Left (Pressing A) */
+/* When pressing A (walking left), keep normal so she faces left <-- */
 #princess.facing-left {
-  transform: scaleX(-3.5) scaleY(3.5);
+  transform: scale(3.5, 3.5);
 }
 
 #princess .layer {
