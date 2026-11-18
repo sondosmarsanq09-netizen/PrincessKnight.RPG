@@ -15,10 +15,22 @@ const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 
 let kX = 400;
-let kY = 450;
+let kY = 550;
 const speed = 6;
 let currentArea = 'hall'; 
 let inDialogue = false;
+
+window.addEventListener('DOMContentLoaded', () => {
+  const overlay = document.getElementById('transition-overlay');
+  setTimeout(() => {
+    overlay.classList.remove('active');
+  }, 100);
+
+  if (knight) {
+    knight.style.left = kX + 'px';
+    knight.style.top = kY + 'px';
+  }
+});
 
 // --- UPGRADED TASK SYSTEM ---
 let taskStage = 0; 
