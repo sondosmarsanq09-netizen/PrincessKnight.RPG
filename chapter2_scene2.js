@@ -32,7 +32,7 @@ const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
 let pX = 400;
-let pY = 450;
+let pY = 570;
 const speed = 5;
 let currentArea = 'room'; // 'room', 'balcony'
 
@@ -94,23 +94,23 @@ function gameLoop() {
   if (keys['w']) { pY -= speed; pMoving = true; }
   if (keys['s']) { pY += speed; pMoving = true; }
   
-  if (pY < 350) pY = 350;
-  if (pY > window.innerHeight - 100) pY = window.innerHeight - 100;
-
+ if (pY < 480) pY = 480;
+  if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
+  
   if (keys['a']) {
     pX -= speed;
     pMoving = true;
     princess.classList.add('facing-left');
     princess.classList.remove('facing-right');
   }
-  if (keys['d']) {
+ if (keys['d']) {
     pX += speed;
     pMoving = true;
     princess.classList.remove('facing-left');
     princess.classList.add('facing-right');
   }
 
-  // --- ROOM / BALCONY NAVIGATION ---
+ // --- ROOM / BALCONY NAVIGATION ---
   if (currentArea === 'room') {
     if (taskStage >= 3) {
       arrowLeft.style.display = 'flex';
@@ -123,16 +123,14 @@ function gameLoop() {
       arrowLeft.style.display = 'none';
     }
 
-    // Walking left out of room transitions to Balcony (entering from the left side)
     if (taskStage >= 3 && pX <= 10) {
       currentArea = 'balcony';
       gameBody.style.backgroundImage = "url('Balcony.png')";
       locationBanner.textContent = "📍 Royal Balcony";
-      pX = 20; // Spawns on the left side of the balcony walking right
+      pX = 20; 
     }
   } else if (currentArea === 'balcony') {
     arrowLeft.style.display = 'none';
-    // Walking back right returns to room
     if (pX >= window.innerWidth - 130) {
       currentArea = 'room';
       gameBody.style.backgroundImage = "url('PrincessRoom.png')";
@@ -141,8 +139,9 @@ function gameLoop() {
     }
     if (pX < 10) pX = 10;
   }
+  
 
-  // --- TASKS & MARKERS ---
+ // --- TASKS & MARKERS ---
   canInteract = false;
   taskMarker.classList.add('hidden');
   interactionPrompt.classList.add('hidden');
@@ -151,7 +150,7 @@ function gameLoop() {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '200px';
-      taskMarker.style.top = '480px';
+      taskMarker.style.top = (pY + 10) + 'px';
 
       if (Math.abs(pX - 200) < 50) {
         canInteract = true;
@@ -163,7 +162,7 @@ function gameLoop() {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '500px';
-      taskMarker.style.top = '480px';
+      taskMarker.style.top = (pY + 10) + 'px';
 
       if (Math.abs(pX - 500) < 50) {
         canInteract = true;
@@ -175,7 +174,7 @@ function gameLoop() {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '800px';
-      taskMarker.style.top = '480px';
+      taskMarker.style.top = (pY + 10) + 'px';
 
       if (Math.abs(pX - 800) < 50) {
         canInteract = true;
@@ -187,7 +186,7 @@ function gameLoop() {
     if (currentArea === 'balcony') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '600px';
-      taskMarker.style.top = '480px';
+      taskMarker.style.top = (pY + 10) + 'px';
 
       if (Math.abs(pX - 600) < 50) {
         canInteract = true;
