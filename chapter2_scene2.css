@@ -15,7 +15,7 @@ body {
   position: relative;
 }
 
-/* --- CORRECTED FACING DIRECTIONS --- */
+/* --- STABLE PRINCESS SPRITE STYLING --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -26,16 +26,16 @@ body {
   z-index: 5;
 }
 
-/* When pressing D (walking right), flip her so she faces right --> */
+/* Corrected Facing Directions */
 #princess.facing-right {
   transform: scaleX(-3.5) scaleY(3.5);
 }
 
-/* When pressing A (walking left), keep normal so she faces left <-- */
 #princess.facing-left {
   transform: scale(3.5, 3.5);
 }
 
+/* Locked layer dimensions and pixel snapping */
 #princess .layer {
   position: absolute;
   top: 0;
@@ -45,24 +45,24 @@ body {
   background-size: 1000% 700%; 
   background-repeat: no-repeat;
   image-rendering: pixelated;
-  animation: princess-idle 0.8s steps(5) infinite;
+  image-rendering: crisp-edges;
+  animation: princess-idle 0.8s steps(5, start) infinite;
 }
 
-/* Stable walking animation frames */
+/* Stable walking animation using step timing */
 #princess.running .layer {
-  animation: princess-walk 0.7s steps(8) infinite;
+  animation: princess-walk 0.7s steps(8, start) infinite;
 }
 
 @keyframes princess-idle {
   0%   { background-position: 0% 0%; }
-  100% { background-position: 55.55% 0%; } 
+  100% { background-position: 50% 0%; } 
 }
 
 @keyframes princess-walk {
   0%   { background-position: 0% 16.66%; }
   100% { background-position: 100% 16.66%; }
 }
-
 .hidden {
   display: none !important;
 }
