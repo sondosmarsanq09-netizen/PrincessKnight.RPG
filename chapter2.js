@@ -15,25 +15,13 @@ const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 
 let kX = 400;
-let kY = 550;
+let kY = 450;
 const speed = 6;
 let currentArea = 'hall'; 
 let inDialogue = false;
 
-window.addEventListener('DOMContentLoaded', () => {
-  const overlay = document.getElementById('transition-overlay');
-  setTimeout(() => {
-    overlay.classList.remove('active');
-  }, 100);
-
-  if (knight) {
-    knight.style.left = kX + 'px';
-    knight.style.top = kY + 'px';
-  }
-});
-
-// --- UPGRADED TASK SYSTEM ---
-let taskStage = 0; 
+// Task System State
+let taskStage = 0;
 let canInteract = false;
 
 const keys = {};
@@ -45,7 +33,7 @@ window.addEventListener('keydown', (e) => {
   }
   keys[k] = true;
 
-  // Press 'E' to complete interaction when near a task marker
+  // Press 'E' to interact when near the task marker
   if (k === 'e' && canInteract && !inDialogue) {
     if (taskStage === 0) {
       taskStage = 1;
@@ -93,7 +81,6 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
-    // --- EDGE ARROWS & HIGHLIGHTS (Hall only) ---
     if (currentArea === 'hall') {
       arrowLeft.style.display = 'flex';
       arrowRight.style.display = 'flex';
@@ -113,7 +100,6 @@ function gameLoop() {
       arrowRight.style.display = 'none';
     }
 
-    // --- AREA SWITCHING LOGIC ---
     if (currentArea === 'hall') {
       if (kX <= 10) {
         currentArea = 'workspace';
@@ -147,19 +133,17 @@ function gameLoop() {
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
     }
 
-    // --- INTERACTIVE TASK LOGIC & MARKER PLACEMENT ---
+    // --- TASK LOGIC & MARKERS ---
     canInteract = false;
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
 
     if (taskStage === 0) {
-      // Task 1: Forge Chambers - Inspect the anvil/forge tools
       if (currentArea === 'workspace') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '150px';
         taskMarker.style.top = '500px';
 
-        // Check if player is standing close to the marker
         if (Math.abs(kX - 150) < 50) {
           canInteract = true;
           interactionPrompt.textContent = "Press [E] to Inspect Forge Anvil";
@@ -168,7 +152,6 @@ function gameLoop() {
       }
     } 
     else if (taskStage === 1) {
-      // Task 2: Royal Garden - Harvest Moonbloom Flower near fountain
       if (currentArea === 'garden') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '350px';
@@ -182,7 +165,6 @@ function gameLoop() {
       }
     } 
     else if (taskStage === 2) {
-      // Task 3: Dragon's Hall - Salute the Dragon Statue
       if (currentArea === 'hall') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '600px';
