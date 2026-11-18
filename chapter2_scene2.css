@@ -15,27 +15,7 @@ body {
   position: relative;
 }
 
-/* --- PRINCESS CONTAINER --- */
-#princess {
-  width: 96px;
-  height: 96px;
-  position: absolute;
-  image-rendering: pixelated;
-  transform: scale(3.5);
-  transform-origin: center bottom;
-  z-index: 5;
-}
-
-/* Facing Directions */
-#princess.facing-right {
-  transform: scaleX(-3.5) scaleY(3.5);
-}
-
-#princess.facing-left {
-  transform: scale(3.5, 3.5);
-}
-
-/* --- SYNCHRONIZED LAYERS --- */
+/* --- BULLETPROOF SYNCHRONIZED LAYERS --- */
 #princess .layer {
   position: absolute;
   top: 0;
@@ -46,17 +26,18 @@ body {
   background-repeat: no-repeat;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  animation: princess-idle 0.8s steps(5, start) infinite;
+  /* 5 steps for idle: 0% to 100% spread across 4 intervals */
+  animation: princess-idle 0.8s steps(4, start) infinite;
 }
 
-/* Walking animation state locks all layers together perfectly */
 #princess.running .layer {
-  animation: princess-walk 0.7s steps(8, start) infinite;
+  /* 8 steps for walk: 0% to 100% spread across 7 intervals */
+  animation: princess-walk 0.7s steps(7, start) infinite;
 }
 
 @keyframes princess-idle {
   0%   { background-position: 0% 0%; }
-  100% { background-position: 50% 0%; } 
+  100% { background-position: 100% 0%; } 
 }
 
 @keyframes princess-walk {
