@@ -15,7 +15,7 @@ body {
   position: relative;
 }
 
-/* --- STABLE PRINCESS SPRITE STYLING --- */
+/* --- SYNCHRONIZED PRINCESS SPRITE CONTAINER --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -24,9 +24,11 @@ body {
   transform: scale(3.5);
   transform-origin: center bottom;
   z-index: 5;
+  /* Animation is applied to the parent container so all layers lock in sync */
+  animation: princess-idle 0.8s steps(5, start) infinite;
 }
 
-/* Corrected Facing Directions */
+/* Facing Directions */
 #princess.facing-right {
   transform: scaleX(-3.5) scaleY(3.5);
 }
@@ -35,7 +37,7 @@ body {
   transform: scale(3.5, 3.5);
 }
 
-/* Locked layer dimensions and pixel snapping */
+/* Static layers inside container (no independent animations!) */
 #princess .layer {
   position: absolute;
   top: 0;
@@ -46,12 +48,11 @@ body {
   background-repeat: no-repeat;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  animation: princess-idle 0.8s steps(5, start) infinite;
 }
 
-/* Stable walking animation using step timing */
-#princess.running .layer {
-  animation: princess-walk 0.7s steps(8, start) infinite;
+/* Walking animation state overrides the container animation */
+#princess.running {
+  animation: princess-walk 0.7s steps(8, start) infinite !important;
 }
 
 @keyframes princess-idle {
@@ -63,6 +64,7 @@ body {
   0%   { background-position: 0% 16.66%; }
   100% { background-position: 100% 16.66%; }
 }
+
 .hidden {
   display: none !important;
 }
@@ -216,7 +218,6 @@ body {
   opacity: 1;
 }
 
-/* FIXED: Stationary Task Marker anchored to world positions, not moving */
 .task-marker {
   position: absolute;
   font-size: 28px;
