@@ -48,7 +48,7 @@ body {
   animation: idle 0.8s steps(5) infinite;
 }
 
-/* --- RESTORED WORKING 8-STEP WALK ANIMATION --- */
+/* --- WORKING 8-STEP WALK ANIMATION --- */
 #princess.running .layer {
   animation: walk 0.8s steps(8) infinite;
 }
@@ -164,8 +164,8 @@ body {
   pointer-events: none;
 }
 
-.edge-indicator.left {
-  left: 15px;
+.edge-indicator.right {
+  right: 15px;
 }
 
 .edge-indicator.highlight {
