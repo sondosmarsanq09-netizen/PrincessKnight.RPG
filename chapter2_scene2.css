@@ -16,15 +16,15 @@ body {
   position: relative;
 }
 
-/* Princess Sprite Styles */
+/* Princess Sprite Styles - Added a fallback style so she is clearly visible */
 #princess {
   width: 120px;
   height: 160px;
   position: absolute;
   image-rendering: pixelated;
   transform: scale(3.5);
-  background-color: transparent !important;
-  background-image: url('PrincessIdle.png'); /* Replace with your sprite sheet if needed */
+  background-color: #ff69b4 !important; /* Temporary fallback color so she's visible until your sprite loads */
+  background-image: url('PrincessIdle.png');
   background-size: contain;
   background-repeat: no-repeat;
   z-index: 5;
@@ -38,10 +38,22 @@ body {
   transform: scale(3.5, 3.5);
 }
 
-.hidden {
-  display: none !important;
+/* Fade Overlay & Meanwhile Text (Smooth fade in/out, stable size) */
+.fade-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 1.5s ease-in-out;
 }
-
 /* UI Banner & Objectives */
 #location-banner {
   position: absolute;
@@ -155,7 +167,7 @@ body {
   color: #ffdf00;
 }
 
-/* Fade Overlay & Meanwhile Text */
+/* Fade Overlay & Meanwhile Text (Smooth fade in/out, stable size) */
 .fade-overlay {
   position: fixed;
   top: 0;
@@ -183,10 +195,13 @@ body {
   font-size: 24px;
   letter-spacing: 3px;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
-  animation: meanwhile-flicker 0.8s steps(2, start) infinite;
-  transition: opacity 0.8s ease-out;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
 }
 
+.fade-overlay.active .meanwhile-text {
+  opacity: 1; /* Fades in smoothly with the black screen */
+}
 @keyframes meanwhile-flicker {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.25; }
