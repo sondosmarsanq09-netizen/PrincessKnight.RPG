@@ -9,7 +9,7 @@ const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const locationBanner = document.getElementById('location-banner');
 const objectiveText = document.getElementById('objective');
-const arrowLeft = document.getElementById('arrow-left');
+const arrowRight = document.getElementById('arrow-right'); // Balcony indicator on the right
 const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
@@ -63,7 +63,7 @@ window.addEventListener('keydown', (e) => {
     } else if (taskStage === 2) {
       taskStage = 3;
       showActionFeedback("Perfume Applied!");
-      objectiveText.textContent = "🔊 Objective: Strange noises are coming from outside... Head left to the Balcony to investigate!";
+      objectiveText.textContent = "🔊 Objective: Strange noises are coming from outside... Head right to the Balcony to investigate!";
     } else if (taskStage === 3) {
       taskStage = 4;
       showActionFeedback("💕 Oh! It's him... down in the Royal Garden!");
@@ -107,31 +107,31 @@ function gameLoop() {
 
     if (currentArea === 'room') {
       if (taskStage >= 3) {
-        arrowLeft.style.display = 'flex';
-        if (pX < 180) {
-          arrowLeft.classList.add('highlight');
+        arrowRight.style.display = 'flex';
+        if (pX > window.innerWidth - 280) {
+          arrowRight.classList.add('highlight');
         } else {
-          arrowLeft.classList.remove('highlight');
+          arrowRight.classList.remove('highlight');
         }
       } else {
-        arrowLeft.style.display = 'none';
+        arrowRight.style.display = 'none';
       }
 
-      if (taskStage >= 3 && pX <= 10) {
+      if (taskStage >= 3 && pX >= window.innerWidth - 130) {
         currentArea = 'balcony';
         gameBody.style.backgroundImage = "url('Balcony.png')";
         locationBanner.textContent = "📍 Royal Balcony";
-        pX = 20; 
+        pX = 20; // Enters from the left side of the balcony
       }
     } else if (currentArea === 'balcony') {
-      arrowLeft.style.display = 'none';
-      if (pX >= window.innerWidth - 130) {
+      arrowRight.style.display = 'none';
+      if (pX <= 10) {
         currentArea = 'room';
         gameBody.style.backgroundImage = "url('PrincessRoom.png')";
         locationBanner.textContent = "📍 Princess's Chambers";
-        pX = window.innerWidth - 150;
+        pX = window.innerWidth - 150; // Returns to the right side of the room
       }
-      if (pX < 10) pX = 10;
+      if (pX > window.innerWidth - 130) pX = window.innerWidth - 130;
     }
 
     // --- TASK LOGIC & MARKERS ---
