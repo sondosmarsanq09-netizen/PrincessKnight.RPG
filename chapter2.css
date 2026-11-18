@@ -43,7 +43,7 @@ body {
 
 #knight.running {
   background-image: url('Run.png');
-  animation: knight-anim 0.7s steps(9) infinite;
+  animation: knight-anim 0.4s steps(9) infinite;
 }
 
 @keyframes knight-anim {
