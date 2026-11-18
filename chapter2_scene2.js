@@ -4,14 +4,12 @@ function startScene2Intro() {
 
   if (!overlay) return;
 
-  // Keep "Meanwhile..." visible for 2 seconds, then fade both out smoothly
   setTimeout(() => {
     if (meanwhileText) {
       meanwhileText.style.opacity = '0';
     }
     overlay.classList.remove('active');
     
-    // Completely hide the overlay after the 1.5s fade finishes so it never blocks clicks/screen
     setTimeout(() => {
       overlay.style.display = 'none';
     }, 1500);
@@ -38,12 +36,6 @@ let pY = 450;
 const speed = 5;
 let currentArea = 'room'; // 'room', 'balcony'
 
-// Task Stages:
-// 0: Make bed in room
-// 1: Brush hair on dresser
-// 2: Apply perfume
-// 3: Hear noise -> Go to balcony to inspect
-// 4: Complete / Spot Knight
 let taskStage = 0;
 let canInteract = false;
 
@@ -71,7 +63,6 @@ window.addEventListener('keydown', (e) => {
   }
   keys[k] = true;
 
-  // Press 'E' to interact
   if (k === 'e' && canInteract) {
     if (taskStage === 0) {
       taskStage = 1;
@@ -132,20 +123,21 @@ function gameLoop() {
       arrowLeft.style.display = 'none';
     }
 
-    // Doorway / Edge to Balcony (only unlocked after hearing noise at stage 3)
+    // Walking left out of room transitions to Balcony (entering from the left side)
     if (taskStage >= 3 && pX <= 10) {
       currentArea = 'balcony';
-      gameBody.style.backgroundImage = "url('Balcony.png')"; // Replace with balcony background asset
+      gameBody.style.backgroundImage = "url('Balcony.png')";
       locationBanner.textContent = "📍 Royal Balcony";
-      pX = window.innerWidth - 150;
+      pX = 20; // Spawns on the left side of the balcony walking right
     }
   } else if (currentArea === 'balcony') {
     arrowLeft.style.display = 'none';
+    // Walking back right returns to room
     if (pX >= window.innerWidth - 130) {
       currentArea = 'room';
       gameBody.style.backgroundImage = "url('PrincessRoom.png')";
       locationBanner.textContent = "📍 Princess's Chambers";
-      pX = 20;
+      pX = window.innerWidth - 150;
     }
     if (pX < 10) pX = 10;
   }
@@ -156,7 +148,6 @@ function gameLoop() {
   interactionPrompt.classList.add('hidden');
 
   if (taskStage === 0) {
-    // Make Bed (left side of room)
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '200px';
@@ -169,7 +160,6 @@ function gameLoop() {
       }
     }
   } else if (taskStage === 1) {
-    // Brush Hair on Dresser (middle of room)
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '500px';
@@ -182,7 +172,6 @@ function gameLoop() {
       }
     }
   } else if (taskStage === 2) {
-    // Wear Perfume (right side of room)
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '800px';
@@ -195,7 +184,6 @@ function gameLoop() {
       }
     }
   } else if (taskStage === 3) {
-    // Inspect Noise on Balcony
     if (currentArea === 'balcony') {
       taskMarker.classList.remove('hidden');
       taskMarker.style.left = '600px';
@@ -212,6 +200,12 @@ function gameLoop() {
   if (princess) {
     princess.style.left = pX + 'px';
     princess.style.top = pY + 'px';
+
+    if (pMoving) {
+      princess.classList.add('running');
+    } else {
+      princess.classList.remove('running');
+    }
   }
 
   requestAnimationFrame(gameLoop);
