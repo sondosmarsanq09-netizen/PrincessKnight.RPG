@@ -50,6 +50,28 @@ body {
   0%   { background-position: 0% 0%; }
   100% { background-position: 100% 0%; }
 }
+/* Jump Sprite Sheet Animations */
+#knight.jumping-up {
+  background-image: url('KnightJump.png');
+  background-size: 3000% 100%;
+  animation: knight-jump-up 0.3s steps(3) forwards;
+}
+
+#knight.jumping-fall {
+  background-image: url('KnightJumpFallInbetween.png');
+  background-size: 2000% 100%;
+  animation: knight-fall 0.3s steps(2) forwards;
+}
+
+@keyframes knight-jump-up {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+@keyframes knight-fall {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
 /* Princess Sprite */
 #princess {
   position: absolute;
