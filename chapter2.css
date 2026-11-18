@@ -15,7 +15,6 @@ body {
   position: relative;
 }
 
-/* Knight Sprite Styles */
 #knight {
   width: 120px;
   height: 80px;
@@ -28,7 +27,7 @@ body {
   background-image: url('Idle.png');
   background-size: 1000% 100%;
   background-repeat: no-repeat;
-  animation: knight-anim 0.9s steps(9) infinite;
+  animation: knight-anim 0.4s steps(9) infinite;
   z-index: 5;
 }
 
@@ -42,7 +41,7 @@ body {
 
 #knight.running {
   background-image: url('Run.png');
-  animation: knight-anim 0.9s steps(9) infinite;
+  animation: knight-anim 0.7s steps(9) infinite;
 }
 
 @keyframes knight-anim {
@@ -50,21 +49,10 @@ body {
   100% { background-position: 100% 0%; }
 }
 
-/* Princess Sprite */
-#princess {
-  position: absolute;
-  width: 120px;
-  height: 160px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: bottom;
-}
-
 .hidden {
   display: none !important;
 }
 
-/* UI Banner & Objectives */
 #location-banner {
   position: absolute;
   top: 20px;
@@ -114,7 +102,6 @@ body {
   100% { transform: translateX(-50%) translateY(-5px); }
 }
 
-/* Edge Navigation Indicators */
 .edge-indicator {
   position: absolute;
   top: 50%;
@@ -156,30 +143,6 @@ body {
   color: #ffdf00;
 }
 
-/* Dialogue Box */
-#dialogue-box {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70%;
-  background: rgba(15, 15, 20, 0.95);
-  border: 2px solid #b8860b;
-  border-radius: 8px;
-  padding: 20px;
-  color: #fff;
-  font-family: serif;
-  z-index: 100;
-}
-
-#speaker-name {
-  font-weight: bold;
-  color: #ffdf00;
-  margin-bottom: 8px;
-  font-size: 18px;
-}
-
-/* Fade Overlay */
 .fade-overlay {
   position: fixed;
   top: 0;
