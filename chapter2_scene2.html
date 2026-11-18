@@ -1,1 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 2 - Scene 2: The Princess</title>
+  <link rel="stylesheet" href="chapter2_scene2.css">
+</head>
+<body id="game-body">
+  <!-- Meanwhile Fade Transition Overlay -->
+  <div id="transition-overlay" class="fade-overlay active">
+    <div id="meanwhile-text" class="meanwhile-text">Meanwhile...</div>
+  </div>
 
+  <!-- UI & Objectives -->
+  <div id="location-banner">📍 Princess's Chambers</div>
+  <div id="objective">Objective: Tend to your morning routine in your room.</div>
+
+  <!-- Edge Navigation Indicator (Balcony to the left) -->
+  <div id="arrow-left" class="edge-indicator left">
+    <span class="arrow-icon">◀</span>
+    <span class="area-label">Balcony</span>
+  </div>
+
+  <!-- Interactive Action Prompt -->
+  <div id="interaction-prompt" class="interaction-prompt hidden">Press [E] to Interact</div>
+
+  <!-- Action Feedback Popup (Floating above Princess's head) -->
+  <div id="action-popup" class="action-popup hidden"></div>
+
+  <!-- Visual Task Marker -->
+  <div id="task-marker" class="task-marker hidden">✨</div>
+
+  <!-- Princess Sprite -->
+  <div id="princess" class="facing-right"></div>
+
+  <script src="chapter2_scene2.js"></script>
+</body>
+</html>
