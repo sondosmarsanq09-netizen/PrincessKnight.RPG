@@ -13,10 +13,10 @@ const arrowLeft = document.getElementById('arrow-left');
 const arrowRight = document.getElementById('arrow-right');
 
 // Coordinates & Area State
-let kX = 300;
-let kY = 400;
+let kX = 400; // Start comfortably in the middle
+let kY = 450; // Lower down on the walkable ground line
 const speed = 6;
-let currentArea = 'hall'; // 'workspace' (WorkSpace.png), 'hall' (PolishDragon.png), 'garden' (RoyalGarden.png)
+let currentArea = 'hall'; 
 let inDialogue = false;
 
 const keys = {};
