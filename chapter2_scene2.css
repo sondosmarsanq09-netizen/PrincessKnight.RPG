@@ -15,7 +15,7 @@ body {
   position: relative;
 }
 
-/* --- FIXED PRINCESS (NO MORE TITAN MODE) --- */
+/* --- EXACT CHAPTER 1 PRINCESS STYLING --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -27,11 +27,11 @@ body {
 }
 
 #princess.facing-right {
-  transform: scaleX(-3.5) scaleY(3.5);
+  transform: scaleX(3.5) scaleY(3.5);
 }
 
 #princess.facing-left {
-  transform: scale(3.5, 3.5);
+  transform: scaleX(-3.5) scaleY(3.5);
 }
 
 #princess .layer {
@@ -46,9 +46,9 @@ body {
   animation: idle 0.8s steps(5) infinite;
 }
 
-/* Walking animation state matching Chapter 1 styling */
+/* Walking animation state matching Chapter 1 */
 #princess.running .layer {
-  animation: walk 0.7s steps(8) infinite;
+  animation: walk 0.7s steps(9) infinite;
 }
 
 @keyframes idle {
@@ -60,6 +60,7 @@ body {
   0%   { background-position: 0% 14.28%; }
   100% { background-position: 100% 14.28%; }
 }
+
 .hidden {
   display: none !important;
 }
@@ -114,7 +115,7 @@ body {
   100% { transform: translateX(-50%) translateY(-5px); }
 }
 
-/* Floating Action Popup above Princess */
+/* Action Popup */
 .action-popup {
   position: absolute;
   background: rgba(20, 20, 30, 0.95);
