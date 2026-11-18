@@ -16,7 +16,8 @@ let kY = 450;
 const speed = 6;
 let currentArea = 'hall'; 
 let inDialogue = false;
-
+const taskMarker = document.getElementById('task-marker');
+let taskStage = 0;
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
@@ -33,7 +34,41 @@ window.addEventListener('keyup', (e) => {
 
 function gameLoop() {
   let kMoving = false;
-
+  
+// --- TASK PROGRESSION ---
+    if (taskStage === 0) {
+      if (currentArea === 'workspace') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '150px';
+        taskMarker.style.top = '500px';
+        if (kX <= 180) {
+          taskStage = 1;
+          document.getElementById('objective').textContent = "Objective: Head right to the Royal Garden to inspect the fountain.";
+        }
+      } else { taskMarker.classList.add('hidden'); }
+    } else if (taskStage === 1) {
+      if (currentArea === 'garden') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '350px';
+        taskMarker.style.top = '480px';
+        if (kX >= 300 && kX <= 420) {
+          taskStage = 2;
+          document.getElementById('objective').textContent = "Objective: Return to Dragon's Hall to report for duty.";
+        }
+      } else { taskMarker.classList.add('hidden'); }
+    } else if (taskStage === 2) {
+      if (currentArea === 'hall') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '600px';
+        taskMarker.style.top = '500px';
+        if (kX >= 550 && kX <= 650) {
+          taskStage = 3;
+          taskMarker.classList.add('hidden');
+          document.getElementById('objective').textContent = "✅ All Chapter 2 duties completed successfully!";
+        }
+      } else { taskMarker.classList.add('hidden'); }
+    }
+  
   if (!inDialogue) {
     if (keys['w']) {
       kY -= speed;
