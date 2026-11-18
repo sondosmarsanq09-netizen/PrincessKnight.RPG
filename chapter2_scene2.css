@@ -15,23 +15,23 @@ body {
   position: relative;
 }
 
-/* --- PRINCESS PROPORTIONS & LAYERS (Matched to Chapter 1) --- */
+/* --- PRINCESS PROPORTIONS & LAYER ALIGNMENT --- */
 #princess {
   width: 96px;
   height: 96px;
   position: absolute;
   image-rendering: pixelated;
-  transform: scale(4.2); /* Scaled up to match knight's proportions */
+  transform: scale(3.5);
   transform-origin: center bottom;
   z-index: 5;
 }
 
-#princess.facing-left {
-  transform: scale(-4.2, 4.2);
+#princess.facing-right {
+  transform: scale(3.5, 3.5);
 }
 
-#princess.facing-right {
-  transform: scale(4.2, 4.2);
+#princess.facing-left {
+  transform: scale(-3.5, 3.5);
 }
 
 #princess .layer {
@@ -57,14 +57,9 @@ body {
 }
 
 @keyframes princess-walk {
-  0%   { background-position: 0% 14.28%; }
-  100% { background-position: 100% 14.28%; }
+  0%   { background-position: 0% 16.66%; }
+  100% { background-position: 77.77% 16.66%; }
 }
-
-.hidden {
-  display: none !important;
-}
-
 /* UI Banner & Objectives */
 #location-banner {
   position: absolute;
