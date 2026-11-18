@@ -8,7 +8,7 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  /* Starts in the middle: PolishDragon.png */
+  /* Starts in the center: PolishDragon.png */
   background-image: url('PolishDragon.png');
   background-size: cover;
   background-position: center;
@@ -39,7 +39,6 @@ body {
   transform: scaleX(1);
 }
 
-/* Princess Sprite (for when she sneaks in later) */
 #princess {
   position: absolute;
   width: 120px;
@@ -47,7 +46,6 @@ body {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom;
-  background-image: url('Idle.png'); /* Swap to Princess asset when ready */
 }
 
 .hidden {
@@ -81,7 +79,49 @@ body {
   z-index: 10;
 }
 
-/* Dialogue Box styling */
+/* Edge Navigation Indicators */
+.edge-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 10px 16px;
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  z-index: 20;
+  opacity: 0.3;
+  transition: opacity 0.3s ease, background 0.3s ease, border-color 0.3s ease;
+  pointer-events: none;
+}
+
+.edge-indicator.left {
+  left: 15px;
+}
+
+.edge-indicator.right {
+  right: 15px;
+}
+
+.edge-indicator.highlight {
+  opacity: 0.95;
+  background: rgba(20, 20, 30, 0.85);
+  border-color: #ffdf00;
+  box-shadow: 0 0 12px rgba(255, 223, 0, 0.3);
+}
+
+.arrow-icon {
+  font-size: 16px;
+  color: #ffdf00;
+}
+
+/* Dialogue Box */
 #dialogue-box {
   position: absolute;
   bottom: 30px;
