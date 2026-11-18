@@ -51,14 +51,19 @@ body {
   to { background-position: 55.55% 0%; } 
 }
 
-.knight {
+/* --- KNIGHT & JUMP SPRITE STYLES --- */
+#knight {
+  --scale-x: 4.8;
+  --scale-y: 4.8;
+  --jump-y: 0px;
+
   width: 120px;
   height: 80px;
   position: absolute;
   top: 590px;
   left: 200px;
   image-rendering: pixelated;
-  transform: scale(4.8);
+  transform: translateY(var(--jump-y)) scale(var(--scale-x), var(--scale-y));
   filter: none !important;
   mix-blend-mode: normal !important;
   background-color: transparent !important;
@@ -69,20 +74,35 @@ body {
   z-index: 5;
 }
 
-.knight.facing-left {
-  transform: scale(-4.8, 4.8);
-}
-
-.knight.facing-right {
-  transform: scale(4.8, 4.8);
-}
-
-.knight.running {
+#knight.running {
   background-image: url('Run.png');
   animation: knight-anim 0.7s steps(9) infinite;
 }
 
+/* Jump Sprite Sheet Animations */
+#knight.jumping-up {
+  background-image: url('KnightJump.png');
+  background-size: 3000% 100%;
+  animation: knight-jump-up 0.3s steps(3) forwards;
+}
+
+#knight.jumping-fall {
+  background-image: url('KnightJumpFallInbetween.png');
+  background-size: 2000% 100%;
+  animation: knight-fall 0.3s steps(2) forwards;
+}
+
 @keyframes knight-anim {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+@keyframes knight-jump-up {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+@keyframes knight-fall {
   0%   { background-position: 0% 0%; }
   100% { background-position: 100% 0%; }
 }
