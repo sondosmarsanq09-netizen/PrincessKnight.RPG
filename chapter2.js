@@ -9,13 +9,14 @@ window.addEventListener('DOMContentLoaded', () => {
 const knight = document.getElementById('knight');
 const gameBody = document.getElementById('game-body');
 const locationBanner = document.getElementById('location-banner');
-const objectiveText = document.getElementById('objective');
+const arrowLeft = document.getElementById('arrow-left');
+const arrowRight = document.getElementById('arrow-right');
 
 // Coordinates & Area State
 let kX = 300;
 let kY = 400;
 const speed = 6;
-let currentArea = 'middle'; // 'left' (WorkSpace), 'middle' (PolishDragon), 'right' (RoyalGarden)
+let currentArea = 'hall'; // 'workspace' (WorkSpace.png), 'hall' (PolishDragon.png), 'garden' (RoyalGarden.png)
 let inDialogue = false;
 
 const keys = {};
@@ -62,43 +63,66 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
-    // --- AREA SWITCHING LOGIC (Left ↔ Middle ↔ Right) ---
-    if (currentArea === 'middle') {
-      // Walking left from PolishDragon -> WorkSpace.png
-      if (kX <= 10) {
-        currentArea = 'left';
-        gameBody.style.backgroundImage = "url('WorkSpace.png')";
-        locationBanner.textContent = "📍 Palace — Storage & Workspace";
-        kX = window.innerWidth - 150; // Pop out on the right side of the workspace
+    // --- DYNAMIC EDGE ARROW HIGHLIGHTING ---
+    if (currentArea === 'hall') {
+      if (kX < 180) {
+        arrowLeft.classList.add('highlight');
+      } else {
+        arrowLeft.classList.remove('highlight');
       }
-      // Walking right from PolishDragon -> RoyalGarden.png
+      if (kX > window.innerWidth - 280) {
+        arrowRight.classList.add('highlight');
+      } else {
+        arrowRight.classList.remove('highlight');
+      }
+    } else {
+      arrowLeft.classList.remove('highlight');
+      arrowRight.classList.remove('highlight');
+    }
+
+    // --- AREA SWITCHING LOGIC ---
+    if (currentArea === 'hall') {
+      // Walking left to WorkSpace.png (Forge Chambers)
+      if (kX <= 10) {
+        currentArea = 'workspace';
+        gameBody.style.backgroundImage = "url('WorkSpace.png')";
+        locationBanner.textContent = "📍 Forge Chambers";
+        arrowLeft.style.display = 'none';
+        arrowRight.style.display = 'none';
+        kX = window.innerWidth - 150; 
+      }
+      // Walking right to RoyalGarden.png (Royal Garden)
       else if (kX >= window.innerWidth - 130) {
-        currentArea = 'right';
+        currentArea = 'garden';
         gameBody.style.backgroundImage = "url('RoyalGarden.png')";
-        locationBanner.textContent = "📍 Palace — Royal Garden";
-        kX = 20; // Pop out on the left side of the garden
+        locationBanner.textContent = "📍 Royal Garden";
+        arrowLeft.style.display = 'none';
+        arrowRight.style.display = 'none';
+        kX = 20; 
       }
     } 
-    else if (currentArea === 'left') {
-      // Walking right from WorkSpace back to PolishDragon
+    else if (currentArea === 'workspace') {
+      // Walking right back to PolishDragon.png (Dragon's Hall)
       if (kX >= window.innerWidth - 130) {
-        currentArea = 'middle';
+        currentArea = 'hall';
         gameBody.style.backgroundImage = "url('PolishDragon.png')";
-        locationBanner.textContent = "📍 Palace — Workshop";
+        locationBanner.textContent = "📍 Dragon's Hall";
+        arrowLeft.style.display = 'flex';
+        arrowRight.style.display = 'flex';
         kX = 20;
       }
-      // Wall clamp for the far-left edge
       if (kX < 10) kX = 10;
     } 
-    else if (currentArea === 'right') {
-      // Walking left from RoyalGarden back to PolishDragon
+    else if (currentArea === 'garden') {
+      // Walking left back to PolishDragon.png (Dragon's Hall)
       if (kX <= 10) {
-        currentArea = 'middle';
+        currentArea = 'hall';
         gameBody.style.backgroundImage = "url('PolishDragon.png')";
-        locationBanner.textContent = "📍 Palace — Workshop";
+        locationBanner.textContent = "📍 Dragon's Hall";
+        arrowLeft.style.display = 'flex';
+        arrowRight.style.display = 'flex';
         kX = window.innerWidth - 150;
       }
-      // Wall clamp for the far-right edge
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
     }
   }
