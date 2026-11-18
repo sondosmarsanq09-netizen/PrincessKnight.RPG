@@ -1,7 +1,12 @@
 window.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('transition-overlay');
-  const meanwhileText = document.getElementById('meanwhile-text');
   
+  // Keep the black screen and text fully visible for 2 seconds
+  setTimeout(() => {
+    // Fade out the overlay (which automatically fades out the meanwhile text alongside it)
+    overlay.classList.remove('active');
+  }, 2000);
+});
   // Show "Meanwhile..." intro transition for 2 seconds before fading in
   setTimeout(() => {
     meanwhileText.style.display = 'none';
