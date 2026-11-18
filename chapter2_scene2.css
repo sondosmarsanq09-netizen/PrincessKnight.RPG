@@ -27,11 +27,11 @@ body {
 }
 
 #princess.facing-right {
-  transform: scaleX(3.5) scaleY(3.5);
+  transform: scaleX(-3.5) scaleY(3.5);
 }
 
 #princess.facing-left {
-  transform: scaleX(-3.5) scaleY(3.5);
+  transform: scale(3.5, 3.5);
 }
 
 #princess .layer {
