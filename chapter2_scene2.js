@@ -1,26 +1,9 @@
-function startScene2Intro() {
+window.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('transition-overlay');
-  const meanwhileText = document.getElementById('meanwhile-text');
-
-  if (!overlay) return;
-
   setTimeout(() => {
-    if (meanwhileText) {
-      meanwhileText.style.opacity = '0';
-    }
     overlay.classList.remove('active');
-    
-    setTimeout(() => {
-      overlay.style.display = 'none';
-    }, 1500);
-  }, 2000);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startScene2Intro);
-} else {
-  startScene2Intro();
-}
+  }, 100);
+});
 
 const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
@@ -33,20 +16,24 @@ const actionPopup = document.getElementById('action-popup');
 
 let pX = 400;
 let pY = 570; // Planted firmly on the floor
-const speed = 5;
-let currentArea = 'room'; // 'room', 'balcony'
+const speed = 6;
+let currentArea = 'room'; 
+let inDialogue = false;
 
+// Task System State
 let taskStage = 0;
 let canInteract = false;
 
+// Helper to show sparkling feedback floating right above the princess's head
 function showActionFeedback(message) {
   actionPopup.textContent = "✨ " + message + " ✨";
+  
   actionPopup.style.left = (pX + 40) + 'px';
   actionPopup.style.top = (pY - 20) + 'px';
 
   actionPopup.classList.remove('hidden');
   actionPopup.style.animation = 'none';
-  actionPopup.offsetHeight;
+  actionPopup.offsetHeight; // trigger reflow
   actionPopup.style.animation = 'float-above-princess 1.6s ease-out forwards';
   
   setTimeout(() => {
@@ -63,7 +50,8 @@ window.addEventListener('keydown', (e) => {
   }
   keys[k] = true;
 
-  if (k === 'e' && canInteract) {
+  // Press 'E' to interact when near the task marker
+  if (k === 'e' && canInteract && !inDialogue) {
     if (taskStage === 0) {
       taskStage = 1;
       showActionFeedback("Bed Made Neatly!");
@@ -91,107 +79,116 @@ window.addEventListener('keyup', (e) => {
 function gameLoop() {
   let pMoving = false;
 
-  if (keys['w']) { pY -= speed; pMoving = true; }
-  if (keys['s']) { pY += speed; pMoving = true; }
-  
-  if (pY < 480) pY = 480;
-  if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
+  if (!inDialogue) {
+    if (keys['w']) {
+      pY -= speed;
+      pMoving = true;
+    }
+    if (keys['s']) {
+      pY += speed;
+      pMoving = true;
+    }
+    
+    if (pY < 480) pY = 480;
+    if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
-  // Movement controls matching the corrected facing directions
-  if (keys['a']) {
-    pX -= speed;
-    pMoving = true;
-    princess.classList.add('facing-left');
-    princess.classList.remove('facing-right');
-  }
-  if (keys['d']) {
-    pX += speed;
-    pMoving = true;
-    princess.classList.remove('facing-left');
-    princess.classList.add('facing-right');
-  }
+    if (keys['a']) {
+      pX -= speed;
+      pMoving = true;
+      princess.classList.add('facing-left');
+      princess.classList.remove('facing-right');
+    }
+    if (keys['d']) {
+      pX += speed;
+      pMoving = true;
+      princess.classList.remove('facing-left');
+      princess.classList.add('facing-right');
+    }
 
-  // --- ROOM / BALCONY NAVIGATION ---
-  if (currentArea === 'room') {
-    if (taskStage >= 3) {
-      arrowLeft.style.display = 'flex';
-      if (pX < 180) {
-        arrowLeft.classList.add('highlight');
+    if (currentArea === 'room') {
+      if (taskStage >= 3) {
+        arrowLeft.style.display = 'flex';
+        if (pX < 180) {
+          arrowLeft.classList.add('highlight');
+        } else {
+          arrowLeft.classList.remove('highlight');
+        }
       } else {
-        arrowLeft.classList.remove('highlight');
+        arrowLeft.style.display = 'none';
       }
-    } else {
+
+      if (taskStage >= 3 && pX <= 10) {
+        currentArea = 'balcony';
+        gameBody.style.backgroundImage = "url('Balcony.png')";
+        locationBanner.textContent = "📍 Royal Balcony";
+        pX = 20; 
+      }
+    } else if (currentArea === 'balcony') {
       arrowLeft.style.display = 'none';
+      if (pX >= window.innerWidth - 130) {
+        currentArea = 'room';
+        gameBody.style.backgroundImage = "url('PrincessRoom.png')";
+        locationBanner.textContent = "📍 Princess's Chambers";
+        pX = window.innerWidth - 150;
+      }
+      if (pX < 10) pX = 10;
     }
 
-    if (taskStage >= 3 && pX <= 10) {
-      currentArea = 'balcony';
-      gameBody.style.backgroundImage = "url('Balcony.png')";
-      locationBanner.textContent = "📍 Royal Balcony";
-      pX = 20; 
-    }
-  } else if (currentArea === 'balcony') {
-    arrowLeft.style.display = 'none';
-    if (pX >= window.innerWidth - 130) {
-      currentArea = 'room';
-      gameBody.style.backgroundImage = "url('PrincessRoom.png')";
-      locationBanner.textContent = "📍 Princess's Chambers";
-      pX = window.innerWidth - 150;
-    }
-    if (pX < 10) pX = 10;
-  }
+    // --- TASK LOGIC & MARKERS ---
+    canInteract = false;
+    taskMarker.classList.add('hidden');
+    interactionPrompt.classList.add('hidden');
 
-  // --- STATIONARY TASKS & MARKERS ---
-  canInteract = false;
-  taskMarker.classList.add('hidden');
-  interactionPrompt.classList.add('hidden');
+    if (taskStage === 0) {
+      if (currentArea === 'room') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '200px'; 
+        taskMarker.style.top = '520px';
 
-  if (taskStage === 0) {
-    if (currentArea === 'room') {
-      taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '200px'; 
-      taskMarker.style.top = '520px';
+        if (Math.abs(pX - 200) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Make Bed";
+          interactionPrompt.classList.remove('hidden');
+        }
+      }
+    } 
+    else if (taskStage === 1) {
+      if (currentArea === 'room') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '500px';
+        taskMarker.style.top = '520px';
 
-      if (Math.abs(pX - 200) < 50) {
-        canInteract = true;
-        interactionPrompt.textContent = "Press [E] to Make Bed";
-        interactionPrompt.classList.remove('hidden');
+        if (Math.abs(pX - 500) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Brush Hair";
+          interactionPrompt.classList.remove('hidden');
+        }
+      }
+    } 
+    else if (taskStage === 2) {
+      if (currentArea === 'room') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '800px';
+        taskMarker.style.top = '520px';
+
+        if (Math.abs(pX - 800) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Apply Perfume";
+          interactionPrompt.classList.remove('hidden');
+        }
       }
     }
-  } else if (taskStage === 1) {
-    if (currentArea === 'room') {
-      taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '500px'; 
-      taskMarker.style.top = '520px';
+    else if (taskStage === 3) {
+      if (currentArea === 'balcony') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '600px';
+        taskMarker.style.top = '520px';
 
-      if (Math.abs(pX - 500) < 50) {
-        canInteract = true;
-        interactionPrompt.textContent = "Press [E] to Brush Hair";
-        interactionPrompt.classList.remove('hidden');
-      }
-    }
-  } else if (taskStage === 2) {
-    if (currentArea === 'room') {
-      taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '800px'; 
-      taskMarker.style.top = '520px';
-
-      if (Math.abs(pX - 800) < 50) {
-        canInteract = true;
-        interactionPrompt.textContent = "Press [E] to Apply Perfume";
-        interactionPrompt.classList.remove('hidden');
-      }
-    }
-  } else if (taskStage === 3) {
-    if (currentArea === 'balcony') {
-      taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '600px'; 
-      taskMarker.style.top = '520px';
-
-      if (Math.abs(pX - 600) < 50) {
-        canInteract = true;
-        interactionPrompt.textContent = "Press [E] to Look Over Balcony Railing";
-        interactionPrompt.classList.remove('hidden');
+        if (Math.abs(pX - 600) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Look Over Balcony Railing";
+          interactionPrompt.classList.remove('hidden');
+        }
       }
     }
   }
