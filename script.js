@@ -1,4 +1,3 @@
-// === FADE IN ON LOAD ===
 window.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('transition-overlay');
   setTimeout(() => {
@@ -10,7 +9,6 @@ const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const objectiveText = document.getElementById('objective');
 
-// --- BUILD UI & EMOTE ELEMENTS ---
 let sceneVignette = document.createElement('div');
 sceneVignette.id = 'scene-vignette';
 document.body.appendChild(sceneVignette);
@@ -46,13 +44,11 @@ choiceContainer.id = 'choice-container';
 choiceContainer.classList.add('hidden');
 document.body.appendChild(choiceContainer);
 
-// Blacksmith Element
 let blacksmith = document.createElement('div');
 blacksmith.id = 'blacksmith';
 blacksmith.className = 'blacksmith';
 document.body.appendChild(blacksmith);
 
-// Emote Bubbles
 let knightEmote = document.createElement('div');
 knightEmote.className = 'emote-bubble hidden';
 document.body.appendChild(knightEmote);
@@ -61,7 +57,6 @@ let princessEmote = document.createElement('div');
 princessEmote.className = 'emote-bubble hidden';
 document.body.appendChild(princessEmote);
 
-// Coordinates & State
 let kX = 200;
 let kY = 400;
 let pX = 500; 
@@ -72,42 +67,14 @@ let currentScene = 1;
 let hasRing = false;
 let inDialogue = false;
 let dialogueIndex = 0;
-let facingDir = 1; // 1 = right, -1 = left
-let isJumping = false;
 
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
-  if (['w', 'a', 's', 'd', ' '].includes(k)) {
+  if (['w', 'a', 's', 'd'].includes(k)) {
     e.preventDefault();
   }
-
-  // Trigger Sprite Jump on Spacebar
-  if (k === ' ' && !isJumping && !inDialogue) {
-    isJumping = true;
-    knight.classList.add('jumping-up');
-    
-    let jumpProgress = 0;
-    const jumpInterval = setInterval(() => {
-      jumpProgress += 1;
-      let jumpOffset = Math.sin((jumpProgress / 20) * Math.PI) * -45;
-      knight.style.setProperty('--jump-y', jumpOffset + 'px');
-
-      if (jumpProgress === 10) {
-        knight.classList.remove('jumping-up');
-        knight.classList.add('jumping-fall');
-      }
-
-      if (jumpProgress >= 20) {
-        clearInterval(jumpInterval);
-        knight.classList.remove('jumping-fall');
-        knight.style.setProperty('--jump-y', '0px');
-        isJumping = false;
-      }
-    }, 15);
-  }
-
   keys[k] = true;
 });
 
@@ -128,22 +95,22 @@ function gameLoop() {
       kMoving = true;
     }
     
-    // 🛑 BOUNDARY CLAMPS (Prevents walking off screen)
-    if (kY < 350) kY = 350; 
-    if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
+    if (kY < 300) kY = 300;
+    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120;
 
     if (keys['a']) {
       kX -= speed;
       kMoving = true;
-      facingDir = -1;
+      knight.classList.add('facing-left');
+      knight.classList.remove('facing-right');
     }
     if (keys['d']) {
       kX += speed;
       kMoving = true;
-      facingDir = 1;
+      knight.classList.remove('facing-left');
+      knight.classList.add('facing-right');
     }
 
-    // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
@@ -151,7 +118,6 @@ function gameLoop() {
           objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
-      // Trigger transition to Scene 2 when walking to the far left
       if (hasRing && kX <= 10) {
         currentScene = 2;
         
@@ -176,7 +142,8 @@ function gameLoop() {
         }
         kX = window.innerWidth - 150; 
         kY = 400;
-        facingDir = -1;
+        knight.classList.add('facing-left');
+        knight.classList.remove('facing-right');
 
         if (objectiveText) {
           objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
@@ -188,20 +155,16 @@ function gameLoop() {
       if (kX <= pX && distance <= 90) {
         kX = pX - 70; 
         kY = pY;
-        facingDir = 1;
+        knight.classList.remove('facing-left');
+        knight.classList.add('facing-right');
         startEncounter();
       }
     }
   }
 
-  // Update DOM positions, scale properties & Emote bubble coordinates
   if (knight) {
     knight.style.left = kX + 'px';
     knight.style.top = kY + 'px';
-
-    const currentScale = 4.8;
-    knight.style.setProperty('--scale-x', currentScale * facingDir);
-    knight.style.setProperty('--scale-y', currentScale);
 
     if (kMoving) {
       knight.classList.add('running');
@@ -224,7 +187,6 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// --- ENCOUNTER & DIALOGUE SEQUENCING ---
 function triggerEmote(element, symbol) {
   element.textContent = symbol;
   element.classList.remove('hidden');
@@ -356,7 +318,6 @@ function resolveChoice(type) {
         objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
       }
       
-      // 🎬 CHAPTER 1 ENDS HERE -> FADE TO BLACK AND GO TO CHAPTER 2
       transitionToNextChapter('chapter2.html');
 
     }, 4500);
@@ -364,13 +325,16 @@ function resolveChoice(type) {
   }, 4000);
 }
 
-// Start game loop
 gameLoop();
 
-// === TRANSITION TO NEXT CHAPTER ===
 function transitionToNextChapter(nextChapterFilename) {
   const overlay = document.getElementById('transition-overlay');
   overlay.classList.add('active');
+  
+  setTimeout(() => {
+    window.location.href = nextChapterFilename;
+  }, 1000);
+}
   
   setTimeout(() => {
     window.location.href = nextChapterFilename;
