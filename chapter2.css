@@ -8,7 +8,6 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  /* Starts in the center: PolishDragon.png */
   background-image: url('PolishDragon.png');
   background-size: cover;
   background-position: center;
@@ -16,7 +15,6 @@ body {
   position: relative;
 }
 
-/* Knight Sprite Styles */
 #knight {
   width: 120px;
   height: 80px;
@@ -50,43 +48,11 @@ body {
   0%   { background-position: 0% 0%; }
   100% { background-position: 100% 0%; }
 }
-/* Jump Sprite Sheet Animations */
-#knight.jumping-up {
-  background-image: url('KnightJump.png');
-  background-size: 3000% 100%;
-  animation: knight-jump-up 0.3s steps(3) forwards;
-}
-
-#knight.jumping-fall {
-  background-image: url('KnightJumpFallInbetween.png');
-  background-size: 2000% 100%;
-  animation: knight-fall 0.3s steps(2) forwards;
-}
-
-@keyframes knight-jump-up {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 100% 0%; }
-}
-
-@keyframes knight-fall {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 100% 0%; }
-}
-/* Princess Sprite */
-#princess {
-  position: absolute;
-  width: 120px;
-  height: 160px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: bottom;
-}
 
 .hidden {
   display: none !important;
 }
 
-/* UI Banner & Objectives */
 #location-banner {
   position: absolute;
   top: 20px;
@@ -113,7 +79,6 @@ body {
   z-index: 10;
 }
 
-/* Edge Navigation Indicators */
 .edge-indicator {
   position: absolute;
   top: 50%;
@@ -155,30 +120,6 @@ body {
   color: #ffdf00;
 }
 
-/* Dialogue Box */
-#dialogue-box {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70%;
-  background: rgba(15, 15, 20, 0.95);
-  border: 2px solid #b8860b;
-  border-radius: 8px;
-  padding: 20px;
-  color: #fff;
-  font-family: serif;
-  z-index: 100;
-}
-
-#speaker-name {
-  font-weight: bold;
-  color: #ffdf00;
-  margin-bottom: 8px;
-  font-size: 18px;
-}
-
-/* Fade Overlay */
 .fade-overlay {
   position: fixed;
   top: 0;
