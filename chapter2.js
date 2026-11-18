@@ -8,16 +8,22 @@ window.addEventListener('DOMContentLoaded', () => {
 const knight = document.getElementById('knight');
 const gameBody = document.getElementById('game-body');
 const locationBanner = document.getElementById('location-banner');
+const objectiveText = document.getElementById('objective');
 const arrowLeft = document.getElementById('arrow-left');
 const arrowRight = document.getElementById('arrow-right');
+const taskMarker = document.getElementById('task-marker');
+const interactionPrompt = document.getElementById('interaction-prompt');
 
 let kX = 400;
 let kY = 450;
 const speed = 6;
 let currentArea = 'hall'; 
 let inDialogue = false;
-const taskMarker = document.getElementById('task-marker');
-let taskStage = 0;
+
+// --- UPGRADED TASK SYSTEM ---
+let taskStage = 0; 
+let canInteract = false;
+
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
@@ -26,6 +32,20 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
   keys[k] = true;
+
+  // Press 'E' to complete interaction when near a task marker
+  if (k === 'e' && canInteract && !inDialogue) {
+    if (taskStage === 0) {
+      taskStage = 1;
+      objectiveText.textContent = "Objective: Head right to the Royal Garden to harvest a Moonbloom flower.";
+    } else if (taskStage === 1) {
+      taskStage = 2;
+      objectiveText.textContent = "Objective: Return to Dragon's Hall and salute the grand statue.";
+    } else if (taskStage === 2) {
+      taskStage = 3;
+      objectiveText.textContent = "✅ All Chapter 2 palace duties completed successfully!";
+    }
+  }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -34,41 +54,7 @@ window.addEventListener('keyup', (e) => {
 
 function gameLoop() {
   let kMoving = false;
-  
-// --- TASK PROGRESSION ---
-    if (taskStage === 0) {
-      if (currentArea === 'workspace') {
-        taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '150px';
-        taskMarker.style.top = '500px';
-        if (kX <= 180) {
-          taskStage = 1;
-          document.getElementById('objective').textContent = "Objective: Head right to the Royal Garden to inspect the fountain.";
-        }
-      } else { taskMarker.classList.add('hidden'); }
-    } else if (taskStage === 1) {
-      if (currentArea === 'garden') {
-        taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '350px';
-        taskMarker.style.top = '480px';
-        if (kX >= 300 && kX <= 420) {
-          taskStage = 2;
-          document.getElementById('objective').textContent = "Objective: Return to Dragon's Hall to report for duty.";
-        }
-      } else { taskMarker.classList.add('hidden'); }
-    } else if (taskStage === 2) {
-      if (currentArea === 'hall') {
-        taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '600px';
-        taskMarker.style.top = '500px';
-        if (kX >= 550 && kX <= 650) {
-          taskStage = 3;
-          taskMarker.classList.add('hidden');
-          document.getElementById('objective').textContent = "✅ All Chapter 2 duties completed successfully!";
-        }
-      } else { taskMarker.classList.add('hidden'); }
-    }
-  
+
   if (!inDialogue) {
     if (keys['w']) {
       kY -= speed;
@@ -95,6 +81,7 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
+    // --- EDGE ARROWS & HIGHLIGHTS (Hall only) ---
     if (currentArea === 'hall') {
       arrowLeft.style.display = 'flex';
       arrowRight.style.display = 'flex';
@@ -114,6 +101,7 @@ function gameLoop() {
       arrowRight.style.display = 'none';
     }
 
+    // --- AREA SWITCHING LOGIC ---
     if (currentArea === 'hall') {
       if (kX <= 10) {
         currentArea = 'workspace';
@@ -145,6 +133,55 @@ function gameLoop() {
         kX = window.innerWidth - 150;
       }
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
+    }
+
+    // --- INTERACTIVE TASK LOGIC & MARKER PLACEMENT ---
+    canInteract = false;
+    taskMarker.classList.add('hidden');
+    interactionPrompt.classList.add('hidden');
+
+    if (taskStage === 0) {
+      // Task 1: Forge Chambers - Inspect the anvil/forge tools
+      if (currentArea === 'workspace') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '150px';
+        taskMarker.style.top = '500px';
+
+        // Check if player is standing close to the marker
+        if (Math.abs(kX - 150) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Inspect Forge Anvil";
+          interactionPrompt.classList.remove('hidden');
+        }
+      }
+    } 
+    else if (taskStage === 1) {
+      // Task 2: Royal Garden - Harvest Moonbloom Flower near fountain
+      if (currentArea === 'garden') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '350px';
+        taskMarker.style.top = '480px';
+
+        if (Math.abs(kX - 350) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Harvest Moonbloom";
+          interactionPrompt.classList.remove('hidden');
+        }
+      }
+    } 
+    else if (taskStage === 2) {
+      // Task 3: Dragon's Hall - Salute the Dragon Statue
+      if (currentArea === 'hall') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '600px';
+        taskMarker.style.top = '500px';
+
+        if (Math.abs(kX - 600) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Salute Dragon Statue";
+          interactionPrompt.classList.remove('hidden');
+        }
+      }
     }
   }
 
