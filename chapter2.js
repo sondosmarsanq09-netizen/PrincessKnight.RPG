@@ -61,10 +61,19 @@ window.addEventListener('keydown', (e) => {
       taskStage = 2;
       showActionFeedback("Moonbloom Harvested Successfully!");
       objectiveText.textContent = "Objective: Return to Dragon's Hall and salute the grand statue.";
-    } else if (taskStage === 2) {
+   } else if (taskStage === 2) {
       taskStage = 3;
       showActionFeedback("Grand Statue Saluted! Duties Complete!");
       objectiveText.textContent = "✅ All Chapter 2 palace duties completed successfully!";
+
+      setTimeout(() => {
+        const overlay = document.getElementById('transition-overlay');
+        overlay.classList.add('active');
+        
+        setTimeout(() => {
+          window.location.href = 'chapter2_scene2.html';
+        }, 1200);
+      }, 2000);
     }
   }
 });
