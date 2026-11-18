@@ -7,19 +7,17 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 const knight = document.getElementById('knight');
-const gameBody = document.getElementById('game-body');
 const locationBanner = document.getElementById('location-banner');
-const arrowLeft = document.getElementById('arrow-left');
-const arrowRight = document.getElementById('arrow-right');
+const objectiveText = document.getElementById('objective');
 
-// Coordinates & Area State
-let kX = 400; // Start comfortably in the middle
-let kY = 450; // Lower down on the walkable ground line
+// Coordinates & Zone Tracking
+let kX = 100;
+let kY = 400;
 const speed = 6;
-let currentArea = 'hall'; 
-let inDialogue = false;
-
 const keys = {};
+
+// Zones: 1 = Chambers (Left), 2 = Workshop / PolishDragon (Center), 3 = Royal Garden (Right)
+let currentZone = 1; 
 
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
@@ -36,111 +34,86 @@ window.addEventListener('keyup', (e) => {
 function gameLoop() {
   let kMoving = false;
 
-  if (!inDialogue) {
-    if (keys['w']) {
-      kY -= speed;
-      kMoving = true;
-    }
-    if (keys['s']) {
-      kY += speed;
-      kMoving = true;
-    }
-    
-    // Vertical screen boundaries
-    if (kY < 300) kY = 300;
-    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120;
+  if (keys['w']) {
+    kY -= speed;
+    kMoving = true;
+  }
+  if (keys['s']) {
+    kY += speed;
+    kMoving = true;
+  }
+  
+  // Boundary clamps
+  if (kY < 300) kY = 300;
+  if (kY > window.innerHeight - 120) kY = window.innerHeight - 120;
 
-    if (keys['a']) {
-      kX -= speed;
-      kMoving = true;
-      knight.classList.add('facing-left');
-      knight.classList.remove('facing-right');
-    }
-    if (keys['d']) {
-      kX += speed;
-      kMoving = true;
-      knight.classList.remove('facing-left');
-      knight.classList.add('facing-right');
-    }
+  if (keys['a']) {
+    kX -= speed;
+    kMoving = true;
+    knight.classList.add('facing-left');
+    knight.classList.remove('facing-right');
+  }
+  if (keys['d']) {
+    kX += speed;
+    kMoving = true;
+    knight.classList.remove('facing-left');
+    knight.classList.add('facing-right');
+  }
 
-    // --- DYNAMIC EDGE ARROW HIGHLIGHTING ---
-    if (currentArea === 'hall') {
-      if (kX < 180) {
-        arrowLeft.classList.add('highlight');
-      } else {
-        arrowLeft.classList.remove('highlight');
-      }
-      if (kX > window.innerWidth - 280) {
-        arrowRight.classList.add('highlight');
-      } else {
-        arrowRight.classList.remove('highlight');
-      }
+  // --- ZONE TRANSITIONS (Horizontal wrapping between screens) ---
+  // Walking off the left edge of current zone
+  if (kX < 0) {
+    if (currentZone === 2) {
+      // Move from Workshop back to Chambers
+      currentZone = 1;
+      document.body.style.backgroundImage = "url('Chambers.png')";
+      locationBanner.textContent = "📍 Palace Chambers";
+      kX = window.innerWidth - 100; // Appear on right side of Chambers
     } else {
-      arrowLeft.classList.remove('highlight');
-      arrowRight.classList.remove('highlight');
-    }
-
-    // --- AREA SWITCHING LOGIC ---
-    if (currentArea === 'hall') {
-      // Walking left to WorkSpace.png (Forge Chambers)
-      if (kX <= 10) {
-        currentArea = 'workspace';
-        gameBody.style.backgroundImage = "url('WorkSpace.png')";
-        locationBanner.textContent = "📍 Forge Chambers";
-        arrowLeft.style.display = 'none';
-        arrowRight.style.display = 'none';
-        kX = window.innerWidth - 150; 
-      }
-      // Walking right to RoyalGarden.png (Royal Garden)
-      else if (kX >= window.innerWidth - 130) {
-        currentArea = 'garden';
-        gameBody.style.backgroundImage = "url('RoyalGarden.png')";
-        locationBanner.textContent = "📍 Royal Garden";
-        arrowLeft.style.display = 'none';
-        arrowRight.style.display = 'none';
-        kX = 20; 
-      }
-    } 
-    else if (currentArea === 'workspace') {
-      // Walking right back to PolishDragon.png (Dragon's Hall)
-      if (kX >= window.innerWidth - 130) {
-        currentArea = 'hall';
-        gameBody.style.backgroundImage = "url('PolishDragon.png')";
-        locationBanner.textContent = "📍 Dragon's Hall";
-        arrowLeft.style.display = 'flex';
-        arrowRight.style.display = 'flex';
-        kX = 20;
-      }
-      if (kX < 10) kX = 10;
-    } 
-    else if (currentArea === 'garden') {
-      // Walking left back to PolishDragon.png (Dragon's Hall)
-      if (kX <= 10) {
-        currentArea = 'hall';
-        gameBody.style.backgroundImage = "url('PolishDragon.png')";
-        locationBanner.textContent = "📍 Dragon's Hall";
-        arrowLeft.style.display = 'flex';
-        arrowRight.style.display = 'flex';
-        kX = window.innerWidth - 150;
-      }
-      if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
+      kX = 0; // Hard stop at far left of Chambers
     }
   }
 
-  // Update DOM positions
-  if (knight) {
-    knight.style.left = kX + 'px';
-    knight.style.top = kY + 'px';
-
-    if (kMoving) {
-      knight.classList.add('running');
+  // Walking off the right edge of current zone
+  if (kX > window.innerWidth - 80) {
+    if (currentZone === 1) {
+      // Move from Chambers to Workshop (PolishDragon)
+      currentZone = 2;
+      document.body.style.backgroundImage = "url('PolishDragon.png')";
+      locationBanner.textContent = "📍 Palace Workshop — Gear Area";
+      if (objectiveText) {
+        objectiveText.textContent = "Objective: Tend to the workshop gear. What was that sound?";
+      }
+      kX = 50; // Appear on left side of Workshop
+    } else if (currentZone === 2) {
+      // Move from Workshop to Royal Garden
+      currentZone = 3;
+      document.body.style.backgroundImage = "url('RoyalGarden.png')";
+      locationBanner.textContent = "📍 Royal Gardens";
+      if (objectiveText) {
+        objectiveText.textContent = "Objective: Patrol the quiet gardens.";
+      }
+      kX = 50; // Appear on left side of Garden
     } else {
-      knight.classList.remove('running');
+      kX = window.innerWidth - 80; // Hard stop at far right of Garden
     }
   }
+
+  // Update DOM position
+  knight.style.left = kX + 'px';
+  knight.style.top = kY + 'px';
 
   requestAnimationFrame(gameLoop);
 }
 
-// Start Chapter 2 Loop
+// Start the loop
 gameLoop();
+
+// Chapter Transition Helper for later
+function transitionToNextChapter(nextChapterFilename) {
+  const overlay = document.getElementById('transition-overlay');
+  overlay.classList.add('active');
+  setTimeout(() => {
+    window.location.href = nextChapterFilename;
+  }, 1000);
+}
