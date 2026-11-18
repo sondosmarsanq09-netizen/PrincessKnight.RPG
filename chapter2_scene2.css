@@ -15,7 +15,7 @@ body {
   position: relative;
 }
 
-/* --- PRINCESS PROPORTIONS & LAYER ALIGNMENT --- */
+/* --- PRINCESS PROPORTIONS & LAYERS --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -26,12 +26,14 @@ body {
   z-index: 5;
 }
 
+/* Default facing right: normal scale */
 #princess.facing-right {
   transform: scale(3.5, 3.5);
 }
 
+/* Facing left: flip horizontally using scaleX(-3.5) */
 #princess.facing-left {
-  transform: scale(-3.5, 3.5);
+  transform: scaleX(-3.5) scaleY(3.5);
 }
 
 #princess .layer {
@@ -46,7 +48,7 @@ body {
   animation: princess-idle 0.8s steps(5) infinite;
 }
 
-/* Walking animation state triggered by .running */
+/* Walking animation plays the walk row correctly */
 #princess.running .layer {
   animation: princess-walk 0.7s steps(8) infinite;
 }
