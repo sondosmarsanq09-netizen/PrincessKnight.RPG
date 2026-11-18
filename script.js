@@ -72,6 +72,8 @@ let currentScene = 1;
 let hasRing = false;
 let inDialogue = false;
 let dialogueIndex = 0;
+let facingDir = 1; // 1 = right, -1 = left
+let isJumping = false;
 
 const keys = {};
 
@@ -80,6 +82,32 @@ window.addEventListener('keydown', (e) => {
   if (['w', 'a', 's', 'd', ' '].includes(k)) {
     e.preventDefault();
   }
+
+  // Trigger Sprite Jump on Spacebar
+  if (k === ' ' && !isJumping && !inDialogue) {
+    isJumping = true;
+    knight.classList.add('jumping-up');
+    
+    let jumpProgress = 0;
+    const jumpInterval = setInterval(() => {
+      jumpProgress += 1;
+      let jumpOffset = Math.sin((jumpProgress / 20) * Math.PI) * -45;
+      knight.style.setProperty('--jump-y', jumpOffset + 'px');
+
+      if (jumpProgress === 10) {
+        knight.classList.remove('jumping-up');
+        knight.classList.add('jumping-fall');
+      }
+
+      if (jumpProgress >= 20) {
+        clearInterval(jumpInterval);
+        knight.classList.remove('jumping-fall');
+        knight.style.setProperty('--jump-y', '0px');
+        isJumping = false;
+      }
+    }, 15);
+  }
+
   keys[k] = true;
 });
 
@@ -101,20 +129,18 @@ function gameLoop() {
     }
     
     // 🛑 BOUNDARY CLAMPS (Prevents walking off screen)
-    if (kY < 300) kY = 300; // Stops him from walking too high up (adjust if needed)
-    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120; // Stops him from walking off the bottom
+    if (kY < 350) kY = 350; 
+    if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
 
     if (keys['a']) {
       kX -= speed;
       kMoving = true;
-      knight.classList.add('facing-left');
-      knight.classList.remove('facing-right');
+      facingDir = -1;
     }
     if (keys['d']) {
       kX += speed;
       kMoving = true;
-      knight.classList.remove('facing-left');
-      knight.classList.add('facing-right');
+      facingDir = 1;
     }
 
     // --- SC1 QUEST & SCENE PROGRESSION ---
@@ -125,11 +151,10 @@ function gameLoop() {
           objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
-// Trigger transition to Scene 2 when walking to the far left
+      // Trigger transition to Scene 2 when walking to the far left
       if (hasRing && kX <= 10) {
         currentScene = 2;
         
-        // Hide the blacksmith when leaving Scene 1
         if (blacksmith) {
           blacksmith.classList.add('hidden');
         }
@@ -140,7 +165,6 @@ function gameLoop() {
         sceneVignette.classList.add('fountain-atmosphere');
         locationBanner.textContent = "📍 Outer Gates — Moonlit Fountain";
         
-      // Position Princess further left, completely off the fountain
         pX = 220; 
         pY = 400;
         if (princess) {
@@ -150,35 +174,34 @@ function gameLoop() {
           princess.style.left = pX + 'px';
           princess.style.top = pY + 'px';
         }
-        // Place Knight safely on the right side walking left
         kX = window.innerWidth - 150; 
         kY = 400;
-        knight.classList.add('facing-left');
-        knight.classList.remove('facing-right');
+        facingDir = -1;
 
         if (objectiveText) {
           objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
         }
       }
     } 
-  else if (currentScene === 2) {
-      // Check if knight walks up to her from the left side
+    else if (currentScene === 2) {
       let distance = Math.abs(kX - pX);
       if (kX <= pX && distance <= 90) {
-        // Snap knight cleanly to her left side, facing right toward her face
         kX = pX - 70; 
         kY = pY;
-        knight.classList.remove('facing-left');
-        knight.classList.add('facing-right');
+        facingDir = 1;
         startEncounter();
       }
     }
   }
 
-  // Update DOM positions & Emote bubble coordinates
+  // Update DOM positions, scale properties & Emote bubble coordinates
   if (knight) {
     knight.style.left = kX + 'px';
     knight.style.top = kY + 'px';
+
+    const currentScale = 4.8;
+    knight.style.setProperty('--scale-x', currentScale * facingDir);
+    knight.style.setProperty('--scale-y', currentScale);
 
     if (kMoving) {
       knight.classList.add('running');
