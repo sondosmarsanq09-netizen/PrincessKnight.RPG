@@ -64,6 +64,25 @@ body {
 .hidden {
   display: none !important;
 }
+#guard {
+  position: absolute;
+  width: 64px; /* Adjust based on your sprite frame dimensions */
+  height: 64px;
+  top: 570px;
+  left: 600px; /* Positioned near the center in Dragon's Hall */
+  image-rendering: pixelated;
+  transform: scale(3.5);
+  background-image: url('Human_Soldier_Sword_Shield_Idle-Sheet.png');
+  background-size: 600% 100%; /* Adjust depending on how many frames are in the sheet */
+  background-repeat: no-repeat;
+  animation: guard-idle 1s steps(6) infinite;
+  z-index: 4;
+}
+
+@keyframes guard-idle {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
 
 /* UI Banner & Objectives */
 #location-banner {
