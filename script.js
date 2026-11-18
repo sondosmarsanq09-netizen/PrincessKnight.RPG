@@ -1,3 +1,4 @@
+// === FADE IN ON LOAD ===
 window.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('transition-overlay');
   setTimeout(() => {
@@ -9,6 +10,7 @@ const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const objectiveText = document.getElementById('objective');
 
+// --- BUILD UI & EMOTE ELEMENTS ---
 let sceneVignette = document.createElement('div');
 sceneVignette.id = 'scene-vignette';
 document.body.appendChild(sceneVignette);
@@ -44,11 +46,13 @@ choiceContainer.id = 'choice-container';
 choiceContainer.classList.add('hidden');
 document.body.appendChild(choiceContainer);
 
+// Blacksmith Element
 let blacksmith = document.createElement('div');
 blacksmith.id = 'blacksmith';
 blacksmith.className = 'blacksmith';
 document.body.appendChild(blacksmith);
 
+// Emote Bubbles
 let knightEmote = document.createElement('div');
 knightEmote.className = 'emote-bubble hidden';
 document.body.appendChild(knightEmote);
@@ -57,6 +61,7 @@ let princessEmote = document.createElement('div');
 princessEmote.className = 'emote-bubble hidden';
 document.body.appendChild(princessEmote);
 
+// Coordinates & State
 let kX = 200;
 let kY = 400;
 let pX = 500; 
@@ -72,7 +77,7 @@ const keys = {};
 
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
-  if (['w', 'a', 's', 'd'].includes(k)) {
+  if (['w', 'a', 's', 'd', ' '].includes(k)) {
     e.preventDefault();
   }
   keys[k] = true;
@@ -95,8 +100,9 @@ function gameLoop() {
       kMoving = true;
     }
     
-    if (kY < 300) kY = 300;
-    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120;
+    // 🛑 BOUNDARY CLAMPS (Prevents walking off screen)
+    if (kY < 300) kY = 300; // Stops him from walking too high up (adjust if needed)
+    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120; // Stops him from walking off the bottom
 
     if (keys['a']) {
       kX -= speed;
@@ -111,6 +117,7 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
+    // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
@@ -118,9 +125,11 @@ function gameLoop() {
           objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
+// Trigger transition to Scene 2 when walking to the far left
       if (hasRing && kX <= 10) {
         currentScene = 2;
         
+        // Hide the blacksmith when leaving Scene 1
         if (blacksmith) {
           blacksmith.classList.add('hidden');
         }
@@ -131,6 +140,7 @@ function gameLoop() {
         sceneVignette.classList.add('fountain-atmosphere');
         locationBanner.textContent = "📍 Outer Gates — Moonlit Fountain";
         
+      // Position Princess further left, completely off the fountain
         pX = 220; 
         pY = 400;
         if (princess) {
@@ -140,6 +150,7 @@ function gameLoop() {
           princess.style.left = pX + 'px';
           princess.style.top = pY + 'px';
         }
+        // Place Knight safely on the right side walking left
         kX = window.innerWidth - 150; 
         kY = 400;
         knight.classList.add('facing-left');
@@ -150,9 +161,11 @@ function gameLoop() {
         }
       }
     } 
-    else if (currentScene === 2) {
+  else if (currentScene === 2) {
+      // Check if knight walks up to her from the left side
       let distance = Math.abs(kX - pX);
       if (kX <= pX && distance <= 90) {
+        // Snap knight cleanly to her left side, facing right toward her face
         kX = pX - 70; 
         kY = pY;
         knight.classList.remove('facing-left');
@@ -162,6 +175,7 @@ function gameLoop() {
     }
   }
 
+  // Update DOM positions & Emote bubble coordinates
   if (knight) {
     knight.style.left = kX + 'px';
     knight.style.top = kY + 'px';
@@ -187,6 +201,7 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
+// --- ENCOUNTER & DIALOGUE SEQUENCING ---
 function triggerEmote(element, symbol) {
   element.textContent = symbol;
   element.classList.remove('hidden');
@@ -318,6 +333,7 @@ function resolveChoice(type) {
         objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
       }
       
+      // 🎬 CHAPTER 1 ENDS HERE -> FADE TO BLACK AND GO TO CHAPTER 2
       transitionToNextChapter('chapter2.html');
 
     }, 4500);
@@ -325,16 +341,13 @@ function resolveChoice(type) {
   }, 4000);
 }
 
+// Start game loop
 gameLoop();
 
+// === TRANSITION TO NEXT CHAPTER ===
 function transitionToNextChapter(nextChapterFilename) {
   const overlay = document.getElementById('transition-overlay');
   overlay.classList.add('active');
-  
-  setTimeout(() => {
-    window.location.href = nextChapterFilename;
-  }, 1000);
-}
   
   setTimeout(() => {
     window.location.href = nextChapterFilename;
