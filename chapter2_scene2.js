@@ -32,7 +32,7 @@ const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
 let pX = 400;
-let pY = 570;
+let pY = 570; // Planted firmly on the floor
 const speed = 5;
 let currentArea = 'room'; // 'room', 'balcony'
 
@@ -94,23 +94,24 @@ function gameLoop() {
   if (keys['w']) { pY -= speed; pMoving = true; }
   if (keys['s']) { pY += speed; pMoving = true; }
   
- if (pY < 480) pY = 480;
+  if (pY < 480) pY = 480;
   if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
-  
+
+  // FIXED CONTROLS: A = Walk Left (faces left), D = Walk Right (faces right)
   if (keys['a']) {
     pX -= speed;
     pMoving = true;
     princess.classList.add('facing-left');
     princess.classList.remove('facing-right');
   }
- if (keys['d']) {
+  if (keys['d']) {
     pX += speed;
     pMoving = true;
     princess.classList.remove('facing-left');
     princess.classList.add('facing-right');
   }
 
- // --- ROOM / BALCONY NAVIGATION ---
+  // --- ROOM / BALCONY NAVIGATION ---
   if (currentArea === 'room') {
     if (taskStage >= 3) {
       arrowLeft.style.display = 'flex';
@@ -139,9 +140,8 @@ function gameLoop() {
     }
     if (pX < 10) pX = 10;
   }
-  
 
- // --- TASKS & MARKERS ---
+  // --- FIXED STATIONARY TASKS & MARKERS ---
   canInteract = false;
   taskMarker.classList.add('hidden');
   interactionPrompt.classList.add('hidden');
@@ -149,8 +149,8 @@ function gameLoop() {
   if (taskStage === 0) {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '200px';
-      taskMarker.style.top = (pY + 10) + 'px';
+      taskMarker.style.left = '200px'; // Stationary world coordinate
+      taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 200) < 50) {
         canInteract = true;
@@ -161,8 +161,8 @@ function gameLoop() {
   } else if (taskStage === 1) {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '500px';
-      taskMarker.style.top = (pY + 10) + 'px';
+      taskMarker.style.left = '500px'; // Stationary world coordinate
+      taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 500) < 50) {
         canInteract = true;
@@ -173,8 +173,8 @@ function gameLoop() {
   } else if (taskStage === 2) {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '800px';
-      taskMarker.style.top = (pY + 10) + 'px';
+      taskMarker.style.left = '800px'; // Stationary world coordinate
+      taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 800) < 50) {
         canInteract = true;
@@ -185,8 +185,8 @@ function gameLoop() {
   } else if (taskStage === 3) {
     if (currentArea === 'balcony') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '600px';
-      taskMarker.style.top = (pY + 10) + 'px';
+      taskMarker.style.left = '600px'; // Stationary world coordinate
+      taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 600) < 50) {
         canInteract = true;
