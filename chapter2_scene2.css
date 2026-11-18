@@ -26,12 +26,12 @@ body {
   z-index: 5;
 }
 
-/* Default facing right: normal scale */
+/* Facing Right (Pressing D) */
 #princess.facing-right {
   transform: scale(3.5, 3.5);
 }
 
-/* Facing left: flip horizontally using scaleX(-3.5) */
+/* Facing Left (Pressing A) - Corrected flip */
 #princess.facing-left {
   transform: scaleX(-3.5) scaleY(3.5);
 }
@@ -48,19 +48,19 @@ body {
   animation: princess-idle 0.8s steps(5) infinite;
 }
 
-/* Walking animation plays the walk row correctly */
+/* Stable walking animation frames */
 #princess.running .layer {
   animation: princess-walk 0.7s steps(8) infinite;
 }
 
 @keyframes princess-idle {
-  from { background-position: 0% 0%; }
-  to { background-position: 55.55% 0%; } 
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 55.55% 0%; } 
 }
 
 @keyframes princess-walk {
   0%   { background-position: 0% 16.66%; }
-  100% { background-position: 77.77% 16.66%; }
+  100% { background-position: 100% 16.66%; }
 }
 /* UI Banner & Objectives */
 #location-banner {
