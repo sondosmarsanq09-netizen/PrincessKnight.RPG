@@ -15,7 +15,7 @@ body {
   position: relative;
 }
 
-/* --- PRINCESS PROPORTIONS & LAYERS --- */
+/* --- STABLE PRINCESS SPRITE STYLING --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -31,7 +31,7 @@ body {
   transform: scale(3.5, 3.5);
 }
 
-/* Facing Left (Pressing A) - Corrected flip */
+/* Facing Left (Pressing A) */
 #princess.facing-left {
   transform: scaleX(-3.5) scaleY(3.5);
 }
@@ -62,6 +62,11 @@ body {
   0%   { background-position: 0% 16.66%; }
   100% { background-position: 100% 16.66%; }
 }
+
+.hidden {
+  display: none !important;
+}
+
 /* UI Banner & Objectives */
 #location-banner {
   position: absolute;
@@ -211,6 +216,7 @@ body {
   opacity: 1;
 }
 
+/* FIXED: Stationary Task Marker anchored to world positions, not moving */
 .task-marker {
   position: absolute;
   font-size: 28px;
