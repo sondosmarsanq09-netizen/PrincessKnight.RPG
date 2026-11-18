@@ -245,3 +245,17 @@ body {
   left: 0 !important;
   transform: none !important;
 }
+@keyframes walk {
+  0%   { background-position: 0% 14.28%; }
+  100% { background-position: 100% 14.28%; }
+}
+
+/* --- ADD IT RIGHT HERE AT THE VERY BOTTOM --- */
+#princess.running .layer:nth-child(3) {
+  animation: walk-skirt 0.7s steps(9) infinite;
+}
+
+@keyframes walk-skirt {
+  0%   { background-position: 0% 28.57%; } 
+  100% { background-position: 100% 16.66%; }
+}
