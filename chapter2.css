@@ -17,12 +17,10 @@ body {
 }
 
 /* Knight Sprite Styles */
-.knight {
+#knight {
   width: 120px;
   height: 80px;
   position: absolute;
-  top: 590px;
-  left: 200px;
   image-rendering: pixelated;
   transform: scale(4.8);
   filter: none !important;
@@ -35,15 +33,15 @@ body {
   z-index: 5;
 }
 
-.knight.facing-left {
+#knight.facing-left {
   transform: scale(-4.8, 4.8);
 }
 
-.knight.facing-right {
+#knight.facing-right {
   transform: scale(4.8, 4.8);
 }
 
-.knight.running {
+#knight.running {
   background-image: url('Run.png');
   animation: knight-anim 0.7s steps(9) infinite;
 }
