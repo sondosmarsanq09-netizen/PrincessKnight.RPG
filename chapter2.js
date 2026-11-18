@@ -5,37 +5,36 @@ window.addEventListener('DOMContentLoaded', () => {
   }, 100);
 });
 
-const knight = document.getElementById('knight');
+const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const locationBanner = document.getElementById('location-banner');
 const objectiveText = document.getElementById('objective');
 const arrowLeft = document.getElementById('arrow-left');
-const arrowRight = document.getElementById('arrow-right');
 const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
-let kX = 400;
-let kY = 450;
+let pX = 400;
+let pY = 570; // Planted firmly on the floor
 const speed = 6;
-let currentArea = 'hall'; 
+let currentArea = 'room'; 
 let inDialogue = false;
 
 // Task System State
 let taskStage = 0;
 let canInteract = false;
 
-// Helper to show sparkling feedback floating right above the knight's head
+// Helper to show sparkling feedback floating right above the princess's head
 function showActionFeedback(message) {
   actionPopup.textContent = "✨ " + message + " ✨";
   
-  actionPopup.style.left = (kX + 60) + 'px';
-  actionPopup.style.top = (kY - 10) + 'px';
+  actionPopup.style.left = (pX + 40) + 'px';
+  actionPopup.style.top = (pY - 20) + 'px';
 
   actionPopup.classList.remove('hidden');
   actionPopup.style.animation = 'none';
   actionPopup.offsetHeight; // trigger reflow
-  actionPopup.style.animation = 'float-above-knight 1.6s ease-out forwards';
+  actionPopup.style.animation = 'float-above-princess 1.6s ease-out forwards';
   
   setTimeout(() => {
     actionPopup.classList.add('hidden');
@@ -55,25 +54,20 @@ window.addEventListener('keydown', (e) => {
   if (k === 'e' && canInteract && !inDialogue) {
     if (taskStage === 0) {
       taskStage = 1;
-      showActionFeedback("Anvil Inspected! +1 Forged Steel");
-      objectiveText.textContent = "Objective: Head right to the Royal Garden to harvest a Moonbloom flower.";
+      showActionFeedback("Bed Made Neatly!");
+      objectiveText.textContent = "Objective: Brush your hair at the vanity dresser.";
     } else if (taskStage === 1) {
       taskStage = 2;
-      showActionFeedback("Moonbloom Harvested Successfully!");
-      objectiveText.textContent = "Objective: Return to Dragon's Hall and salute the grand statue.";
-   } else if (taskStage === 2) {
+      showActionFeedback("Hair Brushed Smoothly!");
+      objectiveText.textContent = "Objective: Put on your favorite perfume.";
+    } else if (taskStage === 2) {
       taskStage = 3;
-      showActionFeedback("Grand Statue Saluted! Duties Complete!");
-      objectiveText.textContent = "✅ All Chapter 2 palace duties completed successfully!";
-
-      setTimeout(() => {
-        const overlay = document.getElementById('transition-overlay');
-        overlay.classList.add('active');
-        
-        setTimeout(() => {
-          window.location.href = 'chapter2_scene2.html';
-        }, 1200);
-      }, 2000);
+      showActionFeedback("Perfume Applied!");
+      objectiveText.textContent = "🔊 Objective: Strange noises are coming from outside... Head left to the Balcony to investigate!";
+    } else if (taskStage === 3) {
+      taskStage = 4;
+      showActionFeedback("💕 Oh! It's him... down in the Royal Garden!");
+      objectiveText.textContent = "✅ Princess spotted her favorite knight! Scene complete.";
     }
   }
 });
@@ -83,84 +77,61 @@ window.addEventListener('keyup', (e) => {
 });
 
 function gameLoop() {
-  let kMoving = false;
+  let pMoving = false;
 
   if (!inDialogue) {
     if (keys['w']) {
-      kY -= speed;
-      kMoving = true;
+      pY -= speed;
+      pMoving = true;
     }
     if (keys['s']) {
-      kY += speed;
-      kMoving = true;
+      pY += speed;
+      pMoving = true;
     }
     
-    if (kY < 350) kY = 350;
-    if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
+    if (pY < 480) pY = 480;
+    if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
     if (keys['a']) {
-      kX -= speed;
-      kMoving = true;
-      knight.classList.add('facing-left');
-      knight.classList.remove('facing-right');
+      pX -= speed;
+      pMoving = true;
+      princess.classList.add('facing-left');
+      princess.classList.remove('facing-right');
     }
     if (keys['d']) {
-      kX += speed;
-      kMoving = true;
-      knight.classList.remove('facing-left');
-      knight.classList.add('facing-right');
+      pX += speed;
+      pMoving = true;
+      princess.classList.remove('facing-left');
+      princess.classList.add('facing-right');
     }
 
-    if (currentArea === 'hall') {
-      arrowLeft.style.display = 'flex';
-      arrowRight.style.display = 'flex';
-      
-      if (kX < 180) {
-        arrowLeft.classList.add('highlight');
+    if (currentArea === 'room') {
+      if (taskStage >= 3) {
+        arrowLeft.style.display = 'flex';
+        if (pX < 180) {
+          arrowLeft.classList.add('highlight');
+        } else {
+          arrowLeft.classList.remove('highlight');
+        }
       } else {
-        arrowLeft.classList.remove('highlight');
+        arrowLeft.style.display = 'none';
       }
-      if (kX > window.innerWidth - 280) {
-        arrowRight.classList.add('highlight');
-      } else {
-        arrowRight.classList.remove('highlight');
+
+      if (taskStage >= 3 && pX <= 10) {
+        currentArea = 'balcony';
+        gameBody.style.backgroundImage = "url('Balcony.png')";
+        locationBanner.textContent = "📍 Royal Balcony";
+        pX = 20; 
       }
-    } else {
+    } else if (currentArea === 'balcony') {
       arrowLeft.style.display = 'none';
-      arrowRight.style.display = 'none';
-    }
-
-    if (currentArea === 'hall') {
-      if (kX <= 10) {
-        currentArea = 'workspace';
-        gameBody.style.backgroundImage = "url('WorkSpace.png')";
-        locationBanner.textContent = "📍 Forge Chambers";
-        kX = window.innerWidth - 150; 
+      if (pX >= window.innerWidth - 130) {
+        currentArea = 'room';
+        gameBody.style.backgroundImage = "url('PrincessRoom.png')";
+        locationBanner.textContent = "📍 Princess's Chambers";
+        pX = window.innerWidth - 150;
       }
-      else if (kX >= window.innerWidth - 130) {
-        currentArea = 'garden';
-        gameBody.style.backgroundImage = "url('RoyalGarden.png')";
-        locationBanner.textContent = "📍 Royal Garden";
-        kX = 20; 
-      }
-    } 
-    else if (currentArea === 'workspace') {
-      if (kX >= window.innerWidth - 130) {
-        currentArea = 'hall';
-        gameBody.style.backgroundImage = "url('PolishDragon.png')";
-        locationBanner.textContent = "📍 Dragon's Hall";
-        kX = 20;
-      }
-      if (kX < 10) kX = 10;
-    } 
-    else if (currentArea === 'garden') {
-      if (kX <= 10) {
-        currentArea = 'hall';
-        gameBody.style.backgroundImage = "url('PolishDragon.png')";
-        locationBanner.textContent = "📍 Dragon's Hall";
-        kX = window.innerWidth - 150;
-      }
-      if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
+      if (pX < 10) pX = 10;
     }
 
     // --- TASK LOGIC & MARKERS ---
@@ -169,54 +140,67 @@ function gameLoop() {
     interactionPrompt.classList.add('hidden');
 
     if (taskStage === 0) {
-      if (currentArea === 'workspace') {
+      if (currentArea === 'room') {
         taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '500px'; 
-        taskMarker.style.top = '500px';
+        taskMarker.style.left = '200px'; 
+        taskMarker.style.top = '520px';
 
-        if (Math.abs(kX - 500) < 50) {
+        if (Math.abs(pX - 200) < 50) {
           canInteract = true;
-          interactionPrompt.textContent = "Press [E] to Inspect Forge Anvil";
+          interactionPrompt.textContent = "Press [E] to Make Bed";
           interactionPrompt.classList.remove('hidden');
         }
       }
     } 
     else if (taskStage === 1) {
-      if (currentArea === 'garden') {
+      if (currentArea === 'room') {
         taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '350px';
-        taskMarker.style.top = '480px';
+        taskMarker.style.left = '500px';
+        taskMarker.style.top = '520px';
 
-        if (Math.abs(kX - 350) < 50) {
+        if (Math.abs(pX - 500) < 50) {
           canInteract = true;
-          interactionPrompt.textContent = "Press [E] to Harvest Moonbloom";
+          interactionPrompt.textContent = "Press [E] to Brush Hair";
           interactionPrompt.classList.remove('hidden');
         }
       }
     } 
     else if (taskStage === 2) {
-      if (currentArea === 'hall') {
+      if (currentArea === 'room') {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = '800px';
+        taskMarker.style.top = '520px';
+
+        if (Math.abs(pX - 800) < 50) {
+          canInteract = true;
+          interactionPrompt.textContent = "Press [E] to Apply Perfume";
+          interactionPrompt.classList.remove('hidden');
+        }
+      }
+    }
+    else if (taskStage === 3) {
+      if (currentArea === 'balcony') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '600px';
-        taskMarker.style.top = '500px';
+        taskMarker.style.top = '520px';
 
-        if (Math.abs(kX - 600) < 50) {
+        if (Math.abs(pX - 600) < 50) {
           canInteract = true;
-          interactionPrompt.textContent = "Press [E] to Salute Dragon Statue";
+          interactionPrompt.textContent = "Press [E] to Look Over Balcony Railing";
           interactionPrompt.classList.remove('hidden');
         }
       }
     }
   }
 
-  if (knight) {
-    knight.style.left = kX + 'px';
-    knight.style.top = kY + 'px';
+  if (princess) {
+    princess.style.left = pX + 'px';
+    princess.style.top = pY + 'px';
 
-    if (kMoving) {
-      knight.classList.add('running');
+    if (pMoving) {
+      princess.classList.add('running');
     } else {
-      knight.classList.remove('running');
+      princess.classList.remove('running');
     }
   }
 
