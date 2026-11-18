@@ -13,6 +13,7 @@ const arrowLeft = document.getElementById('arrow-left');
 const arrowRight = document.getElementById('arrow-right');
 const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
+const actionPopup = document.getElementById('action-popup');
 
 let kX = 400;
 let kY = 450;
@@ -23,6 +24,20 @@ let inDialogue = false;
 // Task System State
 let taskStage = 0;
 let canInteract = false;
+
+// Helper to show lively feedback text on screen
+function showActionFeedback(message) {
+  actionPopup.textContent = message;
+  actionPopup.classList.remove('hidden');
+  // Restart the CSS animation
+  actionPopup.style.animation = 'none';
+  actionPopup.offsetHeight; // trigger reflow
+  actionPopup.style.animation = 'popup-float 1.5s ease-out forwards';
+  
+  setTimeout(() => {
+    actionPopup.classList.add('hidden');
+  }, 1500);
+}
 
 const keys = {};
 
@@ -37,12 +52,15 @@ window.addEventListener('keydown', (e) => {
   if (k === 'e' && canInteract && !inDialogue) {
     if (taskStage === 0) {
       taskStage = 1;
+      showActionFeedback("🔨 Anvil Inspected! +1 Forged Steel");
       objectiveText.textContent = "Objective: Head right to the Royal Garden to harvest a Moonbloom flower.";
     } else if (taskStage === 1) {
       taskStage = 2;
+      showActionFeedback("🌸 Moonbloom Harvested Successfully!");
       objectiveText.textContent = "Objective: Return to Dragon's Hall and salute the grand statue.";
     } else if (taskStage === 2) {
       taskStage = 3;
+      showActionFeedback("⚔️ Grand Statue Saluted! Duties Complete!");
       objectiveText.textContent = "✅ All Chapter 2 palace duties completed successfully!";
     }
   }
@@ -141,10 +159,11 @@ function gameLoop() {
     if (taskStage === 0) {
       if (currentArea === 'workspace') {
         taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '150px';
+        // Moved anvil marker closer to the middle of the forge room
+        taskMarker.style.left = '500px'; 
         taskMarker.style.top = '500px';
 
-        if (Math.abs(kX - 150) < 50) {
+        if (Math.abs(kX - 500) < 50) {
           canInteract = true;
           interactionPrompt.textContent = "Press [E] to Inspect Forge Anvil";
           interactionPrompt.classList.remove('hidden');
