@@ -1,18 +1,28 @@
-window.addEventListener('DOMContentLoaded', () => {
+function startScene2Intro() {
   const overlay = document.getElementById('transition-overlay');
-  
-  // Keep the black screen and text fully visible for 2 seconds
+  const meanwhileText = document.getElementById('meanwhile-text');
+
+  if (!overlay) return;
+
+  // Keep "Meanwhile..." visible for 2 seconds, then fade both out smoothly
   setTimeout(() => {
-    // Fade out the overlay (which automatically fades out the meanwhile text alongside it)
+    if (meanwhileText) {
+      meanwhileText.style.opacity = '0';
+    }
     overlay.classList.remove('active');
+    
+    // Completely hide the overlay after the 1.5s fade finishes so it never blocks clicks/screen
+    setTimeout(() => {
+      overlay.style.display = 'none';
+    }, 1500);
   }, 2000);
-});
-  // Show "Meanwhile..." intro transition for 2 seconds before fading in
-  setTimeout(() => {
-    meanwhileText.style.display = 'none';
-    overlay.classList.remove('active');
-  }, 2000);
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startScene2Intro);
+} else {
+  startScene2Intro();
+}
 
 const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
