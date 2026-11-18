@@ -163,7 +163,8 @@ body {
   width: 100vw;
   height: 100vh;
   background-color: #000000;
-  opacity: 1;
+  opacity: 0;
+  pointer-events: none;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -177,17 +178,18 @@ body {
 }
 
 .meanwhile-text {
-  color: #ffdf00;
-  font-family: serif;
-  font-size: 32px;
-  font-style: italic;
-  letter-spacing: 2px;
-  animation: meanwhile-pulse 1.5s ease-in-out infinite alternate;
+  color: #ffffff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 24px;
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+  animation: meanwhile-flicker 0.8s steps(2, start) infinite;
+  transition: opacity 0.8s ease-out;
 }
 
-@keyframes meanwhile-pulse {
-  0% { opacity: 0.5; transform: scale(0.95); }
-  100% { opacity: 1; transform: scale(1.05); }
+@keyframes meanwhile-flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
 }
 
 .task-marker {
