@@ -332,12 +332,7 @@ function resolveChoice(type) {
       if (objectiveText) {
         objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
       }
-      // Press '2' at any time to instantly jump to Chapter 2 - Scene 2 for testing
-window.addEventListener('keydown', (e) => {
-  if (e.key === '2') {
-    window.location.href = 'chapter2_scene2.html';
-  }
-});
+      
       // 🎬 CHAPTER 1 ENDS HERE -> FADE TO BLACK AND GO TO CHAPTER 2
       transitionToNextChapter('chapter2.html');
 
@@ -348,6 +343,11 @@ window.addEventListener('keydown', (e) => {
 
 // Start game loop
 gameLoop();
+
+// === TRANSITION TO NEXT CHAPTER ===
+function transitionToNextChapter(nextChapterFilename) {
+  const overlay = document.getElementById('transition-overlay');
+  overlay.classList.add('active');
   
   setTimeout(() => {
     window.location.href = nextChapterFilename;
