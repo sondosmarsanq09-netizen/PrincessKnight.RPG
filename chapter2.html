@@ -9,36 +9,27 @@
 <body id="game-body">
   <div id="transition-overlay" class="fade-overlay active"></div>
 
-  <!-- UI Elements -->
+  <!-- UI & Objectives -->
   <div id="location-banner">📍 Dragon's Hall</div>
-  <div id="objective">Objective: Tend to your duties in the hall.</div>
+  <div id="objective">Objective: Head to the Forge Chambers to inspect the anvil.</div>
 
-  <!-- Edge Navigation Indicators -->
+  <!-- Edge Navigation Arrows -->
   <div id="arrow-left" class="edge-indicator left">
-    <span class="arrow-icon">◀</span>
-    <span class="area-label">Forge Chambers</span>
+    <span class="arrow-icon">◀</span> Forge Chambers
   </div>
-
   <div id="arrow-right" class="edge-indicator right">
-    <span class="area-label">Royal Garden</span>
-    <span class="arrow-icon">▶</span>
+    Royal Garden <span class="arrow-icon">▶</span>
   </div>
 
-  <!-- Characters & Elements -->
-  <div id="knight" class="facing-right"></div>
-  <div id="princess" class="hidden"></div>
+  <!-- Interactive Action Prompt (Press E) -->
+  <div id="interaction-prompt" class="interaction-prompt hidden">Press [E] to Interact</div>
 
-  <div id="dialogue-box" class="hidden">
-    <div id="speaker-name">Knight</div>
-    <p id="dialogue-text"></p>
-    <button id="prev-arrow" class="nav-arrow" title="Previous Line">◀</button>
-    <button id="next-arrow" class="nav-arrow" title="Next Line">▶</button>
-  </div>
-<!-- Visual Task Marker (Glows where the player needs to interact) -->
+  <!-- Visual Task Marker -->
   <div id="task-marker" class="task-marker hidden">✨</div>
 
   <!-- Knight Element -->
   <div id="knight"></div>
+
   <script src="chapter2.js"></script>
 </body>
 </html>
