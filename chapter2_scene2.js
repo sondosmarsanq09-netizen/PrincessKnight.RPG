@@ -97,7 +97,7 @@ function gameLoop() {
   if (pY < 480) pY = 480;
   if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
-  // FIXED CONTROLS: A = Walk Left (faces left), D = Walk Right (faces right)
+  // Movement controls matching the corrected facing directions
   if (keys['a']) {
     pX -= speed;
     pMoving = true;
@@ -141,7 +141,7 @@ function gameLoop() {
     if (pX < 10) pX = 10;
   }
 
-  // --- FIXED STATIONARY TASKS & MARKERS ---
+  // --- STATIONARY TASKS & MARKERS ---
   canInteract = false;
   taskMarker.classList.add('hidden');
   interactionPrompt.classList.add('hidden');
@@ -149,7 +149,7 @@ function gameLoop() {
   if (taskStage === 0) {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '200px'; // Stationary world coordinate
+      taskMarker.style.left = '200px'; 
       taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 200) < 50) {
@@ -161,7 +161,7 @@ function gameLoop() {
   } else if (taskStage === 1) {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '500px'; // Stationary world coordinate
+      taskMarker.style.left = '500px'; 
       taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 500) < 50) {
@@ -173,7 +173,7 @@ function gameLoop() {
   } else if (taskStage === 2) {
     if (currentArea === 'room') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '800px'; // Stationary world coordinate
+      taskMarker.style.left = '800px'; 
       taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 800) < 50) {
@@ -185,7 +185,7 @@ function gameLoop() {
   } else if (taskStage === 3) {
     if (currentArea === 'balcony') {
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = '600px'; // Stationary world coordinate
+      taskMarker.style.left = '600px'; 
       taskMarker.style.top = '520px';
 
       if (Math.abs(pX - 600) < 50) {
