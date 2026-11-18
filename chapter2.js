@@ -25,18 +25,21 @@ let inDialogue = false;
 let taskStage = 0;
 let canInteract = false;
 
-// Helper to show lively feedback text on screen
+// Helper to show sparkling feedback floating right above the knight's head
 function showActionFeedback(message) {
-  actionPopup.textContent = message;
+  actionPopup.textContent = "✨ " + message + " ✨";
+  
+  actionPopup.style.left = (kX + 60) + 'px';
+  actionPopup.style.top = (kY - 10) + 'px';
+
   actionPopup.classList.remove('hidden');
-  // Restart the CSS animation
   actionPopup.style.animation = 'none';
   actionPopup.offsetHeight; // trigger reflow
-  actionPopup.style.animation = 'popup-float 1.5s ease-out forwards';
+  actionPopup.style.animation = 'float-above-knight 1.6s ease-out forwards';
   
   setTimeout(() => {
     actionPopup.classList.add('hidden');
-  }, 1500);
+  }, 1600);
 }
 
 const keys = {};
@@ -52,15 +55,15 @@ window.addEventListener('keydown', (e) => {
   if (k === 'e' && canInteract && !inDialogue) {
     if (taskStage === 0) {
       taskStage = 1;
-      showActionFeedback("🔨 Anvil Inspected! +1 Forged Steel");
+      showActionFeedback("Anvil Inspected! +1 Forged Steel");
       objectiveText.textContent = "Objective: Head right to the Royal Garden to harvest a Moonbloom flower.";
     } else if (taskStage === 1) {
       taskStage = 2;
-      showActionFeedback("🌸 Moonbloom Harvested Successfully!");
+      showActionFeedback("Moonbloom Harvested Successfully!");
       objectiveText.textContent = "Objective: Return to Dragon's Hall and salute the grand statue.";
     } else if (taskStage === 2) {
       taskStage = 3;
-      showActionFeedback("⚔️ Grand Statue Saluted! Duties Complete!");
+      showActionFeedback("Grand Statue Saluted! Duties Complete!");
       objectiveText.textContent = "✅ All Chapter 2 palace duties completed successfully!";
     }
   }
@@ -159,7 +162,6 @@ function gameLoop() {
     if (taskStage === 0) {
       if (currentArea === 'workspace') {
         taskMarker.classList.remove('hidden');
-        // Moved anvil marker closer to the middle of the forge room
         taskMarker.style.left = '500px'; 
         taskMarker.style.top = '500px';
 
