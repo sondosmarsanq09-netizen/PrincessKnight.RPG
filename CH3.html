@@ -2,42 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chapter 3 — Midnight Escape</title>
-  <link rel="stylesheet" href="CH3.css" />
+  <title>Test CH3</title>
+  <style>
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      background: #2b1d38 url('PrincessRoom.png') center/cover no-repeat;
+      color: #fff;
+      font-family: monospace;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+  </style>
 </head>
-<body id="game-body">
-  <div id="location-banner">📍 Princess's Chamber</div>
-  <div id="objective">Objective: Escape the palace. Go to your date. Leave unseen by the King.</div>
-
-  <!-- Player-controlled Princess in Chapter 3 -->
-  <div id="princess" class="facing-left">
-    <div class="layer"></div>
-  </div>
-
-  <!-- King Placeholder (swap styling/sprite later when coding King in) -->
-  <div id="king" class="king-placeholder facing-left hidden" aria-label="King Placeholder">
-    <div class="king-crown">👑</div>
-    <div class="king-body">KING</div>
-  </div>
-
-  <div id="task-marker" class="task-marker hidden">❗</div>
-  <div id="interaction-prompt" class="interaction-prompt hidden"></div>
-  <div id="action-popup" class="action-popup hidden"></div>
-
-  <!-- Left (< Chambers / Library) & Right (> Balcony) navigation cues -->
-  <div id="arrow-left" class="nav-arrow side-arrow left-arrow hidden" title="Toward Chambers & Library">&lt;</div>
-  <div id="arrow-right" class="nav-arrow side-arrow right-arrow hidden" title="Balcony">&gt;</div>
-
-  <div id="dialogue-box" class="dialogue-box hidden">
-    <div id="dialogue-speaker" class="dialogue-speaker">Princess</div>
-    <div id="dialogue-text" class="dialogue-text"></div>
-    <div id="dialogue-choices" class="dialogue-choices hidden"></div>
-    <div id="dialogue-hint" class="dialogue-hint"></div>
-  </div>
-
-  <div id="transition-overlay" class="fade-overlay"></div>
-
-  <script src="CH3.js"></script>
+<body>
+  <div id="test-msg">CH3.html is loading!</div>
+  <script>
+    console.log("CH3 inline script ran!");
+    document.getElementById("test-msg").textContent = "CH3.html + JS are both working!";
+  </script>
 </body>
 </html>
