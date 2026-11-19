@@ -332,7 +332,7 @@ const gardenEncounterNodes = [
   {
     speaker: "Knight",
     text: "“Your Highness—forgive me. I heard movement and came at once to ensure no harm had befallen the garden.”",
-    knightEmote: "🥵",
+    knightEmote: "😅",
     princessEmote: "✨"
   },
   {
@@ -345,7 +345,7 @@ const gardenEncounterNodes = [
       {
         label: "1. (Flustered & devoted) \"An outing... with me? Your Highness, I—yes. Name the hour, and I shall be there.\"",
         knightEmote: "😳",
-        princessEmote: "🥰",
+        princessEmote: "😍",
         followUp: [
           {
             speaker: "Princess",
@@ -359,7 +359,7 @@ const gardenEncounterNodes = [
       {
         label: "2. (Trying to sound composed, failing) \"If it is your wish, Your Highness... I accept the charge. Strictly as your guard, of course.\"",
         knightEmote: "💧",
-        princessEmote: "🤭",
+        princessEmote: "😏",
         followUp: [
           {
             speaker: "Princess",
@@ -389,13 +389,13 @@ const gardenEncounterNodes = [
   {
     speaker: "Knight",
     text: "“Listen closely, Your Highness. Slip away late tonight—no guards are posted in the chambers or the library at that hour, so your path will be clear.”",
-    knightEmote: "🤯",
+    knightEmote: "🎯",
     princessEmote: "😉"
   },
   {
     speaker: "Knight",
     text: "“Yet tread lightly near the royal wing: the King will be in his chambers then. The guards withdraw solely to grant him privacy—one careless sound could undo us both.”",
-    knightEmote: "🤫",
+    knightEmote: "😏",
     princessEmote: "😏"
   },
   {
