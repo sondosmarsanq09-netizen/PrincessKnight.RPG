@@ -32,6 +32,11 @@ let kY = 450;
 const speed = 6;
 let currentArea = 'hall'; // 'hall' -> 'garden'
 
+// Autonomous Knight walk-to-doorway state
+let knightWalkingToDoor = false;
+let doorTargetX = 720;
+let doorTargetY = 450;
+
 // Princess starts off-screen on the right and walks into the garden autonomously
 let pX = window.innerWidth + 120;
 let pY = 570;
@@ -44,7 +49,7 @@ let sceneComplete = false;
 let isFadingOut = false;
 
 // Scene Stages:
-// 0 = Hear footsteps in Dragon's Hall & interact to head out to the Royal Garden
+// 0 = Hear footsteps in Dragon's Hall & walk/interact to check the noise
 // 1 = In Royal Garden: Knight enters from left, Princess walks in from right & bumps into him
 // 2 = Multi-choice flirting, date ask, inner monologue & sneak-out plan
 let sceneStage = 0;
@@ -267,9 +272,23 @@ const gardenEncounterNodes = [
   }
 ];
 
+function startWalkingToNoise() {
+  if (knightWalkingToDoor) return;
+  knightWalkingToDoor = true;
+  canInteract = false;
+  taskMarker.classList.add('hidden');
+  interactionPrompt.classList.add('hidden');
+  doorTargetX = Math.min(window.innerWidth - 220, 720);
+  doorTargetY = 450;
+  setEmotion('knight', '👂');
+  objectiveText.textContent = "Objective: Walking over to check the noise near the garden doorway...";
+}
+
 function enterRoyalGardenFromLeft() {
   currentArea = 'garden';
   sceneStage = 1;
+  knightWalkingToDoor = false;
+  setEmotion('knight', null);
 
   if (gameBody) {
     gameBody.style.backgroundImage = "url('RoyalGarden.png')";
@@ -314,7 +333,7 @@ function triggerEncounterDialogue() {
 
 // Initial UI setup for Dragon's Hall
 if (locationBanner) locationBanner.textContent = "📍 Dragon's Hall";
-if (objectiveText) objectiveText.textContent = "Objective: You hear footsteps outside—check the doorway to head to the garden.";
+if (objectiveText) objectiveText.textContent = "Objective: You hear footsteps outside—press [E] to go check the noise.";
 
 // --- CONTROLS ---
 const keys = {};
@@ -337,11 +356,9 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  if (k === 'e' && canInteract && !isFadingOut) {
+  if (k === 'e' && !isFadingOut && !knightWalkingToDoor) {
     if (currentArea === 'hall' && sceneStage === 0) {
-      startDialogue(hallFootstepsNodes, () => {
-        enterRoyalGardenFromLeft();
-      });
+      startWalkingToNoise();
     }
   }
 });
@@ -355,33 +372,63 @@ function gameLoop() {
   let pMoving = false;
 
   if (!inDialogue && !isFadingOut) {
-    // Knight movement (player-controlled)
-    if (keys['w'] || keys['arrowup']) {
-      kY -= speed;
-      kMoving = true;
-    }
-    if (keys['s'] || keys['arrowdown']) {
-      kY += speed;
-      kMoving = true;
-    }
-    if (kY < 350) kY = 350;
-    if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
+    // Knight walks all the way to the noise/doorway himself once triggered
+    if (knightWalkingToDoor && currentArea === 'hall' && sceneStage === 0) {
+      const dx = doorTargetX - kX;
+      const dy = doorTargetY - kY;
+      const dist = Math.hypot(dx, dy);
 
-    if (keys['a'] || keys['arrowleft']) {
-      kX -= speed;
-      kMoving = true;
-      knight.classList.add('facing-left');
-      knight.classList.remove('facing-right');
-    }
-    if (keys['d'] || keys['arrowright']) {
-      kX += speed;
-      kMoving = true;
-      knight.classList.remove('facing-left');
-      knight.classList.add('facing-right');
-    }
+      if (dist > 5) {
+        const walkSpeed = 4.5;
+        kX += (dx / dist) * walkSpeed;
+        kY += (dy / dist) * walkSpeed;
+        kMoving = true;
 
-    if (kX < 10) kX = 10;
-    if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
+        if (dx < 0) {
+          knight.classList.add('facing-left');
+          knight.classList.remove('facing-right');
+        } else {
+          knight.classList.add('facing-right');
+          knight.classList.remove('facing-left');
+        }
+      } else {
+        kX = doorTargetX;
+        kY = doorTargetY;
+        knightWalkingToDoor = false;
+        kMoving = false;
+        startDialogue(hallFootstepsNodes, () => {
+          enterRoyalGardenFromLeft();
+        });
+      }
+    } else {
+      // Manual Knight movement (player-controlled)
+      if (keys['w'] || keys['arrowup']) {
+        kY -= speed;
+        kMoving = true;
+      }
+      if (keys['s'] || keys['arrowdown']) {
+        kY += speed;
+        kMoving = true;
+      }
+      if (kY < 350) kY = 350;
+      if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
+
+      if (keys['a'] || keys['arrowleft']) {
+        kX -= speed;
+        kMoving = true;
+        knight.classList.add('facing-left');
+        knight.classList.remove('facing-right');
+      }
+      if (keys['d'] || keys['arrowright']) {
+        kX += speed;
+        kMoving = true;
+        knight.classList.remove('facing-left');
+        knight.classList.add('facing-right');
+      }
+
+      if (kX < 10) kX = 10;
+      if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
+    }
 
     // Princess autonomous movement from right toward the middle of the garden
     if (currentArea === 'garden' && princessActive && princessWalkingToMeet && !princessBumped) {
@@ -422,7 +469,7 @@ function gameLoop() {
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
 
-    if (currentArea === 'hall' && sceneStage === 0) {
+    if (currentArea === 'hall' && sceneStage === 0 && !knightWalkingToDoor) {
       const doorX = Math.min(window.innerWidth - 220, 720);
       const doorY = 460;
 
@@ -430,11 +477,9 @@ function gameLoop() {
       taskMarker.style.left = doorX + 'px';
       taskMarker.style.top = doorY + 'px';
 
-      if (Math.hypot(kX - doorX, kY - doorY) < 100) {
-        canInteract = true;
-        interactionPrompt.textContent = "Press [E] to Check the Footsteps";
-        interactionPrompt.classList.remove('hidden');
-      }
+      canInteract = true;
+      interactionPrompt.textContent = "Press [E] to Walk & Check Footsteps";
+      interactionPrompt.classList.remove('hidden');
     }
   }
 
