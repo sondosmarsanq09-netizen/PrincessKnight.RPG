@@ -9,6 +9,7 @@ function removeOverlay() {
 window.addEventListener('DOMContentLoaded', removeOverlay);
 setTimeout(removeOverlay, 50);
 
+const gameBody = document.getElementById('game-body');
 const knight = document.getElementById('knight');
 const princess = document.getElementById('princess');
 const locationBanner = document.getElementById('location-banner');
@@ -25,12 +26,13 @@ const dialogueText = document.getElementById('dialogue-text');
 const dialogueChoices = document.getElementById('dialogue-choices');
 const dialogueHint = document.getElementById('dialogue-hint');
 
-// Starting Knight on the garden path (scaled 4.8x like Scene 1)
-let kX = 240;
-let kY = 460;
+// Knight starts in Dragon's Hall (matching Scene 1 floor coordinates)
+let kX = 400;
+let kY = 450;
 const speed = 6;
+let currentArea = 'hall'; // 'hall' -> 'garden'
 
-// Princess starts off-screen / right side and walks in autonomously
+// Princess starts off-screen on the right and walks into the garden autonomously
 let pX = window.innerWidth + 120;
 let pY = 570;
 let princessActive = false;
@@ -42,9 +44,9 @@ let sceneComplete = false;
 let isFadingOut = false;
 
 // Scene Stages:
-// 0 = Check noise at the fountain
-// 1 = Princess walks in and bumps into Knight in middle of garden
-// 2 = Conversation, flirting, date ask, inner monologue & sneak-out plan
+// 0 = Hear footsteps in Dragon's Hall & interact to head out to the Royal Garden
+// 1 = In Royal Garden: Knight enters from left, Princess walks in from right & bumps into him
+// 2 = Multi-choice flirting, date ask, inner monologue & sneak-out plan
 let sceneStage = 0;
 let canInteract = false;
 let popupTimeout = null;
@@ -196,18 +198,12 @@ function closeDialogue() {
 }
 
 // --- STORY DIALOGUE SCRIPTS ---
-const fountainCheckNodes = [
+const hallFootstepsNodes = [
   {
     speaker: "Knight (Inner Monologue)",
-    text: "Weird... footsteps and rustling near the fountain. Definitely not the dragon.",
-    knightEmotion: "🤔",
+    text: "Did you hear that? Footsteps outside leading toward the garden... I should go check it out.",
+    knightEmotion: "👂",
     isMonologue: true
-  },
-  {
-    speaker: "Princess",
-    text: "Oh! Look who wandered out into the garden... were you looking for a distraction, Sir Knight?",
-    princessEmotion: "😏",
-    knightEmotion: "😳"
   }
 ];
 
@@ -271,14 +267,35 @@ const gardenEncounterNodes = [
   }
 ];
 
-function triggerPrincessEntrance() {
+function enterRoyalGardenFromLeft() {
+  currentArea = 'garden';
   sceneStage = 1;
+
+  if (gameBody) {
+    gameBody.style.backgroundImage = "url('RoyalGarden.png')";
+  }
+  if (locationBanner) {
+    locationBanner.textContent = "📍 Royal Garden";
+  }
+
+  // Knight enters the garden from the left (Dragon's Hall side)
+  kX = 140;
+  kY = 450;
+  knight.classList.add('facing-right');
+  knight.classList.remove('facing-left');
+
+  // Princess enters autonomously from the right side of the screen
   princessActive = true;
   princessWalkingToMeet = true;
-  princess.classList.remove('hidden');
+  princessBumped = false;
   pX = window.innerWidth + 80;
   pY = 570;
-  objectiveText.textContent = "Objective: Something—or someone—is approaching in the garden...";
+  princess.classList.remove('hidden');
+  princess.classList.add('facing-left');
+  princess.classList.remove('facing-right');
+
+  showActionFeedback("Heading out to the Royal Garden...");
+  objectiveText.textContent = "Objective: Someone is coming from the right side of the garden...";
 }
 
 function triggerEncounterDialogue() {
@@ -294,6 +311,10 @@ function triggerEncounterDialogue() {
     }, 2200);
   });
 }
+
+// Initial UI setup for Dragon's Hall
+if (locationBanner) locationBanner.textContent = "📍 Dragon's Hall";
+if (objectiveText) objectiveText.textContent = "Objective: You hear footsteps outside—check the doorway to head to the garden.";
 
 // --- CONTROLS ---
 const keys = {};
@@ -317,9 +338,9 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (k === 'e' && canInteract && !isFadingOut) {
-    if (sceneStage === 0) {
-      startDialogue(fountainCheckNodes, () => {
-        triggerPrincessEntrance();
+    if (currentArea === 'hall' && sceneStage === 0) {
+      startDialogue(hallFootstepsNodes, () => {
+        enterRoyalGardenFromLeft();
       });
     }
   }
@@ -362,9 +383,9 @@ function gameLoop() {
     if (kX < 10) kX = 10;
     if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
 
-    // Princess autonomous movement (never controlled by player)
-    if (princessActive && princessWalkingToMeet && !princessBumped) {
-      const targetX = Math.max(360, Math.min(window.innerWidth * 0.55, kX + 140));
+    // Princess autonomous movement from right toward the middle of the garden
+    if (currentArea === 'garden' && princessActive && princessWalkingToMeet && !princessBumped) {
+      const targetX = Math.max(420, Math.min(window.innerWidth * 0.55, kX + 130));
       const targetY = 570;
 
       const dx = targetX - pX;
@@ -396,22 +417,22 @@ function gameLoop() {
       }
     }
 
-    // --- TASK MARKER AT FOUNTAIN ---
+    // --- TASK MARKER IN DRAGON'S HALL FOR FOOTSTEPS ---
     canInteract = false;
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
 
-    if (sceneStage === 0) {
-      const fountainX = Math.min(window.innerWidth - 220, 680);
-      const fountainY = 520;
+    if (currentArea === 'hall' && sceneStage === 0) {
+      const doorX = Math.min(window.innerWidth - 220, 720);
+      const doorY = 460;
 
       taskMarker.classList.remove('hidden');
-      taskMarker.style.left = fountainX + 'px';
-      taskMarker.style.top = fountainY + 'px';
+      taskMarker.style.left = doorX + 'px';
+      taskMarker.style.top = doorY + 'px';
 
-      if (Math.hypot(kX - fountainX, (kY + 70) - fountainY) < 100) {
+      if (Math.hypot(kX - doorX, kY - doorY) < 100) {
         canInteract = true;
-        interactionPrompt.textContent = "Press [E] to Check the Fountain";
+        interactionPrompt.textContent = "Press [E] to Check the Footsteps";
         interactionPrompt.classList.remove('hidden');
       }
     }
