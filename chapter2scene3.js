@@ -14,6 +14,7 @@ const knight = document.getElementById('knight');
 const princess = document.getElementById('princess');
 const locationBanner = document.getElementById('location-banner');
 const objectiveText = document.getElementById('objective');
+const arrowRight = document.getElementById('arrow-right');
 const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
@@ -26,16 +27,11 @@ const dialogueText = document.getElementById('dialogue-text');
 const dialogueChoices = document.getElementById('dialogue-choices');
 const dialogueHint = document.getElementById('dialogue-hint');
 
-// Knight starts in Dragon's Hall (matching Scene 1 floor coordinates)
+// Knight spawns in Dragon's Hall (matching Scene 1 floor coordinates)
 let kX = 400;
 let kY = 450;
 const speed = 6;
 let currentArea = 'hall'; // 'hall' -> 'garden'
-
-// Autonomous Knight walk-to-doorway state
-let knightWalkingToDoor = false;
-let doorTargetX = 720;
-let doorTargetY = 450;
 
 // Princess starts off-screen on the right and walks into the garden autonomously
 let pX = window.innerWidth + 120;
@@ -49,11 +45,10 @@ let sceneComplete = false;
 let isFadingOut = false;
 
 // Scene Stages:
-// 0 = Hear footsteps in Dragon's Hall & walk/interact to check the noise
+// 0 = In Dragon's Hall: player walks Knight right to the Royal Garden
 // 1 = In Royal Garden: Knight enters from left, Princess walks in from right & bumps into him
 // 2 = Multi-choice flirting, date ask, inner monologue & sneak-out plan
 let sceneStage = 0;
-let canInteract = false;
 let popupTimeout = null;
 
 function setEmotion(target, emoji) {
@@ -109,8 +104,8 @@ function startDialogue(nodes, onFinish = null) {
   currentNodes = nodes;
   nodeIndex = 0;
   onDialogueFinish = onFinish;
-  interactionPrompt.classList.add('hidden');
-  taskMarker.classList.add('hidden');
+  if (interactionPrompt) interactionPrompt.classList.add('hidden');
+  if (taskMarker) taskMarker.classList.add('hidden');
   renderNode();
 }
 
@@ -203,10 +198,10 @@ function closeDialogue() {
 }
 
 // --- STORY DIALOGUE SCRIPTS ---
-const hallFootstepsNodes = [
+const openingFootstepsNodes = [
   {
     speaker: "Knight (Inner Monologue)",
-    text: "Did you hear that? Footsteps outside leading toward the garden... I should go check it out.",
+    text: "Footsteps... someone is outside. I should go check who's in the garden.",
     knightEmotion: "👂",
     isMonologue: true
   }
@@ -242,7 +237,7 @@ const gardenEncounterNodes = [
       {
         label: "Try to play it cool (and fail): \"A date? Right. Tactical moonlight reconnaissance. Very official.\"",
         knightEmotion: "🫠",
-        princessEmotion: " giggle"
+        princessEmotion: "🤭"
       }
     ]
   },
@@ -272,38 +267,22 @@ const gardenEncounterNodes = [
   }
 ];
 
-function startWalkingToNoise() {
-  if (knightWalkingToDoor) return;
-  knightWalkingToDoor = true;
-  canInteract = false;
-  taskMarker.classList.add('hidden');
-  interactionPrompt.classList.add('hidden');
-  doorTargetX = Math.min(window.innerWidth - 220, 720);
-  doorTargetY = 450;
-  setEmotion('knight', '👂');
-  objectiveText.textContent = "Objective: Walking over to check the noise near the garden doorway...";
-}
-
 function enterRoyalGardenFromLeft() {
   currentArea = 'garden';
   sceneStage = 1;
-  knightWalkingToDoor = false;
   setEmotion('knight', null);
 
-  if (gameBody) {
-    gameBody.style.backgroundImage = "url('RoyalGarden.png')";
-  }
-  if (locationBanner) {
-    locationBanner.textContent = "📍 Royal Garden";
-  }
+  if (arrowRight) arrowRight.style.display = 'none';
+  if (gameBody) gameBody.style.backgroundImage = "url('RoyalGarden.png')";
+  if (locationBanner) locationBanner.textContent = "📍 Royal Garden";
 
-  // Knight enters the garden from the left (Dragon's Hall side)
-  kX = 140;
+  // Knight walks in from the left edge (Dragon's Hall side)
+  kX = 60;
   kY = 450;
   knight.classList.add('facing-right');
   knight.classList.remove('facing-left');
 
-  // Princess enters autonomously from the right side of the screen
+  // Princess walks in autonomously from the right side of the screen
   princessActive = true;
   princessWalkingToMeet = true;
   princessBumped = false;
@@ -313,8 +292,7 @@ function enterRoyalGardenFromLeft() {
   princess.classList.add('facing-left');
   princess.classList.remove('facing-right');
 
-  showActionFeedback("Heading out to the Royal Garden...");
-  objectiveText.textContent = "Objective: Someone is coming from the right side of the garden...";
+  objectiveText.textContent = "Objective: Walk into the garden to see who is there...";
 }
 
 function triggerEncounterDialogue() {
@@ -331,9 +309,16 @@ function triggerEncounterDialogue() {
   });
 }
 
-// Initial UI setup for Dragon's Hall
+// Initial Dragon's Hall setup & opening footsteps message
+if (gameBody) gameBody.style.backgroundImage = "url('PolishDragon.png')";
 if (locationBanner) locationBanner.textContent = "📍 Dragon's Hall";
-if (objectiveText) objectiveText.textContent = "Objective: You hear footsteps outside—press [E] to go check the noise.";
+if (objectiveText) objectiveText.textContent = "Objective: Footsteps outside—walk right to check who is in the Royal Garden.";
+
+setTimeout(() => {
+  startDialogue(openingFootstepsNodes, () => {
+    setEmotion('knight', null);
+  });
+}, 300);
 
 // --- CONTROLS ---
 const keys = {};
@@ -353,13 +338,6 @@ window.addEventListener('keydown', (e) => {
     } else if (k === 'e' || k === ' ') {
       advanceDialogue();
     }
-    return;
-  }
-
-  if (k === 'e' && !isFadingOut && !knightWalkingToDoor) {
-    if (currentArea === 'hall' && sceneStage === 0) {
-      startWalkingToNoise();
-    }
   }
 });
 
@@ -372,61 +350,49 @@ function gameLoop() {
   let pMoving = false;
 
   if (!inDialogue && !isFadingOut) {
-    // Knight walks all the way to the noise/doorway himself once triggered
-    if (knightWalkingToDoor && currentArea === 'hall' && sceneStage === 0) {
-      const dx = doorTargetX - kX;
-      const dy = doorTargetY - kY;
-      const dist = Math.hypot(dx, dy);
+    // Player-controlled Knight movement
+    if (keys['w'] || keys['arrowup']) {
+      kY -= speed;
+      kMoving = true;
+    }
+    if (keys['s'] || keys['arrowdown']) {
+      kY += speed;
+      kMoving = true;
+    }
+    if (kY < 350) kY = 350;
+    if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
 
-      if (dist > 5) {
-        const walkSpeed = 4.5;
-        kX += (dx / dist) * walkSpeed;
-        kY += (dy / dist) * walkSpeed;
-        kMoving = true;
+    if (keys['a'] || keys['arrowleft']) {
+      kX -= speed;
+      kMoving = true;
+      knight.classList.add('facing-left');
+      knight.classList.remove('facing-right');
+    }
+    if (keys['d'] || keys['arrowright']) {
+      kX += speed;
+      kMoving = true;
+      knight.classList.remove('facing-left');
+      knight.classList.add('facing-right');
+    }
 
-        if (dx < 0) {
-          knight.classList.add('facing-left');
-          knight.classList.remove('facing-right');
+    if (kX < 10) kX = 10;
+
+    // Area transition: Player walks Knight to the right edge of Dragon's Hall -> Royal Garden
+    if (currentArea === 'hall') {
+      if (arrowRight) {
+        arrowRight.style.display = 'flex';
+        if (kX > window.innerWidth - 280) {
+          arrowRight.classList.add('highlight');
         } else {
-          knight.classList.add('facing-right');
-          knight.classList.remove('facing-left');
+          arrowRight.classList.remove('highlight');
         }
-      } else {
-        kX = doorTargetX;
-        kY = doorTargetY;
-        knightWalkingToDoor = false;
-        kMoving = false;
-        startDialogue(hallFootstepsNodes, () => {
-          enterRoyalGardenFromLeft();
-        });
-      }
-    } else {
-      // Manual Knight movement (player-controlled)
-      if (keys['w'] || keys['arrowup']) {
-        kY -= speed;
-        kMoving = true;
-      }
-      if (keys['s'] || keys['arrowdown']) {
-        kY += speed;
-        kMoving = true;
-      }
-      if (kY < 350) kY = 350;
-      if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
-
-      if (keys['a'] || keys['arrowleft']) {
-        kX -= speed;
-        kMoving = true;
-        knight.classList.add('facing-left');
-        knight.classList.remove('facing-right');
-      }
-      if (keys['d'] || keys['arrowright']) {
-        kX += speed;
-        kMoving = true;
-        knight.classList.remove('facing-left');
-        knight.classList.add('facing-right');
       }
 
-      if (kX < 10) kX = 10;
+      if (kX >= window.innerWidth - 130) {
+        enterRoyalGardenFromLeft();
+      }
+    } else if (currentArea === 'garden') {
+      if (arrowRight) arrowRight.style.display = 'none';
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
     }
 
@@ -462,24 +428,6 @@ function gameLoop() {
         showActionFeedback("Bump!");
         triggerEncounterDialogue();
       }
-    }
-
-    // --- TASK MARKER IN DRAGON'S HALL FOR FOOTSTEPS ---
-    canInteract = false;
-    taskMarker.classList.add('hidden');
-    interactionPrompt.classList.add('hidden');
-
-    if (currentArea === 'hall' && sceneStage === 0 && !knightWalkingToDoor) {
-      const doorX = Math.min(window.innerWidth - 220, 720);
-      const doorY = 460;
-
-      taskMarker.classList.remove('hidden');
-      taskMarker.style.left = doorX + 'px';
-      taskMarker.style.top = doorY + 'px';
-
-      canInteract = true;
-      interactionPrompt.textContent = "Press [E] to Walk & Check Footsteps";
-      interactionPrompt.classList.remove('hidden');
     }
   }
 
