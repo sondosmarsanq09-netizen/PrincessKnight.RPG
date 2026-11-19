@@ -44,7 +44,7 @@ let sceneStage = 0;
 let canInteract = false;
 let popupTimeout = null;
 
-// --- CHAPTER 1 STYLE EMOTE BUBBLES & INNER THOUGHT BAR ---
+// --- EMOTE BUBBLES & INNER THOUGHT BAR ---
 const knightEmote = document.createElement('div');
 knightEmote.className = 'emote-bubble hidden';
 document.body.appendChild(knightEmote);
@@ -64,25 +64,38 @@ const dialogueText = document.getElementById('dialogue-text');
 const dialogueChoices = document.getElementById('dialogue-choices');
 const dialogueHint = document.getElementById('dialogue-hint');
 
-// Add Chapter 1 style prev/next arrows inside dialogue-box if not already there
+// Lower-right < and > buttons inside dialogue-box
 const navControls = document.createElement('div');
 navControls.className = 'nav-controls';
 const prevArrow = document.createElement('button');
 prevArrow.type = 'button';
 prevArrow.className = 'nav-arrow';
 prevArrow.title = 'Previous Line';
-prevArrow.textContent = '◀';
+prevArrow.textContent = '<';
 const nextArrow = document.createElement('button');
 nextArrow.type = 'button';
 nextArrow.className = 'nav-arrow';
 nextArrow.title = 'Next Line';
-nextArrow.textContent = '▶';
+nextArrow.textContent = '>';
 navControls.appendChild(prevArrow);
 navControls.appendChild(nextArrow);
 if (dialogueBox) dialogueBox.appendChild(navControls);
 
 let knightEmoteTimer = null;
 let princessEmoteTimer = null;
+
+function positionEmotesNow() {
+  // Knight has transform-origin: center bottom, scale(4.8) on a 120x80 box -> head sits roughly around kY - 165
+  if (knight && knightEmote) {
+    knightEmote.style.left = (kX + 60) + 'px';
+    knightEmote.style.top = (kY - 165) + 'px';
+  }
+  // Princess has transform-origin: center bottom, scale(3.5) on a 96x96 box -> head sits roughly around pY - 125
+  if (princess && princessEmote) {
+    princessEmote.style.left = (pX + 48) + 'px';
+    princessEmote.style.top = (pY - 125) + 'px';
+  }
+}
 
 function triggerEmote(target, symbol) {
   const el = target === 'knight' ? knightEmote : princessEmote;
@@ -93,11 +106,12 @@ function triggerEmote(target, symbol) {
     return;
   }
 
+  positionEmotesNow();
   el.textContent = symbol;
   el.classList.remove('hidden');
   el.style.animation = 'none';
   void el.offsetWidth;
-  el.style.animation = 'pop-fade 1.8s ease-out forwards';
+  el.style.animation = 'emote-pulse-fade 1.8s ease-out forwards';
 
   if (target === 'knight') {
     clearTimeout(knightEmoteTimer);
@@ -108,22 +122,7 @@ function triggerEmote(target, symbol) {
   }
 }
 
-function updateEmotePositions() {
-  if (knight && knightEmote && !knightEmote.classList.contains('hidden')) {
-    knightEmote.style.left = (kX + 60) + 'px';
-    knightEmote.style.top = (kY - 195) + 'px';
-  }
-  if (princess && princessEmotionSync()) {
-    princessEmote.style.left = (pX + 48) + 'px';
-    princessEmote.style.top = (pY - 135) + 'px';
-  }
-}
-
-function princessEmotionSync() {
-  return princessEmote && !princessEmote.classList.contains('hidden');
-}
-
-function showActionFeedback(message, targetX = kX + 60, targetY = kY - 170) {
+function showActionFeedback(message, targetX = kX + 60, targetY = kY - 185) {
   if (!actionPopup) return;
   actionPopup.textContent = "✨ " + message + " ✨";
   actionPopup.style.left = targetX + 'px';
@@ -140,7 +139,7 @@ function showActionFeedback(message, targetX = kX + 60, targetY = kY - 170) {
   }, 2200);
 }
 
-// --- DIALOGUE ENGINE WITH MULTI-CHOICE, INNER MONOLOGUE & ARROWS ---
+// --- DIALOGUE ENGINE WITH MULTI-CHOICE, INNER MONOLOGUE & < > ARROWS ---
 let currentNodes = [];
 let nodeIndex = 0;
 let waitingForChoice = false;
@@ -165,7 +164,6 @@ function renderNode() {
 
   dialogueBox.classList.remove('hidden');
 
-  // Speaker label styling matching Chapter 1
   const speakerLower = (node.speaker || '').toLowerCase();
   dialogueSpeaker.className = 'dialogue-speaker';
   if (speakerLower.includes('princess')) {
@@ -175,7 +173,6 @@ function renderNode() {
     dialogueSpeaker.textContent = 'Knight';
   }
 
-  // Inner monologue uses Chapter 1's dark italic thought bar above the box
   if (node.thought) {
     thoughtBox.textContent = node.thought;
     thoughtBox.classList.remove('hidden');
@@ -223,7 +220,7 @@ function renderNode() {
     dialogueChoices.classList.add('hidden');
     navControls.style.display = 'flex';
     prevArrow.disabled = nodeIndex === 0;
-    dialogueHint.textContent = "Press [E] / [Space] or ▶ to continue";
+    dialogueHint.textContent = "Press [E] / [Space] or > to continue";
   }
 }
 
@@ -451,7 +448,7 @@ function gameLoop() {
       kMoving = true;
     }
 
-    // Clamp vertical movement to ground/walkable path (prevents walking over hedges or above ground line)
+    // Clamp vertical movement to ground/walkable path
     const minWalkY = currentArea === 'garden' ? 465 : 440;
     const maxWalkY = Math.min(window.innerHeight - 55, 620);
     if (kY < minWalkY) kY = minWalkY;
@@ -509,7 +506,7 @@ function gameLoop() {
         // She spots her Knight and calls him over!
         triggerEmote('princess', '💕');
         triggerEmote('knight', '❗');
-        showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 125);
+        showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 155);
         objectiveText.textContent = "Objective: Talk to the Princess.";
       }
     }
@@ -531,7 +528,7 @@ function gameLoop() {
       if (taskMarker) {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = (pX + 35) + 'px';
-        taskMarker.style.top = (pY - 140) + 'px';
+        taskMarker.style.top = (pY - 150) + 'px';
       }
 
       if (Math.abs(kX - pX) < 180) {
@@ -556,7 +553,7 @@ function gameLoop() {
     princess.classList.toggle('running', pMoving);
   }
 
-  updateEmotePositions();
+  positionEmotesNow();
   requestAnimationFrame(gameLoop);
 }
 
