@@ -428,7 +428,7 @@ const knightAfterDeparturePanicNodes = [
   {
     speaker: "Knight",
     text: "“My helm feels far too warm for sanity! No watch in the library or chambers, the King in his rooms... if we are discovered, my head will roll before dawn!”",
-    knightEmote: "🤯"
+    knightEmote: "😳💧"
   }
 ];
 
