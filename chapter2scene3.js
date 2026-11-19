@@ -89,11 +89,13 @@ let princessEmoteTimer = null;
 
 function positionEmotesNow() {
   if (knight && knightEmote) {
-    knightEmote.style.left = (kX + 60) + 'px';
+    const clampedKX = Math.max(30, Math.min(window.innerWidth - 30, kX + 60));
+    knightEmote.style.left = clampedKX + 'px';
     knightEmote.style.top = (kY - 165) + 'px';
   }
   if (princess && princessEmote) {
-    princessEmote.style.left = (pX + 48) + 'px';
+    const clampedPX = Math.max(30, Math.min(window.innerWidth - 30, pX + 48));
+    princessEmote.style.left = clampedPX + 'px';
     princessEmote.style.top = (pY - 125) + 'px';
   }
 }
@@ -206,7 +208,7 @@ function renderNode() {
   }
 
   // Only show (Knight's Internal) when the Knight isn't actively speaking a line
-  if (node.thought && !isPrincess ? false : Boolean(node.thought)) {
+  if (node.thought && isPrincess) {
     thoughtBox.textContent = node.thought;
     thoughtBox.classList.remove('hidden');
   } else {
@@ -244,7 +246,7 @@ function renderNode() {
     navControls.style.display = 'none';
     dialogueHint.textContent = "Choose a response (click or press [1] / [2] / [3])";
 
-    node.choices.forEach((choice, idx) => {
+    node.choices.forEach((choice) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'choice-btn';
@@ -317,7 +319,7 @@ const openingFootstepsNodes = [
   {
     speaker: "Knight",
     text: "“Footsteps beyond the hall... yet no watchman is assigned to the garden at this hour. I had best see who walks there.”",
-    knightEmote: "👂"
+    knightEmote: "👀"
   }
 ];
 
@@ -340,12 +342,12 @@ const gardenEncounterNodes = [
     text: "“Spare me the rehearsed caution. I grow weary of seeing you only as a shadow behind iron. Tonight, you will escort me—a proper outing, away from courtly eyes.”",
     thought: "(Knight's Internal) A... an outing? With me? My wits have deserted me entirely.",
     princessEmote: "😘",
-    knightEmote: "😵‍💫",
+    knightEmote: "😮",
     choices: [
       {
         label: "1. (Flustered & devoted) \"An outing... with me? Your Highness, I—yes. Name the hour, and I shall be there.\"",
         knightEmote: "😳",
-        princessEmote: "😍",
+        princessEmote: "🥰",
         followUp: [
           {
             speaker: "Princess",
@@ -358,8 +360,8 @@ const gardenEncounterNodes = [
       },
       {
         label: "2. (Trying to sound composed, failing) \"If it is your wish, Your Highness... I accept the charge. Strictly as your guard, of course.\"",
-        knightEmote: "💧",
-        princessEmote: "😏",
+        knightEmote: "💦",
+        princessEmote: "😊",
         followUp: [
           {
             speaker: "Princess",
@@ -380,7 +382,7 @@ const gardenEncounterNodes = [
             text: "“Careful, Knight... speak with that much conviction and I may hold you to far more than a simple walk tonight.”",
             thought: "(Knight's Internal) Her eyes held mine a second too long. My heart is hammering against my ribs.",
             princessEmote: "✨",
-            knightEmote: "❤️‍🔥"
+            knightEmote: "❤️"
           }
         ]
       }
@@ -395,7 +397,7 @@ const gardenEncounterNodes = [
   {
     speaker: "Knight",
     text: "“Yet tread lightly near the royal wing: the King will be in his chambers then. The guards withdraw solely to grant him privacy—one careless sound could undo us both.”",
-    knightEmote: "😏",
+    knightEmote: "🤫",
     princessEmote: "😏"
   },
   {
@@ -414,7 +416,7 @@ const princessTurnBackKissNodes = [
     thought: "(Knight's Internal) She turned back... and left a kiss right there! My head is spinning!",
     princessEmote: "💋",
     princessEmoteDuration: 300,
-    knightEmote: "😵‍💫",
+    knightEmote: "😳",
     knightEmoteDuration: 300
   }
 ];
@@ -428,7 +430,7 @@ const knightAfterDeparturePanicNodes = [
   {
     speaker: "Knight",
     text: "“My helm feels far too warm for sanity! No watch in the library or chambers, the King in his rooms... if we are discovered, my head will roll before dawn!”",
-    knightEmote: "😳💧"
+    knightEmote: "😰"
   }
 ];
 
@@ -636,7 +638,7 @@ function gameLoop() {
         pX += 4.2;
         pMoving = true;
 
-        if (pX >= window.innerWidth * 0.8) {
+        if (pX >= window.innerWidth * 0.75) {
           princessTurnedBack = true;
           princessWalkingAway = false;
           pMoving = false;
