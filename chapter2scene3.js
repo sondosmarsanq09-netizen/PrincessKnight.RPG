@@ -32,7 +32,7 @@ let princessActive = false;
 let princessWalkingToRightSpot = false;
 let princessReadyToTalk = false;
 let princessWalkingAway = false;
-let princessPartingLineShown = false;
+let princessTurnedBack = false;
 
 let inDialogue = false;
 let sceneComplete = false;
@@ -42,7 +42,7 @@ let isFadingOut = false;
 // 0 = In Dragon's Hall: player walks Knight right to the Royal Garden
 // 1 = In Royal Garden: Princess walks slightly onto the right side, calls Knight over -> "Talk to Princess" task
 // 2 = Multi-choice flirting, date ask, (Knight's Internal) & sneak-out plan
-// 3 = Princess walks away to the right with a parting line, then Knight panics once she's out of sight -> Chapter ends
+// 3 = Princess walks away, turns back with a kiss (💋 lingering +0.3s), exits -> Knight panics & Chapter ends
 let sceneStage = 0;
 let canInteract = false;
 let popupTimeout = null;
@@ -98,7 +98,7 @@ function positionEmotesNow() {
   }
 }
 
-function triggerEmote(target, symbol) {
+function triggerEmote(target, symbol, extraDurationMs = 0) {
   const el = target === 'knight' ? knightEmote : princessEmote;
   if (!el) return;
 
@@ -107,19 +107,22 @@ function triggerEmote(target, symbol) {
     return;
   }
 
+  const totalMs = 1800 + extraDurationMs;
+  const animName = extraDurationMs > 0 ? 'emote-pulse-fade-lingering' : 'emote-pulse-fade';
+
   positionEmotesNow();
   el.textContent = symbol;
   el.classList.remove('hidden');
   el.style.animation = 'none';
   void el.offsetWidth;
-  el.style.animation = 'emote-pulse-fade 1.8s ease-out forwards';
+  el.style.animation = `${animName} ${totalMs}ms ease-out forwards`;
 
   if (target === 'knight') {
     clearTimeout(knightEmoteTimer);
-    knightEmoteTimer = setTimeout(() => el.classList.add('hidden'), 1800);
+    knightEmoteTimer = setTimeout(() => el.classList.add('hidden'), totalMs);
   } else {
     clearTimeout(princessEmoteTimer);
-    princessEmoteTimer = setTimeout(() => el.classList.add('hidden'), 1800);
+    princessEmoteTimer = setTimeout(() => el.classList.add('hidden'), totalMs);
   }
 }
 
@@ -193,15 +196,17 @@ function renderNode() {
   dialogueBox.classList.remove('hidden');
 
   const speakerLower = (node.speaker || '').toLowerCase();
+  const isPrincess = speakerLower.includes('princess');
   dialogueSpeaker.className = 'dialogue-speaker';
-  if (speakerLower.includes('princess')) {
+  if (isPrincess) {
     dialogueSpeaker.classList.add('princess-speak');
     dialogueSpeaker.textContent = 'Princess';
   } else {
     dialogueSpeaker.textContent = 'Knight';
   }
 
-  if (node.thought) {
+  // Only show (Knight's Internal) when the Knight isn't actively speaking a line
+  if (node.thought && !isPrincess ? false : Boolean(node.thought)) {
     thoughtBox.textContent = node.thought;
     thoughtBox.classList.remove('hidden');
   } else {
@@ -210,8 +215,12 @@ function renderNode() {
 
   dialogueText.textContent = node.text;
 
-  if (node.knightEmote !== undefined) triggerEmote('knight', node.knightEmote);
-  if (node.princessEmote !== undefined) triggerEmote('princess', node.princessEmote);
+  if (node.knightEmote !== undefined) {
+    triggerEmote('knight', node.knightEmote, node.knightEmoteDuration || 0);
+  }
+  if (node.princessEmote !== undefined) {
+    triggerEmote('princess', node.princessEmote, node.princessEmoteDuration || 0);
+  }
 
   if (princessActive && princess && !princessWalkingAway) {
     if (pX < kX) {
@@ -257,8 +266,12 @@ function selectChoice(choice) {
   waitingForChoice = false;
   dialogueChoices.classList.add('hidden');
 
-  if (choice.knightEmote !== undefined) triggerEmote('knight', choice.knightEmote);
-  if (choice.princessEmote !== undefined) triggerEmote('princess', choice.princessEmote);
+  if (choice.knightEmote !== undefined) {
+    triggerEmote('knight', choice.knightEmote, choice.knightEmoteDuration || 0);
+  }
+  if (choice.princessEmote !== undefined) {
+    triggerEmote('princess', choice.princessEmote, choice.princessEmoteDuration || 0);
+  }
 
   if (choice.followUp && choice.followUp.length > 0) {
     currentNodes.splice(nodeIndex + 1, 0, ...choice.followUp);
@@ -303,8 +316,7 @@ function closeDialogue() {
 const openingFootstepsNodes = [
   {
     speaker: "Knight",
-    text: "“Footsteps beyond the hall... yet no watchman is assigned to the garden at this hour.”",
-    thought: "(Knight's Internal) Soft steps against the flagstones. Too quiet for a patrol... I ought to look.",
+    text: "“Footsteps beyond the hall... yet no watchman is assigned to the garden at this hour. I had best see who walks there.”",
     knightEmote: "👂"
   }
 ];
@@ -319,8 +331,7 @@ const gardenEncounterNodes = [
   },
   {
     speaker: "Knight",
-    text: "“Your Highness—forgive me. I heard movement and came at once to ensure no harm had—”",
-    thought: "(Knight's Internal) My tongue nearly tripped over my own gorget. She is just a few paces away, and the evening air around her is ruining my focus.",
+    text: "“Your Highness—forgive me. I heard movement and came at once to ensure no harm had befallen the garden.”",
     knightEmote: "🥵",
     princessEmote: "✨"
   },
@@ -378,14 +389,12 @@ const gardenEncounterNodes = [
   {
     speaker: "Knight",
     text: "“Listen closely, Your Highness. Slip away late tonight—no guards are posted in the chambers or the library at that hour, so your path will be clear.”",
-    thought: "(Knight's Internal) Pull yourself together, Knight. Think clearly—if she slips out tonight, every step must be timed.",
     knightEmote: "🤯",
     princessEmote: "😉"
   },
   {
     speaker: "Knight",
     text: "“Yet tread lightly near the royal wing: the King will be in his chambers then. The guards withdraw solely to grant him privacy—one careless sound could undo us both.”",
-    thought: "(Knight's Internal) No guards in the chambers or library for the King's privacy... one wrong step near his door and we're finished.",
     knightEmote: "🤫",
     princessEmote: "😏"
   },
@@ -398,27 +407,27 @@ const gardenEncounterNodes = [
   }
 ];
 
-const princessPartingNodes = [
+const princessTurnBackKissNodes = [
   {
     speaker: "Princess",
-    text: "“Do not miss me too much before tonight, Knight.”",
-    thought: "(Knight's Internal) Did she just—?! My mind is still spinning from that parting look!",
+    text: "“Do not miss me too sorely before tonight, Sir Knight.”",
+    thought: "(Knight's Internal) She turned back... and left a kiss right there! My head is spinning!",
     princessEmote: "💋",
-    knightEmote: "😵‍💫"
+    princessEmoteDuration: 300,
+    knightEmote: "😵‍💫",
+    knightEmoteDuration: 300
   }
 ];
 
 const knightAfterDeparturePanicNodes = [
   {
     speaker: "Knight",
-    text: "“Y-Your Highness—! Wait, tonight?! By the gods, I just agreed to sneak the Princess past the King's chambers!”",
-    thought: "(Knight's Internal) PANIC. Full panic. No guards in the library or chambers, the King right there in his rooms, and she's walking away smiling like nothing happened!",
+    text: "“Good heavens... by the oath of my blade, she kissed me! A royal kiss—right in the garden—and now she expects me to spirit her past the King's chambers tonight!”",
     knightEmote: "😱"
   },
   {
     speaker: "Knight",
-    text: "“I need a moment to breathe before the night falls... if we get caught, it's over for both of us!”",
-    thought: "(Knight's Internal) Deep breaths... deep breaths. Tonight is going to be the longest night of my life.",
+    text: "“My helm feels far too warm for sanity! No watch in the library or chambers, the King in his rooms... if we are discovered, my head will roll before dawn!”",
     knightEmote: "🤯"
   }
 ];
@@ -442,7 +451,7 @@ function enterRoyalGardenFromLeft() {
   princessWalkingToRightSpot = true;
   princessReadyToTalk = false;
   princessWalkingAway = false;
-  princessPartingLineShown = false;
+  princessTurnedBack = false;
   pX = window.innerWidth + 60;
   pY = 560;
   princess.classList.remove('hidden');
@@ -460,13 +469,13 @@ function triggerEncounterDialogue() {
   if (interactionPrompt) interactionPrompt.classList.add('hidden');
 
   startDialogue(gardenEncounterNodes, () => {
-    // Princess walks away to the right and delivers her parting line
+    // Princess starts walking away to the right, then turns back to leave the kiss
     sceneStage = 3;
     princessWalkingAway = true;
-    princessPartingLineShown = false;
+    princessTurnedBack = false;
     princess.classList.remove('facing-left');
     princess.classList.add('facing-right');
-    objectiveText.textContent = "Objective: Watch the Princess head back...";
+    objectiveText.textContent = "Objective: Watch the Princess take her leave...";
   });
 }
 
@@ -619,31 +628,45 @@ function gameLoop() {
       }
     }
 
-    // Princess walks off to the right after arranging the plan
+    // Princess walks away to the right, turns back to leave the kiss, then finishes exiting
     if (currentArea === 'garden' && princessActive && princessWalkingAway) {
-      princess.classList.remove('facing-left');
-      princess.classList.add('facing-right');
-      pX += 4.2;
-      pMoving = true;
+      if (!princessTurnedBack) {
+        princess.classList.remove('facing-left');
+        princess.classList.add('facing-right');
+        pX += 4.2;
+        pMoving = true;
 
-      if (!princessPartingLineShown && pX >= window.innerWidth * 0.8) {
-        princessPartingLineShown = true;
-        princessWalkingAway = false;
-        pMoving = false;
-        startDialogue(princessPartingNodes, () => {
-          princessWalkingAway = true;
-        });
-      } else if (pX > window.innerWidth + 120) {
-        // Out of sight -> Knight panics and Chapter 2 ends
-        princessActive = false;
-        princessWalkingAway = false;
-        princess.classList.add('hidden');
-        sceneComplete = true;
-        objectiveText.textContent = "✅ Chapter 2 Complete — A midnight plan is set...";
+        if (pX >= window.innerWidth * 0.8) {
+          princessTurnedBack = true;
+          princessWalkingAway = false;
+          pMoving = false;
+          // Turn back toward the Knight to leave the kiss
+          princess.classList.remove('facing-right');
+          princess.classList.add('facing-left');
+          startDialogue(princessTurnBackKissNodes, () => {
+            princess.classList.remove('facing-left');
+            princess.classList.add('facing-right');
+            princessWalkingAway = true;
+          });
+        }
+      } else {
+        princess.classList.remove('facing-left');
+        princess.classList.add('facing-right');
+        pX += 4.2;
+        pMoving = true;
 
-        startDialogue(knightAfterDeparturePanicNodes, () => {
-          fadeOutEndOfChapter();
-        });
+        if (pX > window.innerWidth + 120) {
+          // Out of sight -> Knight panics and Chapter 2 ends
+          princessActive = false;
+          princessWalkingAway = false;
+          princess.classList.add('hidden');
+          sceneComplete = true;
+          objectiveText.textContent = "✅ Chapter 2 Complete — A midnight plan is set...";
+
+          startDialogue(knightAfterDeparturePanicNodes, () => {
+            fadeOutEndOfChapter();
+          });
+        }
       }
     }
   }
