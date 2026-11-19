@@ -1,15 +1,13 @@
 window.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('transition-overlay');
-  setTimeout(() => {
-    overlay.classList.remove('active');
-  }, 100);
+  if (overlay) overlay.classList.remove('active');
 });
 
 const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const locationBanner = document.getElementById('location-banner');
 const objectiveText = document.getElementById('objective');
-const arrowRight = document.getElementById('arrow-right'); // Balcony indicator on the right
+const arrowRight = document.getElementById('arrow-right');
 const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
@@ -55,11 +53,11 @@ window.addEventListener('keydown', (e) => {
     if (taskStage === 0) {
       taskStage = 1;
       showActionFeedback("Bed Made Neatly!");
-      objectiveText.textContent = "Objective: Brush your hair at the vanity dresser.";
+      objectiveText.textContent = "Objective: Brush your hair at the vanity dresser (left).";
     } else if (taskStage === 1) {
       taskStage = 2;
       showActionFeedback("Hair Brushed Smoothly!");
-      objectiveText.textContent = "Objective: Put on your favorite perfume.";
+      objectiveText.textContent = "Objective: Put on your favorite perfume at the table (middle).";
     } else if (taskStage === 2) {
       taskStage = 3;
       showActionFeedback("Perfume Applied!");
@@ -129,12 +127,12 @@ function gameLoop() {
         currentArea = 'room';
         gameBody.style.backgroundImage = "url('PrincessRoom.png')";
         locationBanner.textContent = "📍 Princess's Chambers";
-        pX = window.innerWidth - 150; // Returns to the right side of the room
+        pX = window.innerWidth - 150;
       }
       if (pX > window.innerWidth - 130) pX = window.innerWidth - 130;
     }
 
-    // --- TASK LOGIC & MARKERS ---
+    // --- TASK LOGIC & MARKERS (Re-mapped to correct room coordinates) ---
     canInteract = false;
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
@@ -142,10 +140,10 @@ function gameLoop() {
     if (taskStage === 0) {
       if (currentArea === 'room') {
         taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '200px'; 
+        taskMarker.style.left = '1050px'; // Bed on the right side of the screen
         taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 200) < 50) {
+        if (Math.abs(pX - 1050) < 60) {
           canInteract = true;
           interactionPrompt.textContent = "Press [E] to Make Bed";
           interactionPrompt.classList.remove('hidden');
@@ -155,10 +153,10 @@ function gameLoop() {
     else if (taskStage === 1) {
       if (currentArea === 'room') {
         taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '500px';
+        taskMarker.style.left = '150px'; // Vanity / Mirror on the left side
         taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 500) < 50) {
+        if (Math.abs(pX - 150) < 60) {
           canInteract = true;
           interactionPrompt.textContent = "Press [E] to Brush Hair";
           interactionPrompt.classList.remove('hidden');
@@ -168,10 +166,10 @@ function gameLoop() {
     else if (taskStage === 2) {
       if (currentArea === 'room') {
         taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '800px';
+        taskMarker.style.left = '580px'; // Table / Perfume in the middle
         taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 800) < 50) {
+        if (Math.abs(pX - 580) < 60) {
           canInteract = true;
           interactionPrompt.textContent = "Press [E] to Apply Perfume";
           interactionPrompt.classList.remove('hidden');
@@ -184,7 +182,7 @@ function gameLoop() {
         taskMarker.style.left = '600px';
         taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 600) < 50) {
+        if (Math.abs(pX - 600) < 60) {
           canInteract = true;
           interactionPrompt.textContent = "Press [E] to Look Over Balcony Railing";
           interactionPrompt.classList.remove('hidden');
