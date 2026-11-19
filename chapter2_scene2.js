@@ -1,6 +1,7 @@
 function removeOverlay() {
   const overlay = document.getElementById('transition-overlay');
   if (overlay) {
+    overlay.innerHTML = '';
     overlay.classList.remove('active');
   }
 }
@@ -22,7 +23,8 @@ let pY = 570; // Planted firmly on the floor
 const speed = 6;
 let currentArea = 'room';
 let inDialogue = false;
-let isTransitioning = false;
+let isFadingOut = false;
+let questEnded = false;
 
 // Task System State
 let taskStage = 0;
@@ -48,17 +50,17 @@ function showActionFeedback(message) {
   }, 2200);
 }
 
-// Smooth black fade-out into Chapter 2, Scene 3
+// Pure black fade-out into chapter2scene3.html (no text)
 function fadeToScene3(nextSceneUrl = 'chapter2scene3.html') {
-  if (isTransitioning) return;
-  isTransitioning = true;
-  inDialogue = true;
+  if (isFadingOut) return;
+  isFadingOut = true;
 
   taskMarker.classList.add('hidden');
   interactionPrompt.classList.add('hidden');
 
   const overlay = document.getElementById('transition-overlay');
   if (overlay) {
+    overlay.innerHTML = '';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         overlay.classList.add('active');
@@ -83,7 +85,7 @@ window.addEventListener('keydown', (e) => {
   keys[k] = true;
 
   // Press 'E' to interact when near the task marker
-  if (k === 'e' && canInteract && !inDialogue && !isTransitioning) {
+  if (k === 'e' && canInteract && !inDialogue && !questEnded && !isFadingOut) {
     if (taskStage === 0) {
       taskStage = 1;
       showActionFeedback("Bed Made Neatly!");
@@ -98,10 +100,13 @@ window.addEventListener('keydown', (e) => {
       objectiveText.textContent = "🔊 Objective: Strange noises are coming from outside... Head right to the Balcony to investigate!";
     } else if (taskStage === 3) {
       taskStage = 4;
+      questEnded = true;
+      taskMarker.classList.add('hidden');
+      interactionPrompt.classList.add('hidden');
       showActionFeedback("💕 Oh! It's him... down in the Royal Garden!");
       objectiveText.textContent = "✅ Princess spotted her favorite knight! Scene complete.";
 
-      // Quest ends immediately; player can still move around for ~2.5s before fading out
+      // Quest ends immediately; ~2.5s to walk around before pure black fade to Scene 3
       setTimeout(() => {
         fadeToScene3('chapter2scene3.html');
       }, 2500);
@@ -116,7 +121,7 @@ window.addEventListener('keyup', (e) => {
 function gameLoop() {
   let pMoving = false;
 
-  if (!inDialogue && !isTransitioning) {
+  if (!inDialogue && !isFadingOut) {
     if (keys['w']) {
       pY -= speed;
       pMoving = true;
@@ -176,52 +181,54 @@ function gameLoop() {
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
 
-    if (taskStage === 0) {
-      if (currentArea === 'room') {
-        taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '1050px'; // Bed on the right side of the screen
-        taskMarker.style.top = '520px';
+    if (!questEnded) {
+      if (taskStage === 0) {
+        if (currentArea === 'room') {
+          taskMarker.classList.remove('hidden');
+          taskMarker.style.left = '1050px'; // Bed on the right side of the screen
+          taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 1050) < 60) {
-          canInteract = true;
-          interactionPrompt.textContent = "Press [E] to Make Bed";
-          interactionPrompt.classList.remove('hidden');
+          if (Math.abs(pX - 1050) < 60) {
+            canInteract = true;
+            interactionPrompt.textContent = "Press [E] to Make Bed";
+            interactionPrompt.classList.remove('hidden');
+          }
         }
-      }
-    } else if (taskStage === 1) {
-      if (currentArea === 'room') {
-        taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '150px'; // Vanity / Mirror on the left side
-        taskMarker.style.top = '520px';
+      } else if (taskStage === 1) {
+        if (currentArea === 'room') {
+          taskMarker.classList.remove('hidden');
+          taskMarker.style.left = '150px'; // Vanity / Mirror on the left side
+          taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 150) < 60) {
-          canInteract = true;
-          interactionPrompt.textContent = "Press [E] to Brush Hair";
-          interactionPrompt.classList.remove('hidden');
+          if (Math.abs(pX - 150) < 60) {
+            canInteract = true;
+            interactionPrompt.textContent = "Press [E] to Brush Hair";
+            interactionPrompt.classList.remove('hidden');
+          }
         }
-      }
-    } else if (taskStage === 2) {
-      if (currentArea === 'room') {
-        taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '580px'; // Table / Perfume in the middle
-        taskMarker.style.top = '520px';
+      } else if (taskStage === 2) {
+        if (currentArea === 'room') {
+          taskMarker.classList.remove('hidden');
+          taskMarker.style.left = '580px'; // Table / Perfume in the middle
+          taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 580) < 60) {
-          canInteract = true;
-          interactionPrompt.textContent = "Press [E] to Apply Perfume";
-          interactionPrompt.classList.remove('hidden');
+          if (Math.abs(pX - 580) < 60) {
+            canInteract = true;
+            interactionPrompt.textContent = "Press [E] to Apply Perfume";
+            interactionPrompt.classList.remove('hidden');
+          }
         }
-      }
-    } else if (taskStage === 3) {
-      if (currentArea === 'balcony') {
-        taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '600px';
-        taskMarker.style.top = '520px';
+      } else if (taskStage === 3) {
+        if (currentArea === 'balcony') {
+          taskMarker.classList.remove('hidden');
+          taskMarker.style.left = '600px';
+          taskMarker.style.top = '520px';
 
-        if (Math.abs(pX - 600) < 60) {
-          canInteract = true;
-          interactionPrompt.textContent = "Press [E] to Look Over Balcony Railing";
-          interactionPrompt.classList.remove('hidden');
+          if (Math.abs(pX - 600) < 60) {
+            canInteract = true;
+            interactionPrompt.textContent = "Press [E] to Look Over Balcony Railing";
+            interactionPrompt.classList.remove('hidden');
+          }
         }
       }
     }
