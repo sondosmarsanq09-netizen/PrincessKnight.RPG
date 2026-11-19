@@ -81,17 +81,20 @@ function gameLoop() {
       if (gameBody) gameBody.style.backgroundImage = "url('NightimeBalcony.png')";
       if (locationBanner) locationBanner.textContent = "📍 Royal Balcony";
       if (objectiveText) objectiveText.textContent = "Free Roam: On the Balcony. Head left back into your room.";
-      pX = 20;
+      // Spawn right by the arched doorway/gate onto the balcony instead of the far-left corner
+      pX = Math.round(window.innerWidth * 0.18);
+      pY = Math.max(pY, 540);
     }
   } else if (currentArea === 'balcony') {
     if (arrowRight) arrowRight.style.display = 'none';
 
-    if (pX <= 10) {
+    // Walk back through the left archway/threshold to return to the room
+    if (pX <= Math.round(window.innerWidth * 0.12)) {
       currentArea = 'room';
       if (gameBody) gameBody.style.backgroundImage = "url('NightimePrincessRoom.png')";
       if (locationBanner) locationBanner.textContent = "📍 Princess's Chambers";
       if (objectiveText) objectiveText.textContent = "Free Roam: Walk around your room or head right to the Balcony.";
-      pX = window.innerWidth - 150;
+      pX = window.innerWidth - 170;
     }
     if (pX > window.innerWidth - 130) pX = window.innerWidth - 130;
   }
