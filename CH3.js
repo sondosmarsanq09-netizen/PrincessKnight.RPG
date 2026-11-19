@@ -78,7 +78,7 @@ function gameLoop() {
 
     if (pX >= window.innerWidth - 130) {
       currentArea = 'balcony';
-      if (gameBody) gameBody.style.backgroundImage = "url('Balcony.png')";
+      if (gameBody) gameBody.style.backgroundImage = "url('NightimeBalcony.png')";
       if (locationBanner) locationBanner.textContent = "📍 Royal Balcony";
       if (objectiveText) objectiveText.textContent = "Free Roam: On the Balcony. Head left back into your room.";
       pX = 20;
@@ -88,7 +88,7 @@ function gameLoop() {
 
     if (pX <= 10) {
       currentArea = 'room';
-      if (gameBody) gameBody.style.backgroundImage = "url('PrincessRoom.png')";
+      if (gameBody) gameBody.style.backgroundImage = "url('NightimePrincessRoom.png')";
       if (locationBanner) locationBanner.textContent = "📍 Princess's Chambers";
       if (objectiveText) objectiveText.textContent = "Free Roam: Walk around your room or head right to the Balcony.";
       pX = window.innerWidth - 150;
