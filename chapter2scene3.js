@@ -25,9 +25,9 @@ const dialogueText = document.getElementById('dialogue-text');
 const dialogueChoices = document.getElementById('dialogue-choices');
 const dialogueHint = document.getElementById('dialogue-hint');
 
-// Starting Knight near the left side of the garden (where we left him by the dragon)
+// Starting Knight on the garden path (scaled 4.8x like Scene 1)
 let kX = 240;
-let kY = 570;
+let kY = 460;
 const speed = 6;
 
 // Princess starts off-screen / right side and walks in autonomously
@@ -49,7 +49,6 @@ let sceneStage = 0;
 let canInteract = false;
 let popupTimeout = null;
 
-// Emotion badge helper above character heads
 function setEmotion(target, emoji) {
   const badge = target === 'knight' ? knightEmotion : princessEmotion;
   if (!badge) return;
@@ -66,8 +65,8 @@ function setEmotion(target, emoji) {
 
 function updateEmotionPositions() {
   if (knight && knightEmotion && !knightEmotion.classList.contains('hidden')) {
-    knightEmotion.style.left = (kX + 48) + 'px';
-    knightEmotion.style.top = (kY - 125) + 'px';
+    knightEmotion.style.left = (kX + 60) + 'px';
+    knightEmotion.style.top = (kY - 190) + 'px';
   }
   if (princess && princessEmotion && !princessEmotion.classList.contains('hidden')) {
     princessEmotion.style.left = (pX + 48) + 'px';
@@ -78,8 +77,8 @@ function updateEmotionPositions() {
 function showActionFeedback(message) {
   if (!actionPopup) return;
   actionPopup.textContent = "✨ " + message + " ✨";
-  actionPopup.style.left = (kX + 45) + 'px';
-  actionPopup.style.top = (kY - 25) + 'px';
+  actionPopup.style.left = (kX + 60) + 'px';
+  actionPopup.style.top = (kY - 40) + 'px';
 
   actionPopup.classList.remove('hidden');
   actionPopup.style.animation = 'none';
@@ -128,7 +127,6 @@ function renderNode() {
   if (node.knightEmotion !== undefined) setEmotion('knight', node.knightEmotion);
   if (node.princessEmotion !== undefined) setEmotion('princess', node.princessEmotion);
 
-  // Face characters toward each other if both are visible
   if (princessActive && princess) {
     if (pX < kX) {
       knight.classList.add('facing-left');
@@ -279,7 +277,7 @@ function triggerPrincessEntrance() {
   princessWalkingToMeet = true;
   princess.classList.remove('hidden');
   pX = window.innerWidth + 80;
-  pY = Math.max(480, Math.min(window.innerHeight - 110, kY));
+  pY = 570;
   objectiveText.textContent = "Objective: Something—or someone—is approaching in the garden...";
 }
 
@@ -345,8 +343,8 @@ function gameLoop() {
       kY += speed;
       kMoving = true;
     }
-    if (kY < 480) kY = 480;
-    if (kY > window.innerHeight - 110) kY = window.innerHeight - 110;
+    if (kY < 350) kY = 350;
+    if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
 
     if (keys['a'] || keys['arrowleft']) {
       kX -= speed;
@@ -366,8 +364,8 @@ function gameLoop() {
 
     // Princess autonomous movement (never controlled by player)
     if (princessActive && princessWalkingToMeet && !princessBumped) {
-      const targetX = Math.max(360, Math.min(window.innerWidth * 0.55, kX + 130));
-      const targetY = kY;
+      const targetX = Math.max(360, Math.min(window.innerWidth * 0.55, kX + 140));
+      const targetY = 570;
 
       const dx = targetX - pX;
       const dy = targetY - pY;
@@ -389,7 +387,7 @@ function gameLoop() {
       }
 
       // Bump into the Knight around the middle of the garden
-      if (Math.hypot(pX - kX, pY - kY) < 75) {
+      if (Math.abs(pX - kX) < 85 && Math.abs((pY - 110) - kY) < 120) {
         princessBumped = true;
         princessWalkingToMeet = false;
         pMoving = false;
@@ -411,7 +409,7 @@ function gameLoop() {
       taskMarker.style.left = fountainX + 'px';
       taskMarker.style.top = fountainY + 'px';
 
-      if (Math.hypot(kX - fountainX, kY - fountainY) < 85) {
+      if (Math.hypot(kX - fountainX, (kY + 70) - fountainY) < 100) {
         canInteract = true;
         interactionPrompt.textContent = "Press [E] to Check the Fountain";
         interactionPrompt.classList.remove('hidden');
