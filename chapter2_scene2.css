@@ -132,13 +132,13 @@ body {
   z-index: 200;
   white-space: nowrap;
   pointer-events: none;
-  animation: float-above-princess 1.6s ease-out forwards;
+  animation: float-above-princess 2.2s ease-out forwards;
 }
 
 @keyframes float-above-princess {
   0% { opacity: 0; transform: translate(-50%, 0) scale(0.8); }
-  25% { opacity: 1; transform: translate(-50%, -25px) scale(1.05); }
-  75% { opacity: 1; transform: translate(-50%, -35px) scale(1); }
+  18% { opacity: 1; transform: translate(-50%, -25px) scale(1.05); }
+  78% { opacity: 1; transform: translate(-50%, -35px) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -55px) scale(0.9); }
 }
 
