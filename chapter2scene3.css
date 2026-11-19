@@ -16,9 +16,43 @@ body {
   font-family: monospace;
 }
 
-/* --- CHARACTER CONTAINERS & SPRITE LAYERS --- */
-.character,
-#knight,
+/* --- KNIGHT SPRITE (EXACT SCENE 1 SETUP) --- */
+#knight {
+  width: 120px;
+  height: 80px;
+  position: absolute;
+  image-rendering: pixelated;
+  transform: scale(4.8);
+  transform-origin: center bottom;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  background-color: transparent !important;
+  background-image: url('Idle.png');
+  background-size: 1000% 100%;
+  background-repeat: no-repeat;
+  animation: knight-anim 0.7s steps(9) infinite;
+  z-index: 6;
+}
+
+#knight.facing-left {
+  transform: scale(-4.8, 4.8);
+}
+
+#knight.facing-right {
+  transform: scale(4.8, 4.8);
+}
+
+#knight.running {
+  background-image: url('Run.png');
+  animation: knight-anim 0.9s steps(9) infinite;
+}
+
+@keyframes knight-anim {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+/* --- PRINCESS CONTAINER & MULTI-LAYER SPRITE --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -26,25 +60,17 @@ body {
   image-rendering: pixelated;
   transform: scale(3.5);
   transform-origin: center bottom;
-}
-
-#knight {
-  z-index: 6;
-}
-
-#princess {
   z-index: 5;
 }
 
-.facing-right {
+#princess.facing-right {
   transform: scaleX(-3.5) scaleY(3.5);
 }
 
-.facing-left {
+#princess.facing-left {
   transform: scale(3.5, 3.5);
 }
 
-#knight .layer,
 #princess .layer {
   position: absolute;
   top: 0;
@@ -58,7 +84,6 @@ body {
   animation: idle 0.8s steps(5) infinite;
 }
 
-#knight.running .layer,
 #princess.running .layer {
   animation: walk 0.8s steps(8) infinite;
 }
