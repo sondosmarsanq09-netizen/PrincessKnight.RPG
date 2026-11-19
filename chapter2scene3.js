@@ -145,8 +145,8 @@ function showActionFeedback(message, targetX = kX + 60, targetY = kY - 185) {
   }, 2200);
 }
 
-// Pure black fade-out to end Chapter 2 (no text)
-function fadeOutEndOfChapter(nextUrl = null) {
+// Pure black fade-out to end Chapter 2 and transition into Chapter 3
+function fadeOutEndOfChapter(nextUrl = 'CH3.html') {
   if (isFadingOut) return;
   isFadingOut = true;
 
@@ -169,6 +169,8 @@ function fadeOutEndOfChapter(nextUrl = null) {
         window.location.href = nextUrl;
       }, 1500);
     }
+  } else if (nextUrl) {
+    window.location.href = nextUrl;
   }
 }
 
@@ -658,7 +660,7 @@ function gameLoop() {
         pMoving = true;
 
         if (pX > window.innerWidth + 120) {
-          // Out of sight -> Knight panics and Chapter 2 ends
+          // Out of sight -> Knight panics and Chapter 2 ends into Chapter 3
           princessActive = false;
           princessWalkingAway = false;
           princess.classList.add('hidden');
@@ -666,7 +668,7 @@ function gameLoop() {
           objectiveText.textContent = "✅ Chapter 2 Complete — A midnight plan is set...";
 
           startDialogue(knightAfterDeparturePanicNodes, () => {
-            fadeOutEndOfChapter();
+            fadeOutEndOfChapter('CH3.html');
           });
         }
       }
