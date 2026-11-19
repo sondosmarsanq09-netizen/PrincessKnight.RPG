@@ -18,24 +18,16 @@ const arrowRight = document.getElementById('arrow-right');
 const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
-const knightEmotion = document.getElementById('knight-emotion');
-const princessEmotion = document.getElementById('princess-emotion');
 
-const dialogueBox = document.getElementById('dialogue-box');
-const dialogueSpeaker = document.getElementById('dialogue-speaker');
-const dialogueText = document.getElementById('dialogue-text');
-const dialogueChoices = document.getElementById('dialogue-choices');
-const dialogueHint = document.getElementById('dialogue-hint');
-
-// Knight spawns in Dragon's Hall (matching Scene 1 floor coordinates)
+// Knight spawns in Dragon's Hall on the ground line
 let kX = 400;
-let kY = 450;
+let kY = 560;
 const speed = 6;
 let currentArea = 'hall'; // 'hall' -> 'garden'
 
-// Princess autonomous state in the garden
+// Princess autonomous state in the garden (feet aligned on the ground)
 let pX = window.innerWidth + 120;
-let pY = 570;
+let pY = 560;
 let princessActive = false;
 let princessWalkingToCenter = false;
 let princessReadyToTalk = false;
@@ -52,32 +44,86 @@ let sceneStage = 0;
 let canInteract = false;
 let popupTimeout = null;
 
-function setEmotion(target, emoji) {
-  const badge = target === 'knight' ? knightEmotion : princessEmotion;
-  if (!badge) return;
+// --- CHAPTER 1 STYLE EMOTE BUBBLES & INNER THOUGHT BAR ---
+const knightEmote = document.createElement('div');
+knightEmote.className = 'emote-bubble hidden';
+document.body.appendChild(knightEmote);
 
-  if (!emoji) {
-    badge.classList.add('hidden');
-    badge.textContent = '';
+const princessEmote = document.createElement('div');
+princessEmote.className = 'emote-bubble hidden';
+document.body.appendChild(princessEmote);
+
+const thoughtBox = document.createElement('div');
+thoughtBox.id = 'thought-box';
+thoughtBox.className = 'subtle-thought hidden';
+document.body.appendChild(thoughtBox);
+
+const dialogueBox = document.getElementById('dialogue-box');
+const dialogueSpeaker = document.getElementById('dialogue-speaker');
+const dialogueText = document.getElementById('dialogue-text');
+const dialogueChoices = document.getElementById('dialogue-choices');
+const dialogueHint = document.getElementById('dialogue-hint');
+
+// Add Chapter 1 style prev/next arrows inside dialogue-box if not already there
+const navControls = document.createElement('div');
+navControls.className = 'nav-controls';
+const prevArrow = document.createElement('button');
+prevArrow.type = 'button';
+prevArrow.className = 'nav-arrow';
+prevArrow.title = 'Previous Line';
+prevArrow.textContent = '◀';
+const nextArrow = document.createElement('button');
+nextArrow.type = 'button';
+nextArrow.className = 'nav-arrow';
+nextArrow.title = 'Next Line';
+nextArrow.textContent = '▶';
+navControls.appendChild(prevArrow);
+navControls.appendChild(nextArrow);
+if (dialogueBox) dialogueBox.appendChild(navControls);
+
+let knightEmoteTimer = null;
+let princessEmoteTimer = null;
+
+function triggerEmote(target, symbol) {
+  const el = target === 'knight' ? knightEmote : princessEmote;
+  if (!el) return;
+
+  if (!symbol) {
+    el.classList.add('hidden');
     return;
   }
 
-  badge.textContent = emoji;
-  badge.classList.remove('hidden');
+  el.textContent = symbol;
+  el.classList.remove('hidden');
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'pop-fade 1.8s ease-out forwards';
+
+  if (target === 'knight') {
+    clearTimeout(knightEmoteTimer);
+    knightEmoteTimer = setTimeout(() => el.classList.add('hidden'), 1800);
+  } else {
+    clearTimeout(princessEmoteTimer);
+    princessEmoteTimer = setTimeout(() => el.classList.add('hidden'), 1800);
+  }
 }
 
-function updateEmotionPositions() {
-  if (knight && knightEmotion && !knightEmotion.classList.contains('hidden')) {
-    knightEmotion.style.left = (kX + 60) + 'px';
-    knightEmotion.style.top = (kY - 190) + 'px';
+function updateEmotePositions() {
+  if (knight && knightEmote && !knightEmote.classList.contains('hidden')) {
+    knightEmote.style.left = (kX + 60) + 'px';
+    knightEmote.style.top = (kY - 195) + 'px';
   }
-  if (princess && princessEmotion && !princessEmotion.classList.contains('hidden')) {
-    princessEmotion.style.left = (pX + 48) + 'px';
-    princessEmotion.style.top = (pY - 125) + 'px';
+  if (princess && princessEmotionSync()) {
+    princessEmote.style.left = (pX + 48) + 'px';
+    princessEmote.style.top = (pY - 135) + 'px';
   }
 }
 
-function showActionFeedback(message, targetX = kX + 60, targetY = kY - 40) {
+function princessEmotionSync() {
+  return princessEmote && !princessEmote.classList.contains('hidden');
+}
+
+function showActionFeedback(message, targetX = kX + 60, targetY = kY - 170) {
   if (!actionPopup) return;
   actionPopup.textContent = "✨ " + message + " ✨";
   actionPopup.style.left = targetX + 'px';
@@ -94,7 +140,7 @@ function showActionFeedback(message, targetX = kX + 60, targetY = kY - 40) {
   }, 2200);
 }
 
-// --- DIALOGUE ENGINE WITH MULTI-CHOICE & INNER MONOLOGUE ---
+// --- DIALOGUE ENGINE WITH MULTI-CHOICE, INNER MONOLOGUE & ARROWS ---
 let currentNodes = [];
 let nodeIndex = 0;
 let waitingForChoice = false;
@@ -118,17 +164,29 @@ function renderNode() {
   }
 
   dialogueBox.classList.remove('hidden');
-  if (node.isMonologue) {
-    dialogueBox.classList.add('monologue');
+
+  // Speaker label styling matching Chapter 1
+  const speakerLower = (node.speaker || '').toLowerCase();
+  dialogueSpeaker.className = 'dialogue-speaker';
+  if (speakerLower.includes('princess')) {
+    dialogueSpeaker.classList.add('princess-speak');
+    dialogueSpeaker.textContent = 'Princess';
   } else {
-    dialogueBox.classList.remove('monologue');
+    dialogueSpeaker.textContent = 'Knight';
   }
 
-  dialogueSpeaker.textContent = node.speaker;
+  // Inner monologue uses Chapter 1's dark italic thought bar above the box
+  if (node.thought) {
+    thoughtBox.textContent = node.thought;
+    thoughtBox.classList.remove('hidden');
+  } else {
+    thoughtBox.classList.add('hidden');
+  }
+
   dialogueText.textContent = node.text;
 
-  if (node.knightEmotion !== undefined) setEmotion('knight', node.knightEmotion);
-  if (node.princessEmotion !== undefined) setEmotion('princess', node.princessEmotion);
+  if (node.knightEmote !== undefined) triggerEmote('knight', node.knightEmote);
+  if (node.princessEmote !== undefined) triggerEmote('princess', node.princessEmote);
 
   if (princessActive && princess) {
     if (pX < kX) {
@@ -148,10 +206,13 @@ function renderNode() {
 
   if (node.choices && node.choices.length > 0) {
     waitingForChoice = true;
-    dialogueHint.textContent = "Click an option or press [1] / [2]";
+    dialogueChoices.classList.remove('hidden');
+    navControls.style.display = 'none';
+    dialogueHint.textContent = "Choose a response (click or press [1] / [2])";
 
     node.choices.forEach((choice, idx) => {
       const btn = document.createElement('button');
+      btn.type = 'button';
       btn.className = 'choice-btn';
       btn.textContent = `${idx + 1}. ${choice.label}`;
       btn.addEventListener('click', () => selectChoice(choice));
@@ -159,16 +220,20 @@ function renderNode() {
     });
   } else {
     waitingForChoice = false;
-    dialogueHint.textContent = "Press [E] or [Space] to continue";
+    dialogueChoices.classList.add('hidden');
+    navControls.style.display = 'flex';
+    prevArrow.disabled = nodeIndex === 0;
+    dialogueHint.textContent = "Press [E] / [Space] or ▶ to continue";
   }
 }
 
 function selectChoice(choice) {
   if (!waitingForChoice) return;
   waitingForChoice = false;
+  dialogueChoices.classList.add('hidden');
 
-  if (choice.knightEmotion !== undefined) setEmotion('knight', choice.knightEmotion);
-  if (choice.princessEmotion !== undefined) setEmotion('princess', choice.princessEmotion);
+  if (choice.knightEmote !== undefined) triggerEmote('knight', choice.knightEmote);
+  if (choice.princessEmote !== undefined) triggerEmote('princess', choice.princessEmote);
 
   if (choice.followUp && choice.followUp.length > 0) {
     currentNodes.splice(nodeIndex + 1, 0, ...choice.followUp);
@@ -187,9 +252,20 @@ function advanceDialogue() {
   }
 }
 
+function rewindDialogue() {
+  if (!inDialogue || waitingForChoice || nodeIndex <= 0) return;
+  nodeIndex--;
+  renderNode();
+}
+
+prevArrow.addEventListener('click', rewindDialogue);
+nextArrow.addEventListener('click', advanceDialogue);
+
 function closeDialogue() {
   dialogueBox.classList.add('hidden');
+  thoughtBox.classList.add('hidden');
   dialogueChoices.innerHTML = '';
+  dialogueChoices.classList.add('hidden');
   inDialogue = false;
   waitingForChoice = false;
 
@@ -201,100 +277,101 @@ function closeDialogue() {
 // --- STORY DIALOGUE SCRIPTS ---
 const openingFootstepsNodes = [
   {
-    speaker: "Knight (Inner Monologue)",
-    text: "Footsteps... someone is outside. I should go check who's in the garden.",
-    knightEmotion: "👂",
-    isMonologue: true
+    speaker: "Knight",
+    text: "“Footsteps outside... someone is out in the garden. Let me head over and see who it is.”",
+    thought: "(Internal) Quiet steps on stone—probably not a patrol. I should check it out.",
+    knightEmote: "👂"
   }
 ];
 
 const gardenEncounterNodes = [
   {
     speaker: "Princess",
-    text: "There you are! I spotted you coming out from the hall. Were you patrolling... or looking for me?",
-    princessEmotion: "😏",
-    knightEmotion: "😳"
-  },
-  {
-    speaker: "Knight (Inner Monologue)",
-    text: "IT'S THE PRINCESS. Why does she smell like vanilla and roses—and why is my armor suddenly way too tight?!",
-    knightEmotion: "🥵",
-    princessEmotion: "💖",
-    isMonologue: true
+    text: "“There you are! I spotted you coming out from the hall. Were you patrolling... or looking for me?”",
+    thought: "(Internal) SHE WALKED RIGHT TOWARD ME. Why does she smell like vanilla and roses—and why is my armor suddenly way too tight?!",
+    princessEmote: "😏",
+    knightEmote: "🥵"
   },
   {
     speaker: "Princess",
-    text: "Tell me, Sir Knight... do you ever take that heavy armor off to actually take me out on a real date?",
-    princessEmotion: "😘",
-    knightEmotion: "😵‍💫",
+    text: "“Tell me, Sir Knight... do you ever take that heavy armor off to actually take me out on a real date?”",
+    thought: "(Internal) My heart is hammering louder than a war drum. Keep it together!",
+    princessEmote: "😘",
+    knightEmote: "😵‍💫",
     choices: [
       {
         label: "Flustered & honest: \"Y-Yes. Whenever you say the word, Your Highness—I mean, whenever.\"",
-        knightEmotion: "😳",
-        princessEmotion: "🥰",
+        knightEmote: "😳",
+        princessEmote: "🥰",
         followUp: [
           {
             speaker: "Princess",
-            text: "Ooh, 'whenever I say the word'? Careful, or I might hold you to that tonight.",
-            princessEmotion: "🔥",
-            knightEmotion: "💓"
+            text: "“Ooh, 'whenever I say the word'? Careful, or I might hold you to that tonight.”",
+            thought: "(Internal) She said 'tonight.' My entire nervous system just short-circuited.",
+            princessEmote: "🔥",
+            knightEmote: "💓"
           }
         ]
       },
       {
         label: "Try to play it cool (and fail): \"A date? Right. Tactical moonlight reconnaissance. Very official.\"",
-        knightEmotion: "🫠",
-        princessEmotion: "🤭"
+        knightEmote: "🫠",
+        princessEmote: "🤭",
+        followUp: [
+          {
+            speaker: "Princess",
+            text: "“'Tactical moonlight reconnaissance'? Honestly, that's the cutest excuse you've ever tried.”",
+            thought: "(Internal) Smooth, really smooth. Why did I say 'tactical'?!",
+            princessEmote: "💕",
+            knightEmote: "😳"
+          }
+        ]
       }
     ]
   },
   {
-    speaker: "Knight (Inner Monologue)",
-    text: "BRAIN. Reboot. Okay, okay—stay calm! If we sneak out, we have to time it right so nobody spots us!",
-    knightEmotion: "🤯",
-    isMonologue: true
+    speaker: "Knight",
+    text: "“Listen—meet me when the clock chimes late. There won't be any guards posted in the chambers or the library then, so you can slip out safely.”",
+    thought: "(Internal) Brain reboot! Okay, stay calm—if we sneak out, we have to time it right so nobody spots us.",
+    knightEmote: "🤯",
+    princessEmote: "✨"
   },
   {
     speaker: "Knight",
-    text: "Listen—meet me when the clock chimes late. There won't be any guards posted in the chambers or the library then, so you can slip out safely.",
-    knightEmotion: "😌",
-    princessEmotion: "✨"
-  },
-  {
-    speaker: "Knight",
-    text: "One catch though: the King will be in his chambers at that hour—that's why there are no guards around, to keep his privacy. Keep quiet and stay out of sight.",
-    knightEmotion: "🤫",
-    princessEmotion: "😉"
+    text: "“One catch though: the King will be in his chambers at that hour—that's why there are no guards around, to keep his privacy. Keep quiet and stay out of sight.”",
+    thought: "(Internal) No guards in the chambers or library for the King's privacy... one wrong sound and we're busted.",
+    knightEmote: "🤫",
+    princessEmote: "😉"
   },
   {
     speaker: "Princess",
-    text: "No guards in the library and chambers, and the King wants his privacy... sounds like the easiest royal escape ever. Don't keep me waiting, Knight.",
-    princessEmotion: "💘",
-    knightEmotion: "❤️‍🔥"
+    text: "“No guards in the library and chambers, and the King wants his privacy... sounds like the easiest royal escape ever. Don't keep me waiting, Knight.”",
+    thought: "(Internal) She's smiling like she already has this whole night planned. I'm so doomed—and so in.",
+    princessEmote: "💘",
+    knightEmote: "❤️‍🔥"
   }
 ];
 
 function enterRoyalGardenFromLeft() {
   currentArea = 'garden';
   sceneStage = 1;
-  setEmotion('knight', null);
 
   if (arrowRight) arrowRight.style.display = 'none';
   if (gameBody) gameBody.style.backgroundImage = "url('RoyalGarden.png')";
   if (locationBanner) locationBanner.textContent = "📍 Royal Garden";
 
-  // Knight walks in from the left edge (Dragon's Hall side)
-  kX = 60;
-  kY = 450;
+  // Knight enters from the left on the garden ground line
+  kX = 70;
+  kY = 560;
   knight.classList.add('facing-right');
   knight.classList.remove('facing-left');
 
-  // Princess walks in autonomously from the right side toward the middle of the garden
+  // Princess enters autonomously from the right side toward the middle of the garden
   princessActive = true;
   princessWalkingToCenter = true;
   princessReadyToTalk = false;
   pX = window.innerWidth + 60;
-  pY = 570;
+  pY = 560;
   princess.classList.remove('hidden');
   princess.classList.add('facing-left');
   princess.classList.remove('facing-right');
@@ -312,12 +389,8 @@ function triggerEncounterDialogue() {
   startDialogue(gardenEncounterNodes, () => {
     sceneComplete = true;
     objectiveText.textContent = "✅ Date arranged! Keep quiet around the King's chambers...";
-    setEmotion('knight', '💘');
-    setEmotion('princess', '💕');
-    setTimeout(() => {
-      setEmotion('knight', null);
-      setEmotion('princess', null);
-    }, 2200);
+    triggerEmote('knight', '💘');
+    triggerEmote('princess', '💕');
   });
 }
 
@@ -327,9 +400,7 @@ if (locationBanner) locationBanner.textContent = "📍 Dragon's Hall";
 if (objectiveText) objectiveText.textContent = "Objective: Footsteps outside—walk right to check who is in the Royal Garden.";
 
 setTimeout(() => {
-  startDialogue(openingFootstepsNodes, () => {
-    setEmotion('knight', null);
-  });
+  startDialogue(openingFootstepsNodes);
 }, 300);
 
 // --- CONTROLS ---
@@ -379,8 +450,12 @@ function gameLoop() {
       kY += speed;
       kMoving = true;
     }
-    if (kY < 350) kY = 350;
-    if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
+
+    // Clamp vertical movement to ground/walkable path (prevents walking over hedges or above ground line)
+    const minWalkY = currentArea === 'garden' ? 465 : 440;
+    const maxWalkY = Math.min(window.innerHeight - 55, 620);
+    if (kY < minWalkY) kY = minWalkY;
+    if (kY > maxWalkY) kY = maxWalkY;
 
     if (keys['a'] || keys['arrowleft']) {
       kX -= speed;
@@ -432,9 +507,9 @@ function gameLoop() {
         pMoving = false;
 
         // She spots her Knight and calls him over!
-        setEmotion('princess', '💕');
-        setEmotion('knight', '❗');
-        showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 90);
+        triggerEmote('princess', '💕');
+        triggerEmote('knight', '❗');
+        showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 125);
         objectiveText.textContent = "Objective: Talk to the Princess.";
       }
     }
@@ -445,7 +520,6 @@ function gameLoop() {
     if (interactionPrompt) interactionPrompt.classList.add('hidden');
 
     if (currentArea === 'garden' && sceneStage === 1 && princessReadyToTalk) {
-      // Face Princess toward Knight as he walks over
       if (kX <= pX) {
         princess.classList.add('facing-left');
         princess.classList.remove('facing-right');
@@ -457,10 +531,9 @@ function gameLoop() {
       if (taskMarker) {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = (pX + 35) + 'px';
-        taskMarker.style.top = (pY - 120) + 'px';
+        taskMarker.style.top = (pY - 140) + 'px';
       }
 
-      // Generous interaction radius around the Princess so it never feels finicky
       if (Math.abs(kX - pX) < 180) {
         canInteract = true;
         if (interactionPrompt) {
@@ -483,7 +556,7 @@ function gameLoop() {
     princess.classList.toggle('running', pMoving);
   }
 
-  updateEmotionPositions();
+  updateEmotePositions();
   requestAnimationFrame(gameLoop);
 }
 
