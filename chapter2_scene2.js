@@ -20,8 +20,9 @@ const actionPopup = document.getElementById('action-popup');
 let pX = 400;
 let pY = 570; // Planted firmly on the floor
 const speed = 6;
-let currentArea = 'room'; 
+let currentArea = 'room';
 let inDialogue = false;
+let isTransitioning = false;
 
 // Task System State
 let taskStage = 0;
@@ -33,7 +34,6 @@ function showActionFeedback(message) {
   if (!actionPopup) return;
 
   actionPopup.textContent = "✨ " + message + " ✨";
-  
   actionPopup.style.left = (pX + 40) + 'px';
   actionPopup.style.top = (pY - 20) + 'px';
 
@@ -41,11 +41,36 @@ function showActionFeedback(message) {
   actionPopup.style.animation = 'none';
   actionPopup.offsetHeight; // trigger reflow
   actionPopup.style.animation = 'float-above-princess 2.2s ease-out forwards';
-  
+
   clearTimeout(popupTimeout);
   popupTimeout = setTimeout(() => {
     actionPopup.classList.add('hidden');
   }, 2200);
+}
+
+// Smooth black fade-out into Chapter 2, Scene 3
+function fadeToScene3(nextSceneUrl = 'chapter2scene3.html') {
+  if (isTransitioning) return;
+  isTransitioning = true;
+  inDialogue = true;
+
+  taskMarker.classList.add('hidden');
+  interactionPrompt.classList.add('hidden');
+
+  const overlay = document.getElementById('transition-overlay');
+  if (overlay) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlay.classList.add('active');
+      });
+    });
+
+    setTimeout(() => {
+      window.location.href = nextSceneUrl;
+    }, 1500); // Matches the 1.5s CSS fade transition
+  } else {
+    window.location.href = nextSceneUrl;
+  }
 }
 
 const keys = {};
@@ -58,7 +83,7 @@ window.addEventListener('keydown', (e) => {
   keys[k] = true;
 
   // Press 'E' to interact when near the task marker
-  if (k === 'e' && canInteract && !inDialogue) {
+  if (k === 'e' && canInteract && !inDialogue && !isTransitioning) {
     if (taskStage === 0) {
       taskStage = 1;
       showActionFeedback("Bed Made Neatly!");
@@ -75,6 +100,11 @@ window.addEventListener('keydown', (e) => {
       taskStage = 4;
       showActionFeedback("💕 Oh! It's him... down in the Royal Garden!");
       objectiveText.textContent = "✅ Princess spotted her favorite knight! Scene complete.";
+
+      // Quest ends immediately; player can still move around for ~2.5s before fading out
+      setTimeout(() => {
+        fadeToScene3('chapter2scene3.html');
+      }, 2500);
     }
   }
 });
@@ -86,7 +116,7 @@ window.addEventListener('keyup', (e) => {
 function gameLoop() {
   let pMoving = false;
 
-  if (!inDialogue) {
+  if (!inDialogue && !isTransitioning) {
     if (keys['w']) {
       pY -= speed;
       pMoving = true;
@@ -95,7 +125,7 @@ function gameLoop() {
       pY += speed;
       pMoving = true;
     }
-    
+
     if (pY < 480) pY = 480;
     if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
@@ -158,8 +188,7 @@ function gameLoop() {
           interactionPrompt.classList.remove('hidden');
         }
       }
-    } 
-    else if (taskStage === 1) {
+    } else if (taskStage === 1) {
       if (currentArea === 'room') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '150px'; // Vanity / Mirror on the left side
@@ -171,8 +200,7 @@ function gameLoop() {
           interactionPrompt.classList.remove('hidden');
         }
       }
-    } 
-    else if (taskStage === 2) {
+    } else if (taskStage === 2) {
       if (currentArea === 'room') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '580px'; // Table / Perfume in the middle
@@ -184,8 +212,7 @@ function gameLoop() {
           interactionPrompt.classList.remove('hidden');
         }
       }
-    }
-    else if (taskStage === 3) {
+    } else if (taskStage === 3) {
       if (currentArea === 'balcony') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '600px';
