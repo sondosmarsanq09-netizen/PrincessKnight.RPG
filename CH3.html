@@ -1,28 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Test CH3</title>
-  <style>
-    body {
-      margin: 0;
-      width: 100vw;
-      height: 100vh;
-      background: #2b1d38 url('PrincessRoom.png') center/cover no-repeat;
-      color: #fff;
-      font-family: monospace;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter 3</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="CH3.css">
 </head>
-<body>
-  <div id="test-msg">CH3.html is loading!</div>
-  <script>
-    console.log("CH3 inline script ran!");
-    document.getElementById("test-msg").textContent = "CH3.html + JS are both working!";
-  </script>
+<body id="game-body">
+  <!-- Pure Black Fade Transition Overlay -->
+  <div id="transition-overlay" class="fade-overlay"></div>
+
+  <!-- UI & Free-Roam Banner -->
+  <div id="location-banner">📍 Princess's Chambers</div>
+  <div id="objective">Free Roam: Walk around your room or head right to the Balcony.</div>
+
+  <!-- Edge Navigation Indicator (Balcony to the right) -->
+  <div id="arrow-right" class="edge-indicator right">
+    <span class="area-label">Balcony</span>
+    <span class="arrow-icon">▶</span>
+  </div>
+
+  <!-- Princess Sprite (Exact Chapter 2 Scene 2 Layer Structure) -->
+  <div id="princess" class="facing-right">
+    <div class="layer" style="background-image: url('Female%20Skin1.png');"></div>
+    <div class="layer" style="background-image: url('Boots.png');"></div>
+    <div class="layer" style="background-image: url('Skirt.png');"></div>
+    <div class="layer" style="background-image: url('Corset%20v2.png');"></div>
+    <div class="layer" style="background-image: url('Female%20Hair3.png');"></div>
+  </div>
+
+  <script src="CH3.js"></script>
 </body>
 </html>
