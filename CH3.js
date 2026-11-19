@@ -3,6 +3,8 @@ function removeOverlay() {
   if (overlay) {
     overlay.innerHTML = '';
     overlay.classList.remove('active');
+    overlay.style.opacity = '0';
+    overlay.style.pointerEvents = 'none';
   }
 }
 
@@ -149,8 +151,11 @@ function fadeOutChapter(nextUrl = null) {
   const overlay = document.getElementById('transition-overlay');
   if (overlay) {
     overlay.innerHTML = '';
+    overlay.style.transition = 'opacity 1.5s ease-in-out';
+    overlay.style.pointerEvents = 'auto';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
         overlay.classList.add('active');
       });
     });
@@ -203,13 +208,10 @@ function renderNode() {
     dialogueSpeaker.textContent = node.speaker || 'Narrator';
   }
 
-  // Only show thought bar when the active character is not speaking out loud
+  // Only show thought bar when neither Princess nor King is speaking out loud
   if (node.thought && !isPrincess && !isKing) {
     thoughtBox.textContent = node.thought;
     thoughtBox.classList.remove('hidden');
-  } else if (node.thought && (isKing || isPrincess)) {
-    // Allow internal thoughts on non-spoken cues, or keep clean when speaking
-    thoughtBox.classList.add('hidden');
   } else {
     thoughtBox.classList.add('hidden');
   }
