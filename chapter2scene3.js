@@ -33,12 +33,12 @@ let kY = 450;
 const speed = 6;
 let currentArea = 'hall'; // 'hall' -> 'garden'
 
-// Princess starts off-screen on the right and walks into the garden autonomously
+// Princess autonomous state in the garden
 let pX = window.innerWidth + 120;
 let pY = 570;
 let princessActive = false;
-let princessWalkingToMeet = false;
-let princessBumped = false;
+let princessWalkingToCenter = false;
+let princessReadyToTalk = false;
 
 let inDialogue = false;
 let sceneComplete = false;
@@ -46,9 +46,10 @@ let isFadingOut = false;
 
 // Scene Stages:
 // 0 = In Dragon's Hall: player walks Knight right to the Royal Garden
-// 1 = In Royal Garden: Knight enters from left, Princess walks in from right & bumps into him
+// 1 = In Royal Garden: Princess walks to center, calls Knight over -> "Talk to Princess" task
 // 2 = Multi-choice flirting, date ask, inner monologue & sneak-out plan
 let sceneStage = 0;
+let canInteract = false;
 let popupTimeout = null;
 
 function setEmotion(target, emoji) {
@@ -76,11 +77,11 @@ function updateEmotionPositions() {
   }
 }
 
-function showActionFeedback(message) {
+function showActionFeedback(message, targetX = kX + 60, targetY = kY - 40) {
   if (!actionPopup) return;
   actionPopup.textContent = "✨ " + message + " ✨";
-  actionPopup.style.left = (kX + 60) + 'px';
-  actionPopup.style.top = (kY - 40) + 'px';
+  actionPopup.style.left = targetX + 'px';
+  actionPopup.style.top = targetY + 'px';
 
   actionPopup.classList.remove('hidden');
   actionPopup.style.animation = 'none';
@@ -209,15 +210,21 @@ const openingFootstepsNodes = [
 
 const gardenEncounterNodes = [
   {
+    speaker: "Princess",
+    text: "There you are! I spotted you coming out from the hall. Were you patrolling... or looking for me?",
+    princessEmotion: "😏",
+    knightEmotion: "😳"
+  },
+  {
     speaker: "Knight (Inner Monologue)",
-    text: "SHE WALKED RIGHT INTO ME. Why does she smell like vanilla and roses—and why is my armor suddenly way too tight?!",
+    text: "IT'S THE PRINCESS. Why does she smell like vanilla and roses—and why is my armor suddenly way too tight?!",
     knightEmotion: "🥵",
     princessEmotion: "💖",
     isMonologue: true
   },
   {
     speaker: "Princess",
-    text: "Careful, you're catching me off guard. Tell me... do you ever take that heavy armor off to actually take me out on a real date?",
+    text: "Tell me, Sir Knight... do you ever take that heavy armor off to actually take me out on a real date?",
     princessEmotion: "😘",
     knightEmotion: "😵‍💫",
     choices: [
@@ -282,21 +289,26 @@ function enterRoyalGardenFromLeft() {
   knight.classList.add('facing-right');
   knight.classList.remove('facing-left');
 
-  // Princess walks in autonomously from the right side of the screen
+  // Princess walks in autonomously from the right side toward the middle of the garden
   princessActive = true;
-  princessWalkingToMeet = true;
-  princessBumped = false;
-  pX = window.innerWidth + 80;
+  princessWalkingToCenter = true;
+  princessReadyToTalk = false;
+  pX = window.innerWidth + 60;
   pY = 570;
   princess.classList.remove('hidden');
   princess.classList.add('facing-left');
   princess.classList.remove('facing-right');
 
-  objectiveText.textContent = "Objective: Walk into the garden to see who is there...";
+  objectiveText.textContent = "Objective: Someone is in the garden...";
 }
 
 function triggerEncounterDialogue() {
   sceneStage = 2;
+  princessReadyToTalk = false;
+  canInteract = false;
+  if (taskMarker) taskMarker.classList.add('hidden');
+  if (interactionPrompt) interactionPrompt.classList.add('hidden');
+
   startDialogue(gardenEncounterNodes, () => {
     sceneComplete = true;
     objectiveText.textContent = "✅ Date arranged! Keep quiet around the King's chambers...";
@@ -337,6 +349,14 @@ window.addEventListener('keydown', (e) => {
       if (k === '2' && btns[1]) btns[1].click();
     } else if (k === 'e' || k === ' ') {
       advanceDialogue();
+    }
+    return;
+  }
+
+  // Talk to Princess once she calls the Knight over
+  if (k === 'e' && canInteract && !isFadingOut) {
+    if (currentArea === 'garden' && sceneStage === 1 && princessReadyToTalk) {
+      triggerEncounterDialogue();
     }
   }
 });
@@ -396,37 +416,57 @@ function gameLoop() {
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
     }
 
-    // Princess autonomous movement from right toward the middle of the garden
-    if (currentArea === 'garden' && princessActive && princessWalkingToMeet && !princessBumped) {
-      const targetX = Math.max(420, Math.min(window.innerWidth * 0.55, kX + 130));
-      const targetY = 570;
+    // Princess walks from right to the middle of the garden, stops, and calls the Knight over
+    if (currentArea === 'garden' && princessActive && princessWalkingToCenter) {
+      const centerStopX = window.innerWidth * 0.54;
 
-      const dx = targetX - pX;
-      const dy = targetY - pY;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist > 6) {
-        const pSpeed = 4.2;
-        pX += (dx / dist) * pSpeed;
-        pY += (dy / dist) * pSpeed;
+      if (pX > centerStopX) {
+        pX -= 4.5;
         pMoving = true;
+        princess.classList.add('facing-left');
+        princess.classList.remove('facing-right');
+      } else {
+        pX = centerStopX;
+        princessWalkingToCenter = false;
+        princessReadyToTalk = true;
+        pMoving = false;
 
-        if (dx < 0) {
-          princess.classList.add('facing-left');
-          princess.classList.remove('facing-right');
-        } else {
-          princess.classList.add('facing-right');
-          princess.classList.remove('facing-left');
-        }
+        // She spots her Knight and calls him over!
+        setEmotion('princess', '💕');
+        setEmotion('knight', '❗');
+        showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 90);
+        objectiveText.textContent = "Objective: Talk to the Princess.";
+      }
+    }
+
+    // --- TASK MARKER & PROMPT FOR "TALK TO PRINCESS" ---
+    canInteract = false;
+    if (taskMarker) taskMarker.classList.add('hidden');
+    if (interactionPrompt) interactionPrompt.classList.add('hidden');
+
+    if (currentArea === 'garden' && sceneStage === 1 && princessReadyToTalk) {
+      // Face Princess toward Knight as he walks over
+      if (kX <= pX) {
+        princess.classList.add('facing-left');
+        princess.classList.remove('facing-right');
+      } else {
+        princess.classList.add('facing-right');
+        princess.classList.remove('facing-left');
       }
 
-      // Bump into the Knight around the middle of the garden
-      if (Math.abs(pX - kX) < 85 && Math.abs((pY - 110) - kY) < 120) {
-        princessBumped = true;
-        princessWalkingToMeet = false;
-        pMoving = false;
-        showActionFeedback("Bump!");
-        triggerEncounterDialogue();
+      if (taskMarker) {
+        taskMarker.classList.remove('hidden');
+        taskMarker.style.left = (pX + 35) + 'px';
+        taskMarker.style.top = (pY - 120) + 'px';
+      }
+
+      // Generous interaction radius around the Princess so it never feels finicky
+      if (Math.abs(kX - pX) < 180) {
+        canInteract = true;
+        if (interactionPrompt) {
+          interactionPrompt.textContent = "Press [E] to Talk to Princess";
+          interactionPrompt.classList.remove('hidden');
+        }
       }
     }
   }
