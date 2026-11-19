@@ -1,7 +1,12 @@
-window.addEventListener('DOMContentLoaded', () => {
+function removeOverlay() {
   const overlay = document.getElementById('transition-overlay');
-  if (overlay) overlay.classList.remove('active');
-});
+  if (overlay) {
+    overlay.classList.remove('active');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', removeOverlay);
+setTimeout(removeOverlay, 50);
 
 const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
@@ -21,9 +26,12 @@ let inDialogue = false;
 // Task System State
 let taskStage = 0;
 let canInteract = false;
+let popupTimeout = null;
 
 // Helper to show sparkling feedback floating right above the princess's head
 function showActionFeedback(message) {
+  if (!actionPopup) return;
+
   actionPopup.textContent = "✨ " + message + " ✨";
   
   actionPopup.style.left = (pX + 40) + 'px';
@@ -32,11 +40,12 @@ function showActionFeedback(message) {
   actionPopup.classList.remove('hidden');
   actionPopup.style.animation = 'none';
   actionPopup.offsetHeight; // trigger reflow
-  actionPopup.style.animation = 'float-above-princess 1.6s ease-out forwards';
+  actionPopup.style.animation = 'float-above-princess 2.2s ease-out forwards';
   
-  setTimeout(() => {
+  clearTimeout(popupTimeout);
+  popupTimeout = setTimeout(() => {
     actionPopup.classList.add('hidden');
-  }, 1600);
+  }, 2200);
 }
 
 const keys = {};
@@ -132,7 +141,7 @@ function gameLoop() {
       if (pX > window.innerWidth - 130) pX = window.innerWidth - 130;
     }
 
-    // --- TASK LOGIC & MARKERS (Re-mapped to correct room coordinates) ---
+    // --- TASK LOGIC & MARKERS ---
     canInteract = false;
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
