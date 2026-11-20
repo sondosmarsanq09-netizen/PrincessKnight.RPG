@@ -28,6 +28,10 @@ const actionPrompt = document.getElementById('action-prompt');
 const panicPrompt = document.getElementById('panic-prompt');
 const panicPromptText = document.getElementById('panic-prompt-text');
 const panicBarFill = document.getElementById('panic-bar-fill');
+const patrolAlert = document.getElementById('patrol-alert');
+const patrolText = document.getElementById('patrol-text');
+const torchSweep = document.getElementById('torch-sweep');
+const kingShadowWrap = document.getElementById('king-shadow-wrap');
 
 // Princess / Knight Dialogue Box
 const pDialogueBox = document.getElementById('princess-dialogue-box');
@@ -97,12 +101,13 @@ let patrolTimers = [];
 let patrolCount = 0;
 let pendingOutcome = null; // 'sus_panic' | 'reset_tasks' | 'normal' | 'dismiss_guards'
 let activeTask = null;
+let caughtTriggeredThisCheck = false;
 
 const ANSWER_TIME_LIMIT = 8.0;
 let answerCountdownInterval = null;
 let answerTimeLeft = ANSWER_TIME_LIMIT;
 
-// 3 Room Prep Steps + 2 Balcony Prep Steps placed right along the walkable balcony path
+// 3 Room Prep Steps + 2 Balcony Prep Steps placed right along the walkable path
 const tasks = [
   {
     id: 'pack',
@@ -117,8 +122,8 @@ const tasks = [
     id: 'love_letter',
     area: 'room',
     label: '💌 Write Love Letter',
-    xPct: 0.50,
-    y: 515,
+    xPct: 0.44,
+    y: 540,
     done: false,
     hard: false
   },
@@ -126,7 +131,7 @@ const tasks = [
     id: 'decoy',
     area: 'room',
     label: '🛏️ Bed Decoy',
-    xPct: 0.78,
+    xPct: 0.72,
     y: 555,
     done: false,
     hard: false
@@ -830,13 +835,14 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
   clearPatrolTimers();
   closeTaskModal();
 
+  caughtTriggeredThisCheck = false;
   balconyThreatActive = forceBalconyCheck;
 
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
   patrolText.textContent = balconyThreatActive
-    ? 'King heading toward the balcony!'
-    : (isKingSus ? 'Father is approaching fast...' : 'Footsteps & lantern approaching...');
+    ? 'King heading toward the balcony — press [E] to hide!'
+    : (isKingSus ? 'Father is approaching fast — press [E] to hide!' : 'Footsteps & lantern approaching — press [E] to hide!');
   torchSweep.classList.add('active');
   showEmote('!', 1600);
 
@@ -848,15 +854,16 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
 
   const checkDelay = stepGap * 3 + 300;
   patrolTimers.push(setTimeout(() => {
+    if (patrolState !== 'approaching') return;
     patrolState = 'checking';
     patrolAlert.classList.add('danger');
-    if (currentArea === 'balcony') {
-      patrolText.textContent = balconyThreatActive
-        ? 'King checking the balcony — HIDE!'
-        : 'Safe on the balcony while he checks the room';
+
+    if (currentArea === 'room' || balconyThreatActive) {
+      patrolText.textContent = 'Hide before he sees you! [E]';
     } else {
-      patrolText.textContent = 'Hide now before he spots you!';
+      patrolText.textContent = 'Safe on the balcony while he checks the room';
     }
+
     kingShadowWrap.classList.remove('hidden');
     requestAnimationFrame(() => {
       kingShadowWrap.classList.add('visible');
@@ -864,19 +871,31 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
   }, checkDelay));
 
   patrolTimers.push(setTimeout(() => {
+    if (patrolState !== 'checking') return;
     kingShadowWrap.classList.add('looking-in');
   }, checkDelay + 450));
 
+  // Brief reaction grace window (1.1s) before checking if Princess is hidden
   patrolTimers.push(setTimeout(() => {
+    if (patrolState !== 'checking' || caughtTriggeredThisCheck) return;
     kingShadowWrap.classList.add('deep-scan');
+
+    const inDangerZone = currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive);
+    if (inDangerZone && !isHiding) {
+      caughtTriggeredThisCheck = true;
+      triggerCaughtScolding();
+      return;
+    }
+
     if (currentArea === 'room') {
       patrolText.textContent = 'He\'s looking into the room — stay still!';
     } else if (balconyThreatActive) {
       patrolText.textContent = 'He\'s scanning the balcony — stay still!';
     }
-  }, checkDelay + 1600));
+  }, checkDelay + 1150));
 
   patrolTimers.push(setTimeout(() => {
+    if (patrolState !== 'checking' || caughtTriggeredThisCheck) return;
     patrolState = 'dialogue';
     pendingOutcome = 'normal';
     patrolAlert.classList.remove('danger');
@@ -893,7 +912,7 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
     dialogueChoices.classList.add('hidden');
     cardFooter.classList.remove('hidden');
     cardFooter.textContent = '[Space / E / Click] Continue';
-  }, checkDelay + 3100));
+  }, checkDelay + 2800));
 }
 
 function triggerCaughtScolding() {
@@ -908,7 +927,9 @@ function triggerCaughtScolding() {
   caughtFlash.classList.add('active');
   setTimeout(() => caughtFlash.classList.remove('active'), 650);
 
+  kingShadowWrap.classList.remove('hidden');
   kingShadowWrap.classList.add('visible', 'looking-in', 'deep-scan');
+  patrolAlert.classList.remove('hidden');
   patrolAlert.classList.add('danger');
   patrolText.textContent = 'CAUGHT! Choose carefully!';
 
@@ -957,6 +978,7 @@ function finishKingPatrol() {
   const outcome = pendingOutcome || 'normal';
   pendingOutcome = null;
   balconyThreatActive = false;
+  caughtTriggeredThisCheck = false;
 
   clearPatrolTimers();
   stopAnswerTimer();
@@ -1096,11 +1118,20 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (k === 'e' && !activeTask && !isMonologueActive && !['dialogue', 'scolding', 'scold_result'].includes(patrolState)) {
+    if (patrolState === 'approaching' || patrolState === 'checking') {
+      if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
+        isHiding = !isHiding;
+        princess.classList.toggle('hidden-in-shadows', isHiding);
+      }
+      return;
+    }
+
     const nearTask = getNearbyTask();
     if (nearTask && patrolState === 'idle') {
       openTaskModal(nearTask);
       return;
     }
+
     if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
       isHiding = !isHiding;
       princess.classList.toggle('hidden-in-shadows', isHiding);
@@ -1155,30 +1186,19 @@ function gameLoop() {
     }
   }
 
-  if (patrolState === 'checking' && !isHiding) {
-    if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
-      triggerCaughtScolding();
-    }
-  }
-
   if (pY < 480) pY = 480;
   if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
   const nearTask = getNearbyTask();
-  if (currentArea === 'balcony' && (patrolState === 'approaching' || patrolState === 'checking')) {
+  if (patrolState === 'approaching' || patrolState === 'checking') {
     actionPrompt.classList.remove('hidden');
-    if (balconyThreatActive) {
-      actionPrompt.textContent = isHiding
-        ? 'Hidden on balcony — stay still!'
-        : 'King checking balcony — hide!';
-    } else {
+    if (currentArea === 'balcony' && !balconyThreatActive) {
       actionPrompt.textContent = 'Safe on the balcony while he checks the room';
+    } else if (isHiding) {
+      actionPrompt.textContent = 'Hidden in shadows — don\'t move!';
+    } else {
+      actionPrompt.textContent = 'Hide before he sees you! [E]';
     }
-  } else if (patrolState === 'approaching' || patrolState === 'checking') {
-    actionPrompt.classList.remove('hidden');
-    actionPrompt.textContent = isHiding
-      ? 'Hidden — stay still!'
-      : 'Hide before he sees you!';
   } else if (nearTask && !activeTask && !isMonologueActive) {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = `[E] ${nearTask.label}`;
