@@ -102,7 +102,7 @@ const ANSWER_TIME_LIMIT = 8.0;
 let answerCountdownInterval = null;
 let answerTimeLeft = ANSWER_TIME_LIMIT;
 
-// 3 Room Prep Steps + 2 Balcony Prep Steps
+// 3 Room Prep Steps + 2 Balcony Prep Steps placed right along the walkable balcony path
 const tasks = [
   {
     id: 'pack',
@@ -135,8 +135,8 @@ const tasks = [
     id: 'star_click',
     area: 'balcony',
     label: '✦ Catch Stars',
-    xPct: 0.42,
-    y: 550,
+    xPct: 0.34,
+    y: 560,
     done: false,
     hard: true
   },
@@ -144,8 +144,8 @@ const tasks = [
     id: 'star_spell',
     area: 'balcony',
     label: '✨ Name the Stars',
-    xPct: 0.72,
-    y: 555,
+    xPct: 0.58,
+    y: 565,
     done: false,
     hard: true
   }
@@ -173,7 +173,6 @@ function getIncompleteTasks() {
   return tasks.filter((t) => !t.done);
 }
 
-// Royal lines fitting the King's role
 const normalRoyalLines = [
   '"Keep strict watch along the eastern corridor until daybreak. Let no one slip past."',
   '"See that every post is manned. The castle stands under royal order tonight."',
@@ -231,7 +230,7 @@ function beginGraceCountdownOnce() {
     if (patrolState === 'idle' && !allTasksFinished) {
       startKingPatrol();
     }
-  }, 30000);
+  }, 12000);
 }
 
 function queueMonologue(lines, onFinish = null, speakerLabel = 'PRINCESS') {
@@ -459,6 +458,10 @@ function updateObjectiveHUD() {
   }
 }
 
+function getTaskScreenX(task) {
+  return Math.max(120, Math.min(window.innerWidth - 160, Math.round(window.innerWidth * task.xPct)));
+}
+
 function renderTaskMarkers() {
   taskMarkersWrap.innerHTML = '';
   if (allTasksFinished) return;
@@ -467,7 +470,7 @@ function renderTaskMarkers() {
     if (t.area !== currentArea) return;
     const el = document.createElement('div');
     el.className = 'task-hotspot' + (t.hard ? ' hard' : '');
-    const safeX = Math.max(120, Math.min(window.innerWidth - 140, Math.round(window.innerWidth * t.xPct)));
+    const safeX = getTaskScreenX(t);
     const safeY = Math.max(160, Math.min(window.innerHeight - 150, t.y - 75));
     el.style.left = safeX + 'px';
     el.style.top = safeY + 'px';
@@ -481,8 +484,8 @@ function getNearbyTask() {
   const incomplete = getIncompleteTasks();
   return incomplete.find((t) => {
     if (t.area !== currentArea || t.done) return false;
-    const tx = Math.max(120, Math.min(window.innerWidth - 140, Math.round(window.innerWidth * t.xPct)));
-    return Math.abs(pX - tx) < 120 && Math.abs(pY - t.y) < 105;
+    const tx = getTaskScreenX(t);
+    return Math.abs(pX - tx) < 170 && Math.abs(pY - t.y) < 150;
   });
 }
 
@@ -493,7 +496,7 @@ function scheduleBalconyShadowBeat() {
 
   balconyAlertTimer = setTimeout(() => {
     balconyAlertTimer = null;
-    if (currentArea !== 'balcony' || isMonologueActive || activeTask || patrolState !== 'idle') return;
+    if (currentArea !== 'balcony' || activeTask || patrolState !== 'idle') return;
 
     balconyThreatActive = true;
     showEmote('!', 1600);
@@ -1033,7 +1036,7 @@ function finishKingPatrol() {
 function scheduleNextPatrol() {
   clearPatrolTimers();
   if (!patrolsUnlocked || allTasksFinished) return;
-  const intervalMs = isKingSus ? 12000 : 18000;
+  const intervalMs = isKingSus ? 10000 : 14000;
   patrolTimers.push(setTimeout(() => {
     if (patrolState === 'idle' && !allTasksFinished) {
       startKingPatrol();
