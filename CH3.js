@@ -29,7 +29,7 @@ const panicPrompt = document.getElementById('panic-prompt');
 const panicPromptText = document.getElementById('panic-prompt-text');
 const panicBarFill = document.getElementById('panic-bar-fill');
 
-// Princess / Knight Dialogue Box (Ch.2 Sc.3 style)
+// Princess / Knight Dialogue Box
 const pDialogueBox = document.getElementById('princess-dialogue-box');
 const pSpeaker = document.getElementById('p-speaker');
 const pDialogueText = document.getElementById('p-dialogue-text');
@@ -50,7 +50,7 @@ const answerTimerFill = document.getElementById('answer-timer-fill');
 const escapeMapModal = document.getElementById('escape-map-modal');
 const closeMapBtn = document.getElementById('close-map-btn');
 
-// Task Modal UI
+// Prep Modal UI
 const taskModal = document.getElementById('task-modal');
 const taskTitle = document.getElementById('task-title');
 const taskInstructions = document.getElementById('task-instructions');
@@ -65,21 +65,21 @@ let currentArea = 'room'; // 'room' <-> 'balcony'
 let isHiding = false;
 let noiseLevel = 0;
 
-// Caught / Suspicion / Panic States
+// Caught / Suspicion / Panic States (Blur ONLY happens while isPanicking after getting caught)
 let caughtCount = 0;
 let isKingSus = false;
 let isPanicking = false;
 let breathsNeeded = 0;
-const PANIC_PASSOUT_LIMIT = 8.5; // seconds before passing out if not breathed through
+const PANIC_PASSOUT_LIMIT = 8.5;
 let panicTimeLeft = PANIC_PASSOUT_LIMIT;
 let panicCountdownInterval = null;
 
-// Balcony Shadow Alert State (triggers a few seconds AFTER stepping on balcony)
+// Balcony Shadow Alert State
 let firstBalconyVisitDone = false;
 let balconyAlertTimer = null;
 let balconyThreatActive = false;
 
-// End-of-Tasks Hallway Wait & Map State
+// End-of-Prep Hallway Wait & Map State
 let allTasksFinished = false;
 let hallWaitActive = false;
 let hallWaitLeft = 12.0;
@@ -91,7 +91,7 @@ let isMonologueActive = false;
 let patrolsUnlocked = false;
 let initialGraceTimer = null;
 
-// Patrol & Task State
+// Patrol & Prep State
 let patrolState = 'idle'; // 'idle' | 'approaching' | 'checking' | 'dialogue' | 'scolding' | 'scold_result'
 let patrolTimers = [];
 let patrolCount = 0;
@@ -102,13 +102,13 @@ const ANSWER_TIME_LIMIT = 8.0;
 let answerCountdownInterval = null;
 let answerTimeLeft = ANSWER_TIME_LIMIT;
 
-// 3 Bedroom Tasks + 2 Balcony Tasks
+// 3 Room Prep Steps + 2 Balcony Prep Steps
 const tasks = [
   {
     id: 'pack',
     area: 'room',
-    label: '🎒 Pack Escape Bag',
-    xPct: 0.18,
+    label: '🎒 Pack Bag',
+    xPct: 0.22,
     y: 545,
     done: false,
     hard: false
@@ -125,8 +125,8 @@ const tasks = [
   {
     id: 'decoy',
     area: 'room',
-    label: '🛏️ Fake Bed Decoy',
-    xPct: 0.84,
+    label: '🛏️ Bed Decoy',
+    xPct: 0.78,
     y: 555,
     done: false,
     hard: false
@@ -134,18 +134,18 @@ const tasks = [
   {
     id: 'star_click',
     area: 'balcony',
-    label: '✦ Catch Falling Stars',
-    xPct: 0.55,
-    y: 555,
+    label: '✦ Catch Stars',
+    xPct: 0.42,
+    y: 550,
     done: false,
     hard: true
   },
   {
     id: 'star_spell',
     area: 'balcony',
-    label: '✨ Name the Stars Quest',
-    xPct: 0.80,
-    y: 560,
+    label: '✨ Name the Stars',
+    xPct: 0.72,
+    y: 555,
     done: false,
     hard: true
   }
@@ -169,12 +169,11 @@ function resetAllTasks() {
   updateObjectiveHUD();
 }
 
-function getVisibleTasks() {
-  const incomplete = tasks.filter((t) => !t.done);
-  return incomplete.slice(0, 2);
+function getIncompleteTasks() {
+  return tasks.filter((t) => !t.done);
 }
 
-// Royal, authoritative lines fitting the King's role
+// Royal lines fitting the King's role
 const normalRoyalLines = [
   '"Keep strict watch along the eastern corridor until daybreak. Let no one slip past."',
   '"See that every post is manned. The castle stands under royal order tonight."',
@@ -189,6 +188,7 @@ const susRoyalLines = [
 
 const caughtEncounter = {
   scold: '"Why are you still awake?! Go to bed right now!"',
+  hint: 'Hint: Pick an answer that sounds natural and won\'t make him suspect you\'re sneaking around.',
   choices: [
     {
       text: '1. "I woke up for some warm tea."',
@@ -208,11 +208,15 @@ const caughtEncounter = {
   ]
 };
 
-// --- EMOTES & DIALOGUE BOX ---
+// --- PULSE-AND-FADEOUT EMOTES (NO BOX, NO HEART, NO WATER) ---
 let emoteTimeout = null;
-function showEmote(symbol, duration = 2200) {
+function showEmote(symbol = '!', duration = 1600) {
   if (!princessEmote) return;
-  princessEmote.textContent = symbol;
+  const allowed = ['!', '...', '✦', '?'];
+  const cleanSymbol = allowed.includes(symbol) ? symbol : '!';
+  princessEmote.classList.add('hidden');
+  void princessEmote.offsetWidth;
+  princessEmote.textContent = cleanSymbol;
   princessEmote.classList.remove('hidden');
   clearTimeout(emoteTimeout);
   emoteTimeout = setTimeout(() => {
@@ -230,7 +234,7 @@ function beginGraceCountdownOnce() {
   }, 30000);
 }
 
-function queueMonologue(lines, onFinish = null, speakerLabel = '💭 PRINCESS') {
+function queueMonologue(lines, onFinish = null, speakerLabel = 'PRINCESS') {
   monologueQueue = lines.map((item) => ({ ...item, speaker: item.speaker || speakerLabel }));
   pDialogueBox._onFinish = onFinish;
   advanceMonologue();
@@ -249,7 +253,7 @@ function advanceMonologue() {
   const item = monologueQueue.shift();
   pSpeaker.textContent = item.speaker;
   pDialogueText.textContent = item.text;
-  if (item.emote) showEmote(item.emote, 2400);
+  if (item.emote) showEmote(item.emote, 1600);
   pDialogueBox.classList.remove('hidden');
 }
 
@@ -266,7 +270,7 @@ function closeEscapeMap() {
 
 closeMapBtn.addEventListener('click', closeEscapeMap);
 
-// --- PANIC ATTACK & BREATHING TIMER (Post-Catch Only; Pass Out If Timer Hits 0) ---
+// --- PANIC ATTACK & BREATHING TIMER (Post-Catch Only) ---
 function stopPanicTimer() {
   if (panicCountdownInterval) {
     clearInterval(panicCountdownInterval);
@@ -282,11 +286,11 @@ function triggerPostCatchPanic() {
 
   worldLayer.classList.add('panic-blur');
   panicStatus.classList.remove('hidden');
-  panicStatus.textContent = `💔 Panic #${caughtCount} (Slower!) • Press [B]`;
+  panicStatus.textContent = '💔 DANGER: Princess is having a panic attack — calm her down [B]!';
   panicPrompt.classList.remove('hidden');
-  panicPromptText.textContent = `😮‍💨 Gasping for air! Press [B] (${breathsNeeded} breaths) before passing out!`;
+  panicPromptText.textContent = `💔 DANGER: Panic attack! Calm her down with [B] (${breathsNeeded} breaths left) before she passes out!`;
   panicBarFill.style.width = '100%';
-  showEmote('💦', 2500);
+  showEmote('!', 1600);
 
   const tickMs = 80;
   panicCountdownInterval = setInterval(() => {
@@ -332,12 +336,12 @@ function handlePanicPassOut() {
 
   queueMonologue([
     {
-      text: 'Ugh... I couldn\'t catch my breath in time... I passed out on the floor for a bit...',
-      emote: '💦'
+      text: 'Ugh... I couldn\'t get enough air in time... I think I blacked out for a second.',
+      emote: '...'
     },
     {
-      text: 'Okay, I\'m awake again. Gotta stay calm and watch my breathing if I get scared again!',
-      emote: '...'
+      text: 'Okay, I\'m back up. Take it slow and don\'t lose it again.',
+      emote: '!'
     }
   ]);
 }
@@ -345,20 +349,19 @@ function handlePanicPassOut() {
 function performSteadyBreath() {
   if (!isPanicking) return;
   breathsNeeded--;
-  // Give a tiny breathing time cushion when pressing [B]
   panicTimeLeft = Math.min(PANIC_PASSOUT_LIMIT, panicTimeLeft + 1.1);
 
   if (breathsNeeded <= 0) {
     clearPanicState();
-    showEmote('✨', 2000);
+    showEmote('✦', 1600);
     queueMonologue([
       {
-        text: 'In... and out... okay, I\'m breathing steadily again. I didn\'t pass out!',
+        text: 'Okay... in and out. My head\'s finally clearing up.',
         emote: '...'
       }
     ]);
   } else {
-    panicPromptText.textContent = `😮‍💨 *Gasp*... keep breathing! Press [B] (${breathsNeeded} left)`;
+    panicPromptText.textContent = `💔 DANGER: Still panicking! Press [B] to calm her down (${breathsNeeded} left)`;
   }
 }
 
@@ -434,7 +437,7 @@ function addNoise(amount, reasonText) {
   const mult = isKingSus ? 1.35 : 1.0;
   noiseLevel = Math.min(100, noiseLevel + amount * mult);
   noiseBarFill.style.width = noiseLevel + '%';
-  showEmote('💦', 1600);
+  showEmote('!', 1400);
 
   if (noiseLevel >= 100 && patrolState === 'idle') {
     noiseLevel = 0;
@@ -450,22 +453,24 @@ function addNoise(amount, reasonText) {
 function updateObjectiveHUD() {
   const doneCount = tasks.filter((t) => t.done).length;
   if (allTasksFinished) {
-    objectiveText.textContent = `All ${tasks.length}/${tasks.length} tasks done! Wait in your room & check the escape map [M].`;
+    objectiveText.textContent = `Getting Ready Done! Wait for the halls to clear • Map [M]`;
   } else {
-    objectiveText.textContent = `Tasks: ${doneCount}/${tasks.length} Done • Quiet & fast!`;
+    objectiveText.textContent = `Getting Ready: ${doneCount}/${tasks.length} Done • Stay quiet!`;
   }
 }
 
 function renderTaskMarkers() {
   taskMarkersWrap.innerHTML = '';
   if (allTasksFinished) return;
-  const visible = getVisibleTasks();
-  visible.forEach((t) => {
+  const incomplete = getIncompleteTasks();
+  incomplete.forEach((t) => {
     if (t.area !== currentArea) return;
     const el = document.createElement('div');
     el.className = 'task-hotspot' + (t.hard ? ' hard' : '');
-    el.style.left = Math.round(window.innerWidth * t.xPct) + 'px';
-    el.style.top = (t.y - 75) + 'px';
+    const safeX = Math.max(120, Math.min(window.innerWidth - 140, Math.round(window.innerWidth * t.xPct)));
+    const safeY = Math.max(160, Math.min(window.innerHeight - 150, t.y - 75));
+    el.style.left = safeX + 'px';
+    el.style.top = safeY + 'px';
     el.textContent = t.label;
     taskMarkersWrap.appendChild(el);
   });
@@ -473,11 +478,11 @@ function renderTaskMarkers() {
 
 function getNearbyTask() {
   if (allTasksFinished) return null;
-  const visible = getVisibleTasks();
-  return visible.find((t) => {
+  const incomplete = getIncompleteTasks();
+  return incomplete.find((t) => {
     if (t.area !== currentArea || t.done) return false;
-    const tx = window.innerWidth * t.xPct;
-    return Math.abs(pX - tx) < 110 && Math.abs(pY - t.y) < 90;
+    const tx = Math.max(120, Math.min(window.innerWidth - 140, Math.round(window.innerWidth * t.xPct)));
+    return Math.abs(pX - tx) < 120 && Math.abs(pY - t.y) < 105;
   });
 }
 
@@ -491,18 +496,18 @@ function scheduleBalconyShadowBeat() {
     if (currentArea !== 'balcony' || isMonologueActive || activeTask || patrolState !== 'idle') return;
 
     balconyThreatActive = true;
-    showEmote('!', 2200);
+    showEmote('!', 1600);
     queueMonologue(
       [
         {
-          speaker: '⚔️ KNIGHT WATCH',
+          speaker: 'KNIGHT WATCH',
           text: 'Sire, I see shadows moving out by the balcony railing and hear faint rustling!',
           emote: '!'
         },
         {
-          speaker: '💭 PRINCESS',
-          text: 'Shoot, I\'m doomed... they\'re going to check the balcony too now. Nowhere is safe!',
-          emote: '💦'
+          speaker: 'PRINCESS',
+          text: 'Crap... I\'m doomed. They\'re gonna check the balcony too now. Nowhere\'s safe.',
+          emote: '...'
         }
       ],
       () => {
@@ -514,14 +519,13 @@ function scheduleBalconyShadowBeat() {
   }, 3500);
 }
 
-// --- HALLWAY WAIT & ESCAPE MAP AFTER ALL TASKS ---
+// --- HALLWAY WAIT & ESCAPE MAP AFTER ALL PREP IS DONE ---
 function startHallwayWaitAndMap() {
   allTasksFinished = true;
   renderTaskMarkers();
   updateObjectiveHUD();
   clearPatrolTimers();
 
-  // King announces everyone is asleep and guards can go now
   patrolState = 'dialogue';
   pendingOutcome = 'dismiss_guards';
   royalDialogueCard.classList.remove('hidden', 'scolding');
@@ -552,8 +556,8 @@ function beginHallClearTimer() {
       closeEscapeMap();
       queueMonologue([
         {
-          text: 'The halls are finally empty... I have the Knight\'s route memorized. Time to slip out to him!',
-          emote: '♥'
+          text: 'Okay, the halls look empty now. I\'ve got the route down—time to go meet him.',
+          emote: '✦'
         }
       ]);
       return;
@@ -562,7 +566,7 @@ function beginHallClearTimer() {
   }, 100);
 }
 
-// --- AMONG US STYLE MINI-TASKS ---
+// --- PREP MINI-GAMES ---
 function openTaskModal(task) {
   if (patrolState !== 'idle' || isMonologueActive || allTasksFinished) return;
   activeTask = task;
@@ -570,8 +574,8 @@ function openTaskModal(task) {
   taskBody.innerHTML = '';
 
   if (task.id === 'pack') {
-    taskTitle.textContent = '🎒 Task 1: Pack Escape Satchel';
-    taskInstructions.textContent = 'Drag all 3 items into your bag quietly!';
+    taskTitle.textContent = '🎒 Pack Bag';
+    taskInstructions.textContent = 'Drag or click all 3 things into your bag quietly.';
     let packed = 0;
     taskBody.innerHTML = `
       <div class="pack-arena">
@@ -581,7 +585,7 @@ function openTaskModal(task) {
           <div class="drag-item" draggable="true" data-item="letter">💌 Old Love Letter</div>
         </div>
         <div class="satchel-dropzone" id="satchel-zone">
-          <div>🎒 Drop items here</div>
+          <div>🎒 Drop here</div>
           <div id="pack-count">0 / 3 Packed</div>
         </div>
       </div>
@@ -620,8 +624,8 @@ function openTaskModal(task) {
       }
     });
   } else if (task.id === 'love_letter') {
-    taskTitle.textContent = '💌 Task 2: Write Love Letter';
-    taskInstructions.textContent = 'Pen an old-school love letter in order (1 → 2 → 3 → 4) without smudging!';
+    taskTitle.textContent = '💌 Write Love Letter';
+    taskInstructions.textContent = 'Write the letter in order (1 → 2 → 3 → 4) without smudging ink.';
     let nextStep = 1;
     taskBody.innerHTML = `
       <div class="rune-row">
@@ -645,8 +649,8 @@ function openTaskModal(task) {
       });
     });
   } else if (task.id === 'decoy') {
-    taskTitle.textContent = '🛏️ Task 3: Make Bed Decoy';
-    taskInstructions.textContent = 'Arrange all 3 pillows under the blanket so it looks like you\'re sleeping!';
+    taskTitle.textContent = '🛏️ Bed Decoy';
+    taskInstructions.textContent = 'Tuck the pillows and blanket so the bed looks occupied.';
     let placed = 0;
     taskBody.innerHTML = `
       <div class="decoy-grid">
@@ -668,10 +672,10 @@ function openTaskModal(task) {
   } else if (task.id === 'star_click') {
     const goal = 7;
     let caughtStars = 0;
-    taskTitle.textContent = '✦ Balcony Task: Fast-Click Starlight';
-    taskInstructions.textContent = `Click the glowing stars quickly (${goal} stars) before they drift away!`;
+    taskTitle.textContent = '✦ Balcony: Catch Stars';
+    taskInstructions.textContent = `Click the glowing stars fast (${goal} stars).`;
     taskBody.innerHTML = `
-      <div style="margin-bottom:8px;font-size:13px;color:#ffd166;" id="star-counter">Stars Gathered: 0 / ${goal}</div>
+      <div style="margin-bottom:8px;font-size:13px;color:#ffd166;" id="star-counter">Stars Caught: 0 / ${goal}</div>
       <div class="star-click-arena" id="star-arena"></div>
     `;
     const arena = document.getElementById('star-arena');
@@ -683,14 +687,12 @@ function openTaskModal(task) {
       const btn = document.createElement('button');
       btn.className = 'star-target-btn';
       btn.textContent = '✦ STAR';
-      const leftPct = 15 + Math.random() * 70;
-      const topPct = 18 + Math.random() * 64;
-      btn.style.left = leftPct + '%';
-      btn.style.top = topPct + '%';
+      btn.style.left = (15 + Math.random() * 70) + '%';
+      btn.style.top = (18 + Math.random() * 64) + '%';
       btn.addEventListener('click', () => {
         caughtStars++;
         addNoise(7);
-        counterEl.textContent = `Stars Gathered: ${caughtStars} / ${goal}`;
+        counterEl.textContent = `Stars Caught: ${caughtStars} / ${goal}`;
         if (caughtStars >= goal) {
           completeTask(task);
         } else {
@@ -705,8 +707,8 @@ function openTaskModal(task) {
     const letters = ['N', 'L', 'A', 'U', 'S', 'R'];
     let typed = '';
 
-    taskTitle.textContent = '✨ Balcony Task: Name the Stars Quest';
-    taskInstructions.textContent = 'Click the star letters in order to spell the night-sky word!';
+    taskTitle.textContent = '✨ Balcony: Name the Stars';
+    taskInstructions.textContent = 'Click the star letters in order to spell the word.';
     taskBody.innerHTML = `
       <div class="spell-target-word">SPELL: ${targetWord} &nbsp;|&nbsp; <span id="typed-preview">____</span></div>
       <div class="star-letter-grid" id="letter-grid"></div>
@@ -752,14 +754,14 @@ function completeTask(task) {
   closeTaskModal();
   renderTaskMarkers();
   updateObjectiveHUD();
-  showEmote('✨', 2200);
+  showEmote('✦', 1600);
 
   const remaining = tasks.filter((t) => !t.done).length;
   if (remaining > 0) {
     queueMonologue([
       {
-        text: `Okay, done with that one! ${remaining} left—keep moving quiet and steady!`,
-        emote: '✨'
+        text: `Good, that part's done. ${remaining} more to finish getting ready.`,
+        emote: '...'
       }
     ]);
   } else {
@@ -817,7 +819,7 @@ function handleAnswerTimeout() {
   dialogueChoices.classList.add('hidden');
   royalLine.textContent = '"Too slow! You\'re up to something! Guards—search her room and go through her stuff!"';
   cardFooter.classList.remove('hidden');
-  cardFooter.textContent = '[Space / E / Click] Out of time (Tasks resetting)...';
+  cardFooter.textContent = '[Space / E / Click] Continue';
 }
 
 function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
@@ -830,10 +832,10 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
   patrolText.textContent = balconyThreatActive
-    ? 'King heading toward the balcony! Hide [E] if out there!'
-    : (isKingSus ? 'Suspicious King approaching fast...' : 'Footsteps & lantern approaching...');
+    ? 'King heading toward the balcony!'
+    : (isKingSus ? 'Father is approaching fast...' : 'Footsteps & lantern approaching...');
   torchSweep.classList.add('active');
-  showEmote('!', 2000);
+  showEmote('!', 1600);
 
   const stepGap = isKingSus ? 430 : 550;
   triggerFootstepPulse();
@@ -847,10 +849,10 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
     patrolAlert.classList.add('danger');
     if (currentArea === 'balcony') {
       patrolText.textContent = balconyThreatActive
-        ? 'King checking the balcony! Press [E] to HIDE!'
-        : 'King checking room — safe on balcony!';
+        ? 'King checking the balcony — HIDE!'
+        : 'Safe on the balcony while he checks the room';
     } else {
-      patrolText.textContent = 'Press [E] to HIDE!';
+      patrolText.textContent = 'Hide now before he spots you!';
     }
     kingShadowWrap.classList.remove('hidden');
     requestAnimationFrame(() => {
@@ -865,9 +867,9 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
   patrolTimers.push(setTimeout(() => {
     kingShadowWrap.classList.add('deep-scan');
     if (currentArea === 'room') {
-      patrolText.textContent = 'He\'s looking in... STAY HIDDEN!';
+      patrolText.textContent = 'He\'s looking into the room — stay still!';
     } else if (balconyThreatActive) {
-      patrolText.textContent = 'King scanning the balcony! STAY HIDDEN!';
+      patrolText.textContent = 'He\'s scanning the balcony — stay still!';
     }
   }, checkDelay + 1600));
 
@@ -897,7 +899,7 @@ function triggerCaughtScolding() {
   caughtCount++;
   patrolState = 'scolding';
   pendingOutcome = null;
-  showEmote('💦', 2500);
+  showEmote('!', 1600);
 
   playCaughtSting();
   caughtFlash.classList.add('active');
@@ -905,12 +907,12 @@ function triggerCaughtScolding() {
 
   kingShadowWrap.classList.add('visible', 'looking-in', 'deep-scan');
   patrolAlert.classList.add('danger');
-  patrolText.textContent = 'CAUGHT! Pick an answer fast!';
+  patrolText.textContent = 'CAUGHT! Choose carefully!';
 
   royalDialogueCard.classList.remove('hidden', 'royal-gold');
   royalDialogueCard.classList.add('scolding');
   royalSpeaker.textContent = '👑 FURIOUS KING';
-  royalLine.textContent = caughtEncounter.scold;
+  royalLine.innerHTML = `${caughtEncounter.scold}<div class="scold-hint">${caughtEncounter.hint}</div>`;
   cardFooter.classList.add('hidden');
 
   dialogueChoices.innerHTML = '';
@@ -941,10 +943,10 @@ function resolveScoldChoice(choice) {
     isKingSus = true;
     susBadge.classList.remove('hidden');
     pendingOutcome = 'sus_panic';
-    cardFooter.textContent = '[Space / E / Click] He bought it... panic setting in';
+    cardFooter.textContent = '[Space / E / Click] Continue';
   } else {
     pendingOutcome = 'reset_tasks';
-    cardFooter.textContent = '[Space / E / Click] Guards searching your stuff...';
+    cardFooter.textContent = '[Space / E / Click] Continue';
   }
 }
 
@@ -967,12 +969,12 @@ function finishKingPatrol() {
     queueMonologue(
       [
         {
-          text: 'Phew, close call... now I have to wait a bit in my room to make sure the halls are empty.',
-          emote: '✨'
+          text: 'Phew, close call... I\'ll wait a bit in here so the halls are clear before I move.',
+          emote: '...'
         },
         {
-          text: 'Let me check the escape map the Knight gave me so I know how to slip out past the King\'s wing...',
-          emote: '...'
+          text: 'Let me check the route he sketched out so I don\'t run straight into Father\'s wing.',
+          emote: '✦'
         }
       ],
       beginHallClearTimer
@@ -992,11 +994,11 @@ function finishKingPatrol() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: 'Ughhh no!! The guards went through my stuff and ruined my tasks—I have to do it all over again...',
-        emote: '💦'
+        text: 'Ugh, no... they went through everything and ruined my prep. I have to start getting ready all over again.',
+        emote: '!'
       },
       {
-        text: 'Why can\'t I catch my breath?! What if he locks me up forever... what if I ruin everything tonight?!',
+        text: 'Why am I shaking like this... what if he locks me down completely and ruins tonight?',
         emote: '...'
       }
     ]);
@@ -1004,18 +1006,18 @@ function finishKingPatrol() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: 'He believed me... barely. Now he\'s suspicious of me—I can hear him ordering a closer watch on my wing.',
-        emote: '💦'
+        text: 'He bought it... barely. Now he\'s watching me like a hawk—I can hear him ordering tighter eyes on my wing.',
+        emote: '!'
       },
       {
-        text: 'My heart is pounding... I wish I just had freedom and he saw the good in me instead of treating me like a threat.',
+        text: 'I just want some freedom for once... why can\'t he see the good in me instead of treating me like a threat?',
         emote: '...'
       }
     ]);
   } else if (isKingSus) {
     queueMonologue([
       {
-        text: 'Ugh, he\'s still keeping a close eye on my chambers... I just want to breathe freely for once.',
+        text: 'Still on edge out there... I just need to finish getting ready and get out of here.',
         emote: '...'
       }
     ]);
@@ -1054,7 +1056,6 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 
-  // Toggle Escape Map with [M] or close with [Esc]
   if (k === 'm' && allTasksFinished) {
     escapeMapModal.classList.toggle('hidden');
     return;
@@ -1064,7 +1065,6 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  // [B] to steady breathing during post-catch panic attack
   if (k === 'b' && isPanicking) {
     performSteadyBreath();
     return;
@@ -1089,12 +1089,6 @@ window.addEventListener('keydown', (e) => {
 
   if ((patrolState === 'dialogue' || patrolState === 'scold_result') && (k === ' ' || k === 'e' || k === 'enter')) {
     finishKingPatrol();
-    return;
-  }
-
-  if (k === 'k' && patrolState === 'idle' && !activeTask && !allTasksFinished) {
-    patrolsUnlocked = true;
-    startKingPatrol();
     return;
   }
 
@@ -1158,7 +1152,6 @@ function gameLoop() {
     }
   }
 
-  // Caught if unhidden in room during check, OR unhidden on balcony when knights reported shadows there!
   if (patrolState === 'checking' && !isHiding) {
     if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
       triggerCaughtScolding();
@@ -1173,16 +1166,16 @@ function gameLoop() {
     actionPrompt.classList.remove('hidden');
     if (balconyThreatActive) {
       actionPrompt.textContent = isHiding
-        ? 'Hidden on balcony — DO NOT MOVE!'
-        : '⚠️ King checking balcony! Press [E] to HIDE!';
+        ? 'Hidden on balcony — stay still!'
+        : 'King checking balcony — hide!';
     } else {
-      actionPrompt.textContent = '🌙 Safe on the Balcony while King checks room!';
+      actionPrompt.textContent = 'Safe on the balcony while he checks the room';
     }
   } else if (patrolState === 'approaching' || patrolState === 'checking') {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = isHiding
-      ? 'Hidden — DO NOT MOVE!'
-      : '⚠️ Press [E] to HIDE!';
+      ? 'Hidden — stay still!'
+      : 'Hide before he sees you!';
   } else if (nearTask && !activeTask && !isMonologueActive) {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = `[E] ${nearTask.label}`;
@@ -1206,7 +1199,7 @@ function gameLoop() {
       pX = Math.round(window.innerWidth * 0.18);
       pY = Math.max(pY, 540);
       renderTaskMarkers();
-      showEmote('...', 1800);
+      showEmote('...', 1600);
       scheduleBalconyShadowBeat();
     }
   } else if (currentArea === 'balcony') {
@@ -1233,30 +1226,30 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// Clearer Opening Monologue explaining the whole plan & rules
+// Natural opening thoughts calling prep "getting ready"
 renderTaskMarkers();
 updateObjectiveHUD();
 queueMonologue(
   [
     {
-      text: 'Okay, deep breath... I\'m finally meeting him tonight! My heart is racing, and I am SO excited—yet terrified of getting caught.',
-      emote: '♥'
+      text: 'Okay, deep breath... I\'m actually doing this tonight. Just thinking about seeing him makes my stomach flip.',
+      emote: '✦'
     },
     {
-      text: 'Here\'s the plan: I have 30 seconds before Father\'s patrol checks start, so I can get tasks done first with WASD/Arrows and [E].',
+      text: 'If Father catches me before I\'m ready, I\'m dead meat. I need to finish getting ready fast and keep quiet.',
       emote: '!'
     },
     {
-      text: 'The Noise bar shows how loud I\'m being—too much noise brings Father to check my wing right away.',
+      text: 'I\'ve got a little time before patrols start checking in. If I make too much noise, Father\'s gonna come straight here.',
       emote: '...'
     },
     {
-      text: 'When he checks my room, I have to press [E] to hide in the shadows. The balcony is safe at first, though knights might spot shadows out there later!',
-      emote: '💦'
+      text: 'I can slip out onto the balcony to finish getting ready too—though if knights spot shadows out there, I\'ll have to hide.',
+      emote: '!'
     },
     {
-      text: 'And if I do get caught, I\'ll have to pick an excuse fast—if I panic afterward, I\'ll move slower and must press [B] to breathe before passing out!',
-      emote: '💦'
+      text: 'Alright... let\'s get my things together before anything goes wrong.',
+      emote: '...'
     }
   ],
   beginGraceCountdownOnce
