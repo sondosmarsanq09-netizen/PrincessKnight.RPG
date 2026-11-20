@@ -19,7 +19,6 @@ body {
   transition: background-image 0.35s ease;
 }
 
-/* Heavy royal footsteps rumble */
 body.footstep-rumble {
   animation: heavy-step 0.24s ease-in-out;
 }
@@ -31,7 +30,6 @@ body.footstep-rumble {
   100% { transform: translateY(0px); }
 }
 
-/* Dramatic Crimson Flash when spotted */
 #caught-flash {
   position: fixed;
   inset: 0;
@@ -51,13 +49,13 @@ body.footstep-rumble {
   position: absolute;
   top: 18px;
   left: 18px;
-  background: rgba(11, 12, 24, 0.82);
+  background: rgba(11, 12, 24, 0.84);
   border: 1px solid rgba(212, 175, 55, 0.35);
   border-radius: 6px;
   padding: 12px 16px;
   color: #f4f1ea;
   z-index: 30;
-  max-width: 460px;
+  max-width: 470px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
 }
 
@@ -74,10 +72,71 @@ body.footstep-rumble {
   line-height: 1.4;
 }
 
+#noise-meter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  font-size: 12px;
+  color: #ffd966;
+}
+
+#noise-bar-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#noise-bar-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #52b788, #ffd166, #ef476f);
+  transition: width 0.2s ease;
+}
+
 #controls-hint {
   margin-top: 6px;
   font-size: 11px;
   color: #9ea4c4;
+}
+
+/* --- TASK HOTSPOTS --- */
+.task-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: rgba(18, 22, 42, 0.88);
+  border: 2px solid #ffd166;
+  color: #fff3b0;
+  padding: 6px 12px;
+  border-radius: 18px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 18;
+  box-shadow: 0 0 16px rgba(255, 209, 102, 0.55);
+  animation: hotspot-bob 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.task-hotspot.done {
+  border-color: #52b788;
+  color: #b7e4c7;
+  opacity: 0.65;
+  animation: none;
+  box-shadow: none;
+}
+
+.task-hotspot.hard {
+  border-color: #ff6b6b;
+  color: #ffd6d6;
+  box-shadow: 0 0 18px rgba(255, 107, 107, 0.65);
+}
+
+@keyframes hotspot-bob {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50%      { transform: translate(-50%, -58%); }
 }
 
 /* --- PATROL ALERT BANNER --- */
@@ -127,24 +186,24 @@ body.footstep-rumble {
   to   { transform: scale(1.3); opacity: 1; }
 }
 
-/* --- HIDE PROMPT --- */
-#hide-prompt {
+/* --- ACTION / HIDE PROMPT --- */
+#action-prompt {
   position: absolute;
-  bottom: 135px;
+  bottom: 145px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(12, 14, 28, 0.9);
-  border: 1px solid rgba(255, 217, 102, 0.7);
+  background: rgba(12, 14, 28, 0.92);
+  border: 1px solid rgba(255, 217, 102, 0.75);
   color: #ffd966;
   padding: 7px 16px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: bold;
   z-index: 28;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.2s ease;
 }
 
-#hide-prompt.hidden {
+#action-prompt.hidden {
   opacity: 0;
   pointer-events: none;
 }
@@ -171,7 +230,7 @@ body.footstep-rumble {
   transform: translateY(-50%) scale(1.12);
 }
 
-/* --- 1. ENVIRONMENTAL TORCHLIGHT SWEEP --- */
+/* --- TORCHLIGHT & KING SILHOUETTE --- */
 #torch-sweep {
   position: absolute;
   inset: 0;
@@ -198,7 +257,6 @@ body.footstep-rumble {
   100% { filter: brightness(0.96); }
 }
 
-/* --- 2. PURE-CSS KING SILHOUETTE (LOWERED TO FLOOR) --- */
 #king-shadow-wrap {
   position: absolute;
   left: 9%;
@@ -287,7 +345,7 @@ body.footstep-rumble {
   border-radius: 2px;
 }
 
-/* --- PRINCESS SPRITE SETUP --- */
+/* --- PRINCESS SPRITE + FLOATING EMOTE --- */
 #princess {
   width: 96px;
   height: 96px;
@@ -310,6 +368,36 @@ body.footstep-rumble {
 #princess.hidden-in-shadows {
   opacity: 0.38;
   filter: brightness(0.42) contrast(1.2);
+}
+
+#princess-emote {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff8e7;
+  color: #1b1829;
+  border: 1px solid #1b1829;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 7px;
+  font-weight: bold;
+  z-index: 10;
+  animation: emote-pop 0.6s ease-in-out infinite alternate;
+}
+
+/* Keep emote un-mirrored when facing right */
+#princess.facing-right #princess-emote {
+  transform: translateX(-50%) scaleX(-1);
+}
+
+#princess-emote.hidden {
+  display: none;
+}
+
+@keyframes emote-pop {
+  from { top: -11px; }
+  to   { top: -15px; }
 }
 
 #princess .sprite-layer {
@@ -345,7 +433,49 @@ body.footstep-rumble {
   to   { background-position: 88.88% 16.66%; }
 }
 
-/* --- DIALOGUE BOX (Ch.2 Sc.3 Base + Ornate Royal Gold + Angry Red) --- */
+/* --- CHAPTER 2 SCENE 3 STYLE PRINCESS MONOLOGUE BOX --- */
+#princess-dialogue-box {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(680px, 92vw);
+  background: rgba(14, 16, 30, 0.94);
+  border: 2px solid #8d99ae;
+  border-radius: 6px;
+  padding: 15px 20px;
+  color: #edf2f4;
+  z-index: 48;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.82);
+  cursor: pointer;
+}
+
+#princess-dialogue-box.hidden {
+  display: none;
+}
+
+.p-box-header {
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffb4a2;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+#p-dialogue-text {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #f8f9fa;
+}
+
+.p-box-footer {
+  text-align: right;
+  font-size: 11px;
+  color: #adb5bd;
+  margin-top: 8px;
+}
+
+/* --- KING'S SPECIAL GOLD / ANGRY RED DIALOGUE BOX --- */
 #royal-dialogue-card {
   position: fixed;
   bottom: 22px;
@@ -359,10 +489,9 @@ body.footstep-rumble {
   z-index: 50;
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.88);
   cursor: pointer;
-  transition: opacity 0.22s ease, transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+  transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
-/* Extra-ornate Golden Royal Trim for the King's normal lines */
 #royal-dialogue-card.royal-gold {
   background: linear-gradient(155deg, rgba(25, 13, 21, 0.97), rgba(11, 10, 22, 0.99));
   border: 2.5px solid #e5be48;
@@ -372,7 +501,6 @@ body.footstep-rumble {
     inset 0 0 18px rgba(229, 190, 72, 0.12);
 }
 
-/* Keep the beloved Angry Red Box when scolding */
 #royal-dialogue-card.scolding {
   border: 2.5px solid #ff4d4d;
   background: linear-gradient(145deg, rgba(48, 8, 16, 0.98), rgba(16, 6, 12, 0.99));
@@ -395,17 +523,11 @@ body.footstep-rumble {
   line-height: 1.1;
 }
 
-.top-bar {
-  margin-bottom: 3px;
-}
-
-.bottom-bar {
-  margin-top: 3px;
-}
+.top-bar { margin-bottom: 3px; }
+.bottom-bar { margin-top: 3px; }
 
 #royal-dialogue-card.scolding .gold-filigree {
   color: #ff6b81;
-  text-shadow: 0 0 8px rgba(255, 77, 77, 0.5);
 }
 
 .card-border {
@@ -440,7 +562,6 @@ body.footstep-rumble {
   color: #ff758f;
 }
 
-/* Answer Timer UI */
 #answer-timer-wrap {
   display: flex;
   align-items: center;
@@ -486,7 +607,6 @@ body.footstep-rumble {
   margin-bottom: 10px;
 }
 
-/* Multi-choice buttons when caught */
 #dialogue-choices {
   display: flex;
   flex-direction: column;
@@ -523,4 +643,211 @@ body.footstep-rumble {
   font-size: 11px;
   color: #c9b37e;
   margin-top: 4px;
+}
+
+/* --- AMONG US STYLE TASK MODAL --- */
+#task-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 7, 15, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+#task-modal.hidden {
+  display: none;
+}
+
+#task-window {
+  width: min(540px, 92vw);
+  background: #14172b;
+  border: 2px solid #ffd166;
+  border-radius: 10px;
+  padding: 18px 22px;
+  color: #f8f9fa;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.9);
+}
+
+#task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 209, 102, 0.3);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+#task-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ffd166;
+}
+
+#close-task-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#task-instructions {
+  font-size: 13px;
+  color: #ced4da;
+  margin-bottom: 16px;
+}
+
+/* Task 1: Drag items into satchel */
+.pack-arena {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.pack-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 48%;
+}
+
+.drag-item {
+  background: #232847;
+  border: 1.5px solid #8d99ae;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: grab;
+  font-size: 13px;
+  text-align: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.drag-item:hover {
+  border-color: #ffd166;
+  transform: scale(1.03);
+}
+
+.drag-item.packed {
+  opacity: 0.35;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+
+.satchel-dropzone {
+  width: 48%;
+  height: 155px;
+  border: 2px dashed #ffd166;
+  border-radius: 10px;
+  background: rgba(255, 209, 102, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #ffd166;
+  text-align: center;
+  padding: 10px;
+}
+
+.satchel-dropzone.over {
+  background: rgba(255, 209, 102, 0.22);
+  transform: scale(1.03);
+}
+
+/* Task 2: Bed decoy pillows */
+.decoy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.pillow-btn {
+  background: #262b4d;
+  border: 1.5px solid #9ea4c4;
+  color: #fff;
+  padding: 18px 10px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pillow-btn.placed {
+  background: #1f4e3d;
+  border-color: #52b788;
+  color: #d8f3dc;
+}
+
+/* Task 3: Alibi Note sequence */
+.rune-row {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+}
+
+.rune-btn {
+  flex: 1;
+  padding: 16px 8px;
+  background: #222644;
+  border: 2px solid #8d99ae;
+  color: #ffd166;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.rune-btn.done {
+  background: #2b5947;
+  border-color: #52b788;
+}
+
+/* Task 4: Balcony Hard Timing Lock */
+.timing-bar {
+  position: relative;
+  width: 100%;
+  height: 28px;
+  background: #0d101f;
+  border: 2px solid #ff6b6b;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.timing-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(82, 183, 136, 0.45);
+  border-left: 2px solid #52b788;
+  border-right: 2px solid #52b788;
+}
+
+.timing-needle {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background: #ffd166;
+  box-shadow: 0 0 10px #ffd166;
+}
+
+.timing-action-btn {
+  width: 100%;
+  padding: 12px;
+  background: #e63946;
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
 }
