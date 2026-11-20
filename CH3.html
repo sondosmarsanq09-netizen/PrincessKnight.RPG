@@ -15,17 +15,17 @@
     <!-- HUD -->
     <div id="hud">
       <div id="location-banner">📍 Princess's Chambers</div>
-      <div id="objective">Tasks: 0/5 Done • Quiet & fast!</div>
+      <div id="objective">Getting Ready: 0/5 Done • Stay quiet!</div>
       <div id="noise-meter-wrap">
         <span>🔊 Noise:</span>
         <div id="noise-bar-track">
           <div id="noise-bar-fill"></div>
         </div>
       </div>
-      <div id="sus-badge" class="hidden">👑 King is Suspicious — Harder Patrols!</div>
-      <div id="panic-status" class="hidden">💔 Panic Attack • Press [B] to Breathe</div>
+      <div id="sus-badge" class="hidden">👑 King is Suspicious — Watch Closely</div>
+      <div id="panic-status" class="hidden">💔 DANGER: Princess is having a panic attack — calm her down [B]!</div>
       <div id="hall-wait-hud" class="hidden">⏳ Waiting for halls to clear: <span id="hall-wait-sec">12.0s</span> • [M] Map</div>
-      <div id="controls-hint">[WASD / Arrows] Move • [E] Task / Hide • [B] Breathe • [M] Map • [K] Test</div>
+      <div id="controls-hint">[WASD / Arrows] Move • [E] Prep / Hide • [B] Breathe • [M] Map</div>
     </div>
 
     <!-- Tension / Stealth Status Pill -->
@@ -34,18 +34,18 @@
       <span id="patrol-text">Heavy footsteps approaching the corridor...</span>
     </div>
 
-    <!-- Hiding / Task Prompt -->
+    <!-- Hiding / Prep Prompt -->
     <div id="action-prompt" class="hidden">[E] Interact</div>
 
     <!-- Panic Timer & Breathe Prompt -->
     <div id="panic-prompt" class="hidden">
-      <div id="panic-prompt-text">😮‍💨 Gasping for air! Press [B] to breathe before passing out!</div>
+      <div id="panic-prompt-text">💔 DANGER: Princess is having a panic attack — calm her down with [B]!</div>
       <div class="panic-bar-track">
         <div id="panic-bar-fill"></div>
       </div>
     </div>
 
-    <!-- Task Hotspots in Room & Balcony -->
+    <!-- Prep Hotspots in Room & Balcony -->
     <div id="task-markers"></div>
 
     <!-- Balcony Arrow Hint -->
@@ -67,7 +67,7 @@
       </div>
     </div>
 
-    <!-- Princess Multi-Layer Character + Floating Emote -->
+    <!-- Princess Multi-Layer Character + Floating Pulse Emote -->
     <div id="princess" class="facing-right">
       <div id="princess-emote" class="hidden">!</div>
       <div class="sprite-layer skin"></div>
@@ -78,9 +78,9 @@
     </div>
   </div>
 
-  <!-- Chapter 2 Scene 3 Style Princess / Knight Dialogue Box -->
+  <!-- Frosted Translucent White Dialogue Box (Matching Previous Chapter) -->
   <div id="princess-dialogue-box" class="hidden">
-    <div class="p-box-header" id="p-speaker">💭 PRINCESS (THOUGHTS)</div>
+    <div class="p-box-header" id="p-speaker">PRINCESS</div>
     <p id="p-dialogue-text">Okay, deep breath...</p>
     <div class="p-box-footer">[Space / E / Click] Continue</div>
   </div>
@@ -105,37 +105,37 @@
     <div class="gold-filigree bottom-bar">✦ ✦ ✦</div>
   </div>
 
-  <!-- Castle Escape Map Overlay (Shown during Hallway Wait or [M]) -->
+  <!-- Castle Escape Map Overlay -->
   <div id="escape-map-modal" class="hidden">
     <div id="escape-map-card">
       <div class="map-header">
         <span>🗺️ KNIGHT'S MIDNIGHT ESCAPE MAP</span>
         <button id="close-map-btn">Close [M / Esc]</button>
       </div>
-      <p class="map-sub">The Knight marked the safest route out of the castle while the halls clear:</p>
+      <p class="map-sub">The route he marked out so you can slip past the castle while the halls clear:</p>
       <div class="castle-blueprint">
         <div class="map-node start-node">🛏️ Princess Chambers<br><small>(Wait here till halls empty)</small></div>
         <div class="map-arrow">──▶</div>
-        <div class="map-node danger-node">👑 King's Wing &amp; Royal Hall<br><small>(HIGH DANGER — Do not linger)</small></div>
+        <div class="map-node danger-node">👑 King's Wing &amp; Royal Hall<br><small>(HIGH DANGER — Stay quiet)</small></div>
         <div class="map-arrow">──▶</div>
-        <div class="map-node safe-node">🌿 West Servant Stair &amp; Garden Gate<br><small>(Knight's route out of castle)</small></div>
+        <div class="map-node safe-node">🌿 West Servant Stair &amp; Garden Gate<br><small>(Way out toward the Knight)</small></div>
       </div>
       <div class="map-notes">
-        <div>• <b>Rule 1:</b> Wait out the hall timer in your room so patrolling guards clear the corridor.</div>
-        <div>• <b>Rule 2:</b> Slip past the King's wing silently—high noise draws immediate royal inspection.</div>
-        <div>• <b>Rule 3:</b> Follow the west garden path where the Knight is waiting beyond the castle walls.</div>
+        <div>• Wait out the timer in your room until the corridors empty out.</div>
+        <div>• Keep noise down near the King's wing so nobody notices you leaving.</div>
+        <div>• Head down the west garden path where he's waiting beyond the walls.</div>
       </div>
     </div>
   </div>
 
-  <!-- Among Us Style Task Modal -->
+  <!-- Prep Mini-Game Modal -->
   <div id="task-modal" class="hidden">
     <div id="task-window">
       <div id="task-header">
-        <span id="task-title">Task</span>
+        <span id="task-title">Prep</span>
         <button id="close-task-btn" title="Close [Esc]">✕</button>
       </div>
-      <p id="task-instructions">Complete the prep task quietly!</p>
+      <p id="task-instructions">Get ready quietly!</p>
       <div id="task-body"></div>
     </div>
   </div>
