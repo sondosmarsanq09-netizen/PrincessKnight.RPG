@@ -500,7 +500,6 @@ function handleBalconyArrivalDuringPatrol() {
   if (currentArea !== 'balcony') return;
   if (!['approaching', 'checking'].includes(patrolState)) return;
 
-  // First time knights call out on the balcony: show callout once, then King checks balcony from now on
   if (!balconyCalledOutOnce) {
     balconyCalledOutOnce = true;
     balconyCheckedByKing = true;
@@ -537,13 +536,14 @@ function handleBalconyArrivalDuringPatrol() {
         if (!isHiding && !caughtTriggeredThisCheck) {
           caughtTriggeredThisCheck = true;
           triggerCaughtScolding();
+        } else {
+          openPatrolSummaryDialogue();
         }
       }
     );
     return;
   }
 
-  // Subsequent patrols once balcony is checked by the King: King checks balcony alongside the room
   if (balconyCheckedByKing) {
     balconyCheckActive = true;
     patrolState = 'checking';
@@ -555,8 +555,29 @@ function handleBalconyArrivalDuringPatrol() {
     if (!isHiding && !caughtTriggeredThisCheck) {
       caughtTriggeredThisCheck = true;
       triggerCaughtScolding();
+    } else {
+      openPatrolSummaryDialogue();
     }
   }
+}
+
+function openPatrolSummaryDialogue(customCallout = null) {
+  patrolState = 'dialogue';
+  pendingOutcome = 'normal';
+  patrolAlert.classList.remove('danger');
+  stopAnswerTimer();
+
+  const pool = isKingSus ? susRoyalLines : normalRoyalLines;
+  const line = customCallout || pool[patrolCount % pool.length];
+  patrolCount++;
+
+  royalDialogueCard.classList.remove('hidden', 'scolding');
+  royalDialogueCard.classList.add('royal-gold');
+  royalSpeaker.textContent = isKingSus ? '👑 KING (WATCHFUL)' : '👑 KING';
+  royalLine.textContent = line;
+  dialogueChoices.classList.add('hidden');
+  cardFooter.classList.remove('hidden');
+  cardFooter.textContent = '[Space / E / Click] Continue';
 }
 
 // --- HALLWAY WAIT & ESCAPE MAP AFTER ALL PREP IS DONE ---
@@ -962,45 +983,31 @@ function startKingPatrol(customCallout = null) {
 
   patrolTimers.push(setTimeout(() => {
     if (patrolState !== 'checking') return;
-    if (currentArea === 'balcony' && !balconyCheckedByKing) return;
     kingShadowWrap.classList.add('looking-in');
   }, checkDelay + 450));
 
   patrolTimers.push(setTimeout(() => {
     if (patrolState !== 'checking' || caughtTriggeredThisCheck) return;
-    if (currentArea === 'balcony' && !balconyCheckedByKing) return;
-
     kingShadowWrap.classList.add('deep-scan');
-    if (!isHiding) {
+
+    const shouldCheckCurrentArea = currentArea === 'room' || balconyCheckedByKing;
+    if (shouldCheckCurrentArea && !isHiding) {
       caughtTriggeredThisCheck = true;
       triggerCaughtScolding();
       return;
     }
-    patrolText.textContent = currentArea === 'balcony'
-      ? 'He\'s checking the balcony — stay still!'
-      : 'He\'s looking into the room — stay still!';
+
+    if (shouldCheckCurrentArea) {
+      patrolText.textContent = currentArea === 'balcony'
+        ? 'He\'s checking the balcony — stay still!'
+        : 'He\'s looking into the room — stay still!';
+    }
   }, checkDelay + 1150));
 
+  // Always resolve checking so the King never gets stuck
   patrolTimers.push(setTimeout(() => {
     if (patrolState !== 'checking' || caughtTriggeredThisCheck) return;
-    if (currentArea === 'balcony' && !balconyCheckedByKing) return;
-
-    patrolState = 'dialogue';
-    pendingOutcome = 'normal';
-    patrolAlert.classList.remove('danger');
-    stopAnswerTimer();
-
-    const pool = isKingSus ? susRoyalLines : normalRoyalLines;
-    const line = customCallout || pool[patrolCount % pool.length];
-    patrolCount++;
-
-    royalDialogueCard.classList.remove('hidden', 'scolding');
-    royalDialogueCard.classList.add('royal-gold');
-    royalSpeaker.textContent = isKingSus ? '👑 KING (WATCHFUL)' : '👑 KING';
-    royalLine.textContent = line;
-    dialogueChoices.classList.add('hidden');
-    cardFooter.classList.remove('hidden');
-    cardFooter.textContent = '[Space / E / Click] Continue';
+    openPatrolSummaryDialogue(customCallout);
   }, checkDelay + 2800));
 }
 
