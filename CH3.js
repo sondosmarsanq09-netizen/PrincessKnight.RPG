@@ -495,8 +495,8 @@ function getNearbyTask() {
   });
 }
 
-// --- KNIGHT CALLOUT WHEN WALKING ONTO BALCONY (NO LOOP) ---
-function triggerBalconyCalloutOnce() {
+// --- KNIGHT CALLOUT ONLY ON THE MOMENT PRINCESS WALKS INTO BALCONY (ONCE PER PATROL) ---
+function triggerBalconyEntryCalloutOnce() {
   if (currentArea !== 'balcony' || balconyCalledOutThisPatrol) return;
   if (!['approaching', 'checking'].includes(patrolState)) return;
 
@@ -505,14 +505,12 @@ function triggerBalconyCalloutOnce() {
   caughtTriggeredThisCheck = false;
   closeTaskModal();
 
-  // Clear pending check timers so the patrol doesn't double-fire or loop
-  patrolTimers.forEach((id) => clearTimeout(id));
-  patrolTimers = [];
+  clearPatrolTimers();
 
   patrolState = 'checking';
   patrolAlert.classList.remove('hidden');
   patrolAlert.classList.add('danger');
-  patrolText.textContent = 'Knights called out shadows on the balcony — hide [E]!';
+  patrolText.textContent = 'Knights spotted you stepping onto the balcony — hide [E]!';
   showEmote('!', 1600);
 
   queueMonologue(
@@ -524,13 +522,12 @@ function triggerBalconyCalloutOnce() {
       },
       {
         speaker: 'PRINCESS',
-        text: 'They called me out immediately—there\'s no safety out here! I have to hide before they check!',
+        text: 'They called me out the second I stepped out here! I have to hide right now!',
         emote: '...'
       }
     ],
     () => {
-      if (!['approaching', 'checking'].includes(patrolState)) return;
-      patrolState = 'checking';
+      if (patrolState !== 'checking' || caughtTriggeredThisCheck) return;
       kingShadowWrap.classList.remove('hidden');
       requestAnimationFrame(() => {
         kingShadowWrap.classList.add('visible', 'looking-in', 'deep-scan');
@@ -545,7 +542,6 @@ function triggerBalconyCalloutOnce() {
             triggerCaughtScolding();
             return;
           }
-          // Hidden safely: transition to King's patrol line so the patrol finishes cleanly
           presentKingPatrolDialogue();
         }, 1800)
       );
@@ -938,7 +934,7 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
 
   caughtTriggeredThisCheck = false;
   balconyCalledOutThisPatrol = false;
-  balconyThreatActive = forceBalconyCheck || currentArea === 'balcony';
+  balconyThreatActive = false;
 
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
@@ -958,11 +954,6 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
   patrolTimers.push(setTimeout(() => {
     if (patrolState !== 'approaching') return;
     patrolState = 'checking';
-
-    if (currentArea === 'balcony') {
-      triggerBalconyCalloutOnce();
-      return;
-    }
 
     kingShadowWrap.classList.remove('hidden');
     requestAnimationFrame(() => {
@@ -1301,8 +1292,8 @@ function gameLoop() {
       renderTaskMarkers();
       showEmote('...', 1600);
 
-      if (['approaching', 'checking'].includes(patrolState)) {
-        triggerBalconyCalloutOnce();
+      if (['approaching', 'checking'].includes(patrolState) && !balconyCalledOutThisPatrol) {
+        triggerBalconyEntryCalloutOnce();
       }
     }
   } else if (currentArea === 'balcony') {
