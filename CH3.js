@@ -78,8 +78,7 @@ const PANIC_PASSOUT_LIMIT = 8.5;
 let panicTimeLeft = PANIC_PASSOUT_LIMIT;
 let panicCountdownInterval = null;
 
-// Balcony Patrol State
-let balconySafetyTimer = null;
+// Balcony Patrol State (No safety timer — balcony is always an active threat during patrols)
 let balconyThreatActive = false;
 let balconyEscalatedThisPatrol = false;
 
@@ -496,74 +495,59 @@ function getNearbyTask() {
   });
 }
 
-// --- BALCONY 3s SAFETY -> KNIGHTS SCREAMING -> PRINCESS LINE -> BALCONY CHECK ---
-function clearBalconySafetyTimer() {
-  if (balconySafetyTimer) {
-    clearTimeout(balconySafetyTimer);
-    balconySafetyTimer = null;
-  }
-}
+// --- IMMEDIATE BALCONY CALLOUT & CHECK (NO SAFETY TIMER) ---
+function triggerImmediateBalconyCallout() {
+  if (currentArea !== 'balcony' || balconyEscalatedThisPatrol) return;
+  if (!['approaching', 'checking'].includes(patrolState)) return;
 
-function startBalconyThreeSecondSafety() {
-  if (currentArea !== 'balcony' || balconyEscalatedThisPatrol || balconySafetyTimer) return;
+  balconyEscalatedThisPatrol = true;
+  balconyThreatActive = true;
+  caughtTriggeredThisCheck = false;
+  closeTaskModal();
 
-  patrolAlert.classList.remove('hidden', 'danger');
-  patrolText.textContent = 'Safe on the balcony for 3s...';
+  patrolState = 'checking';
+  patrolAlert.classList.remove('hidden');
+  patrolAlert.classList.add('danger');
+  patrolText.textContent = 'Knights called out shadows on the balcony — hide [E]!';
 
-  balconySafetyTimer = setTimeout(() => {
-    balconySafetyTimer = null;
-    if (currentArea !== 'balcony' || balconyEscalatedThisPatrol) return;
-    if (!['approaching', 'checking'].includes(patrolState)) return;
+  kingShadowWrap.classList.remove('hidden');
+  kingShadowWrap.classList.add('visible', 'looking-in');
+  showEmote('!', 1600);
 
-    balconyEscalatedThisPatrol = true;
-    balconyThreatActive = true;
-    caughtTriggeredThisCheck = false;
-    closeTaskModal();
-
-    patrolState = 'checking';
-    patrolAlert.classList.remove('hidden');
-    patrolAlert.classList.add('danger');
-    patrolText.textContent = 'Knights spotted shadows on the balcony!';
-
-    kingShadowWrap.classList.remove('hidden');
-    kingShadowWrap.classList.add('visible', 'looking-in');
-    showEmote('!', 1600);
-
-    queueMonologue(
-      [
-        {
-          speaker: 'KNIGHTS',
-          text: 'YOUR MAJESTY!! WE SEE SHADOWS AND HEAR RUSTLING OUT ON THE BALCONY RIGHT NOW!!',
-          emote: '!'
-        },
-        {
-          speaker: 'PRINCESS',
-          text: 'Oh no... they\'re going to start checking the balcony too! I have to hide if they come out here!',
-          emote: '...'
-        }
-      ],
-      () => {
-        if (currentArea !== 'balcony' || patrolState !== 'checking') return;
-        kingShadowWrap.classList.add('deep-scan');
-        patrolText.textContent = 'King checking balcony — press [E] to hide!';
-
-        patrolTimers.push(
-          setTimeout(() => {
-            if (
-              patrolState === 'checking' &&
-              currentArea === 'balcony' &&
-              balconyThreatActive &&
-              !isHiding &&
-              !caughtTriggeredThisCheck
-            ) {
-              caughtTriggeredThisCheck = true;
-              triggerCaughtScolding();
-            }
-          }, 1800)
-        );
+  queueMonologue(
+    [
+      {
+        speaker: 'KNIGHTS',
+        text: 'YOUR MAJESTY!! WE SEE SHADOWS AND HEAR RUSTLING OUT ON THE BALCONY RIGHT NOW!!',
+        emote: '!'
+      },
+      {
+        speaker: 'PRINCESS',
+        text: 'There\'s no safety out here—they called me out immediately! I have to hide right now!',
+        emote: '...'
       }
-    );
-  }, 3000);
+    ],
+    () => {
+      if (currentArea !== 'balcony' || patrolState !== 'checking') return;
+      kingShadowWrap.classList.add('deep-scan');
+      patrolText.textContent = 'King & knights checking balcony — press [E] to hide!';
+
+      patrolTimers.push(
+        setTimeout(() => {
+          if (
+            patrolState === 'checking' &&
+            currentArea === 'balcony' &&
+            balconyThreatActive &&
+            !isHiding &&
+            !caughtTriggeredThisCheck
+          ) {
+            caughtTriggeredThisCheck = true;
+            triggerCaughtScolding();
+          }
+        }, 1800)
+      );
+    }
+  );
 }
 
 // --- HALLWAY WAIT & ESCAPE MAP AFTER ALL PREP IS DONE ---
@@ -870,7 +854,6 @@ function completeTask(task) {
 function clearPatrolTimers() {
   patrolTimers.forEach((id) => clearTimeout(id));
   patrolTimers = [];
-  clearBalconySafetyTimer();
 }
 
 function stopAnswerTimer() {
@@ -927,7 +910,7 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
 
   caughtTriggeredThisCheck = false;
   balconyEscalatedThisPatrol = false;
-  balconyThreatActive = forceBalconyCheck;
+  balconyThreatActive = forceBalconyCheck || currentArea === 'balcony';
 
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
@@ -954,7 +937,7 @@ function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
     });
 
     if (currentArea === 'balcony') {
-      startBalconyThreeSecondSafety();
+      triggerImmediateBalconyCallout();
       return;
     }
 
@@ -1275,12 +1258,10 @@ function gameLoop() {
   const nearTask = getNearbyTask();
   if (patrolState === 'approaching' || patrolState === 'checking') {
     actionPrompt.classList.remove('hidden');
-    if (currentArea === 'balcony' && !balconyThreatActive) {
-      actionPrompt.textContent = 'Safe on the balcony for 3s...';
-    } else if (isHiding) {
+    if (isHiding) {
       actionPrompt.textContent = 'Hidden in shadows — don\'t move!';
     } else {
-      actionPrompt.textContent = 'Hide before he sees you! [E]';
+      actionPrompt.textContent = 'Hide before they see you! [E]';
     }
   } else if (nearTask && !activeTask && !isMonologueActive) {
     actionPrompt.classList.remove('hidden');
@@ -1310,14 +1291,13 @@ function gameLoop() {
       showEmote('...', 1600);
 
       if (['approaching', 'checking'].includes(patrolState)) {
-        startBalconyThreeSecondSafety();
+        triggerImmediateBalconyCallout();
       }
     }
   } else if (currentArea === 'balcony') {
     if (arrowRight) arrowRight.style.display = 'none';
 
     if (pX <= Math.round(window.innerWidth * 0.12)) {
-      clearBalconySafetyTimer();
       balconyThreatActive = false;
       balconyEscalatedThisPatrol = false;
       currentArea = 'room';
@@ -1358,7 +1338,7 @@ queueMonologue(
       emote: '...'
     },
     {
-      text: 'I can slip out onto the balcony to finish getting ready too—though if knights spot shadows out there, I\'ll have to hide.',
+      text: 'I can slip out onto the balcony to finish getting ready too—though there\'s no safety out there if knights spot me.',
       emote: '!'
     },
     {
