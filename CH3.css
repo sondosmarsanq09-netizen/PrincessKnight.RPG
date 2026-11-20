@@ -301,8 +301,8 @@ body.footstep-rumble {
 #princess .skin   { background-image: url('Female Skin1.png'); z-index: 1; }
 #princess .boots  { background-image: url('Boots.png');        z-index: 2; }
 #princess .outfit { background-image: url('Corset v2.png');    z-index: 3; }
-#princess .hair   { background-image: url('Female Hair3.png'); z-index: 4; }
-
+#princess .skirt  { background-image: url('Skirt.png');        z-index: 4; }
+#princess .hair   { background-image: url('Female Hair3.png'); z-index: 5; }
 #princess.running .sprite-layer {
   animation: p-walk 0.8s steps(8) infinite;
 }
