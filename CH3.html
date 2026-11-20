@@ -1,33 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chapter 3</title>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="CH3.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chapter 3 - Midnight Chambers</title>
+  <link rel="stylesheet" href="CH3.css" />
 </head>
 <body id="game-body">
-  <!-- Pure Black Fade Transition Overlay -->
-  <div id="transition-overlay" class="fade-overlay"></div>
+  <div id="transition-overlay"></div>
 
-  <!-- UI & Free-Roam Banner -->
-  <div id="location-banner">📍 Princess's Chambers</div>
-  <div id="objective">Free Roam: Walk around your room or head right to the Balcony.</div>
+  <!-- HUD -->
+  <div id="hud">
+    <div id="location-banner">📍 Princess's Chambers</div>
+    <div id="objective">Free Roam: Walk around your room or head right to the Balcony.</div>
+    <div id="controls-hint">[WASD / Arrows] Move • [E] Hide / Interact • [K] Test King Patrol</div>
+  </div>
 
-  <!-- Edge Navigation Indicator (Balcony to the right) -->
-  <div id="arrow-right" class="edge-indicator right">
-    <span class="area-label">Balcony</span>
+  <!-- Tension / Stealth Status Pill -->
+  <div id="patrol-alert" class="hidden">
+    <span class="lantern-dot"></span>
+    <span id="patrol-text">Heavy footsteps approaching the corridor...</span>
+  </div>
+
+  <!-- Hiding Spot Prompt -->
+  <div id="hide-prompt" class="hidden">[E] Duck into the shadows</div>
+
+  <!-- Balcony Arrow Hint -->
+  <div id="arrow-right">
+    <span>Balcony</span>
     <span class="arrow-icon">▶</span>
   </div>
 
-  <!-- Princess Sprite -->
+  <!-- Environmental Torchlight & Pure-CSS King Silhouette -->
+  <div id="torch-sweep"></div>
+  <div id="king-shadow-wrap" class="hidden">
+    <div id="king-silhouette">
+      <div class="crown">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="head"></div>
+      <div class="cloak"></div>
+      <div class="sword-tip"></div>
+    </div>
+  </div>
+
+  <!-- Princess Multi-Layer Character (retains your Chapter 2/3 setup) -->
   <div id="princess" class="facing-right">
-    <div class="layer" style="background-image: url('Female%20Skin1.png');"></div>
-    <div class="layer" style="background-image: url('Boots.png');"></div>
-    <div class="layer" style="background-image: url('Skirt.png');"></div>
-    <div class="layer" style="background-image: url('Corset%20v2.png');"></div>
-    <div class="layer" style="background-image: url('Female%20Hair3.png');"></div>
+    <div class="sprite-layer skin"></div>
+    <div class="sprite-layer outfit"></div>
+    <div class="sprite-layer boots"></div>
+    <div class="sprite-layer hair"></div>
+  </div>
+
+  <!-- Dramatic Royal Dialogue Card -->
+  <div id="royal-dialogue-card" class="hidden">
+    <div class="card-border">
+      <div class="royal-crest">👑 HIS MAJESTY THE KING</div>
+      <p id="royal-line">"Still awake at this hour? The castle gates are locked till dawn..."</p>
+      <div class="card-footer">[Space / E / Click] Continue</div>
+    </div>
   </div>
 
   <script src="CH3.js"></script>
