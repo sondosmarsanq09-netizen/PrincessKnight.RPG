@@ -19,15 +19,31 @@ body {
   transition: background-image 0.35s ease;
 }
 
-/* Subtle screen rumble for heavy royal footsteps */
+/* Heavy royal footsteps rumble */
 body.footstep-rumble {
-  animation: heavy-step 0.22s ease-in-out;
+  animation: heavy-step 0.24s ease-in-out;
 }
 
 @keyframes heavy-step {
   0%   { transform: translateY(0px); }
-  40%  { transform: translateY(3px); }
+  35%  { transform: translateY(4px); }
+  70%  { transform: translateY(-1px); }
   100% { transform: translateY(0px); }
+}
+
+/* Dramatic Crimson Flash when spotted */
+#caught-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(220, 20, 40, 0.48) 0%, rgba(120, 0, 15, 0.82) 100%);
+  opacity: 0;
+  z-index: 45;
+  transition: opacity 0.25s ease;
+}
+
+#caught-flash.active {
+  opacity: 1;
 }
 
 /* --- HUD --- */
@@ -69,7 +85,7 @@ body.footstep-rumble {
   position: absolute;
   top: 18px;
   right: 22px;
-  background: rgba(34, 12, 18, 0.9);
+  background: rgba(34, 12, 18, 0.92);
   border: 1px solid #d4af37;
   color: #ffe699;
   padding: 10px 16px;
@@ -84,6 +100,13 @@ body.footstep-rumble {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+#patrol-alert.danger {
+  border-color: #ff4d4d;
+  background: rgba(65, 10, 18, 0.95);
+  color: #ffccd5;
+  box-shadow: 0 0 28px rgba(255, 50, 50, 0.55);
+}
+
 #patrol-alert.hidden {
   opacity: 0;
   pointer-events: none;
@@ -96,12 +119,12 @@ body.footstep-rumble {
   border-radius: 50%;
   background: #ffb703;
   box-shadow: 0 0 10px #ffb703, 0 0 20px #fb8500;
-  animation: lantern-pulse 0.8s infinite alternate;
+  animation: lantern-pulse 0.6s infinite alternate;
 }
 
 @keyframes lantern-pulse {
   from { transform: scale(0.85); opacity: 0.7; }
-  to   { transform: scale(1.25); opacity: 1; }
+  to   { transform: scale(1.3); opacity: 1; }
 }
 
 /* --- HIDE PROMPT --- */
@@ -110,12 +133,13 @@ body.footstep-rumble {
   bottom: 135px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(12, 14, 28, 0.88);
-  border: 1px solid rgba(255, 217, 102, 0.6);
+  background: rgba(12, 14, 28, 0.9);
+  border: 1px solid rgba(255, 217, 102, 0.7);
   color: #ffd966;
-  padding: 6px 14px;
+  padding: 7px 16px;
   border-radius: 20px;
   font-size: 12px;
+  font-weight: bold;
   z-index: 28;
   transition: opacity 0.25s ease;
 }
@@ -154,55 +178,59 @@ body.footstep-rumble {
   pointer-events: none;
   opacity: 0;
   background: radial-gradient(
-    circle at 14% 55%,
-    rgba(255, 175, 55, 0.34) 0%,
-    rgba(255, 130, 30, 0.14) 28%,
-    rgba(0, 0, 0, 0.45) 72%
+    circle at 14% 62%,
+    rgba(255, 175, 55, 0.38) 0%,
+    rgba(255, 130, 30, 0.16) 32%,
+    rgba(0, 0, 0, 0.5) 75%
   );
   z-index: 12;
-  transition: opacity 0.7s ease;
+  transition: opacity 0.55s ease;
 }
 
 #torch-sweep.active {
   opacity: 1;
-  animation: torch-flicker 1.4s infinite alternate;
+  animation: torch-flicker 1.1s infinite alternate;
 }
 
 @keyframes torch-flicker {
-  0%   { filter: brightness(0.95); }
-  50%  { filter: brightness(1.12); }
-  100% { filter: brightness(0.98); }
+  0%   { filter: brightness(0.92); }
+  50%  { filter: brightness(1.18); }
+  100% { filter: brightness(0.96); }
 }
 
-/* --- 2. PURE-CSS KING SILHOUETTE --- */
+/* --- 2. PURE-CSS KING SILHOUETTE (LOWERED TO FLOOR) --- */
 #king-shadow-wrap {
   position: absolute;
   left: 9%;
-  bottom: 95px;
+  bottom: 18px;
   width: 170px;
   height: 320px;
   pointer-events: none;
   z-index: 14;
   opacity: 0;
   transform: translateX(-45px) skewX(-6deg);
-  transition: opacity 0.7s ease, transform 0.8s ease;
-  filter: blur(1.2px) drop-shadow(0 0 18px rgba(255, 165, 40, 0.45));
+  transition: opacity 0.55s ease, transform 0.65s ease;
+  filter: blur(1.1px) drop-shadow(0 0 18px rgba(255, 165, 40, 0.45));
 }
 
 #king-shadow-wrap.visible {
-  opacity: 0.84;
+  opacity: 0.86;
   transform: translateX(0px) skewX(-6deg);
 }
 
 #king-shadow-wrap.looking-in {
-  transform: translateX(18px) skewX(-2deg) scaleX(1.04);
+  transform: translateX(22px) skewX(-2deg) scaleX(1.05);
+}
+
+#king-shadow-wrap.deep-scan {
+  transform: translateX(34px) skewX(2deg) scaleX(1.08);
 }
 
 #king-silhouette {
   position: relative;
   width: 100%;
   height: 100%;
-  animation: shadow-breathe 2.2s ease-in-out infinite;
+  animation: shadow-breathe 2s ease-in-out infinite;
 }
 
 @keyframes shadow-breathe {
@@ -243,8 +271,8 @@ body.footstep-rumble {
   top: 86px;
   left: 16px;
   width: 132px;
-  height: 230px;
-  background: linear-gradient(to bottom, #07060d 65%, rgba(7, 6, 13, 0.85) 100%);
+  height: 232px;
+  background: linear-gradient(to bottom, #07060d 72%, rgba(7, 6, 13, 0.92) 100%);
   clip-path: polygon(22% 0%, 78% 0%, 100% 100%, 0% 100%);
 }
 
@@ -279,10 +307,9 @@ body.footstep-rumble {
   transform: scale(3.5, 3.5);
 }
 
-/* Hiding in shadows visual state */
 #princess.hidden-in-shadows {
-  opacity: 0.42;
-  filter: brightness(0.45) contrast(1.15);
+  opacity: 0.38;
+  filter: brightness(0.42) contrast(1.2);
 }
 
 #princess .sprite-layer {
@@ -303,6 +330,7 @@ body.footstep-rumble {
 #princess .outfit { background-image: url('Corset v2.png');    z-index: 3; }
 #princess .skirt  { background-image: url('Skirt.png');        z-index: 4; }
 #princess .hair   { background-image: url('Female Hair3.png'); z-index: 5; }
+
 #princess.running .sprite-layer {
   animation: p-walk 0.8s steps(8) infinite;
 }
@@ -317,21 +345,28 @@ body.footstep-rumble {
   to   { background-position: 88.88% 16.66%; }
 }
 
-/* --- 3. DRAMATIC ROYAL DIALOGUE CARD --- */
+/* --- 3. DRAMATIC ROYAL DIALOGUE & CHOICE CARD --- */
 #royal-dialogue-card {
   position: fixed;
-  bottom: 28px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  width: min(680px, 92vw);
-  background: linear-gradient(145deg, rgba(24, 11, 20, 0.96), rgba(12, 10, 22, 0.98));
+  width: min(720px, 94vw);
+  background: linear-gradient(145deg, rgba(24, 11, 20, 0.97), rgba(12, 10, 22, 0.99));
   border: 2px solid #d4af37;
   border-radius: 8px;
   padding: 6px;
   z-index: 50;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.9), 0 0 28px rgba(212, 175, 55, 0.3);
   cursor: pointer;
   transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#royal-dialogue-card.scolding {
+  border-color: #ff4d4d;
+  background: linear-gradient(145deg, rgba(48, 8, 16, 0.98), rgba(16, 6, 12, 0.99));
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.95), 0 0 34px rgba(255, 60, 60, 0.45);
+  cursor: default;
 }
 
 #royal-dialogue-card.hidden {
@@ -346,6 +381,10 @@ body.footstep-rumble {
   padding: 16px 22px;
 }
 
+#royal-dialogue-card.scolding .card-border {
+  border-color: rgba(255, 90, 90, 0.5);
+}
+
 .royal-crest {
   color: #ffd966;
   font-size: 13px;
@@ -354,15 +393,52 @@ body.footstep-rumble {
   margin-bottom: 8px;
 }
 
+#royal-dialogue-card.scolding .royal-crest {
+  color: #ff758f;
+}
+
 #royal-line {
   color: #f8f5ec;
   font-size: 16px;
   line-height: 1.55;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+/* Multi-choice buttons when caught */
+#dialogue-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+
+#dialogue-choices.hidden {
+  display: none;
+}
+
+.choice-btn {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  color: #fff3d1;
+  padding: 10px 14px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+
+.choice-btn:hover {
+  background: rgba(212, 175, 55, 0.22);
+  border-color: #ffd966;
+  transform: translateX(4px);
 }
 
 .card-footer {
   text-align: right;
   font-size: 11px;
   color: #c9b37e;
+  margin-top: 6px;
 }
