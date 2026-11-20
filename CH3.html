@@ -8,12 +8,13 @@
 </head>
 <body id="game-body">
   <div id="transition-overlay"></div>
+  <div id="caught-flash"></div>
 
   <!-- HUD -->
   <div id="hud">
     <div id="location-banner">📍 Princess's Chambers</div>
     <div id="objective">Free Roam: Walk around your room or head right to the Balcony.</div>
-    <div id="controls-hint">[WASD / Arrows] Move • [E] Hide / Interact • [K] Test King Patrol</div>
+    <div id="controls-hint">[WASD / Arrows] Move • [E] Hide in Shadows • [K] Test Patrol</div>
   </div>
 
   <!-- Tension / Stealth Status Pill -->
@@ -44,7 +45,7 @@
     </div>
   </div>
 
-  <!-- Princess Multi-Layer Character (retains your Chapter 2/3 setup) -->
+  <!-- Princess Multi-Layer Character (with Skirt restored!) -->
   <div id="princess" class="facing-right">
     <div class="sprite-layer skin"></div>
     <div class="sprite-layer boots"></div>
@@ -53,12 +54,13 @@
     <div class="sprite-layer hair"></div>
   </div>
 
-  <!-- Dramatic Royal Dialogue Card -->
+  <!-- Dramatic Royal Dialogue & Multi-Choice Card -->
   <div id="royal-dialogue-card" class="hidden">
     <div class="card-border">
-      <div class="royal-crest">👑 HIS MAJESTY THE KING</div>
+      <div class="royal-crest" id="royal-speaker">👑 HIS MAJESTY THE KING</div>
       <p id="royal-line">"Still awake at this hour? The castle gates are locked till dawn..."</p>
-      <div class="card-footer">[Space / E / Click] Continue</div>
+      <div id="dialogue-choices" class="hidden"></div>
+      <div class="card-footer" id="card-footer">[Space / E / Click] Continue</div>
     </div>
   </div>
 
