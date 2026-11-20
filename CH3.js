@@ -19,6 +19,7 @@ const locationBanner = document.getElementById('location-banner');
 const objectiveText = document.getElementById('objective');
 const noiseBarFill = document.getElementById('noise-bar-fill');
 const susBadge = document.getElementById('sus-badge');
+const panicStatus = document.getElementById('panic-status');
 const arrowRight = document.getElementById('arrow-right');
 const taskMarkersWrap = document.getElementById('task-markers');
 const actionPrompt = document.getElementById('action-prompt');
@@ -55,16 +56,17 @@ const closeTaskBtn = document.getElementById('close-task-btn');
 // Princess Coordinates & State
 let pX = 400;
 let pY = 570;
-const normalSpeed = 6;
-const panicSpeed = 2.8;
+const baseSpeed = 6;
 let currentArea = 'room'; // 'room' <-> 'balcony'
 let isHiding = false;
 let noiseLevel = 0;
 
-// Escalation & Panic States
+// Caught / Suspicion / Panic States (Panic & blur ONLY activate after getting caught!)
+let caughtCount = 0;
 let isKingSus = false;
 let isPanicking = false;
 let breathsNeeded = 0;
+let balconyThreatActive = false; // True when a knight spots shadows on the balcony
 
 // Dialogue Queue for Princess Monologue
 let monologueQueue = [];
@@ -78,13 +80,12 @@ let patrolTimers = [];
 let patrolCount = 0;
 let pendingOutcome = null; // 'sus_panic' | 'reset_tasks' | 'normal'
 let activeTask = null;
-let timingAnimId = null;
 
 const ANSWER_TIME_LIMIT = 8.0;
 let answerCountdownInterval = null;
 let answerTimeLeft = ANSWER_TIME_LIMIT;
 
-// 3 Bedroom Tasks + 1 Multi-Round Hard Balcony Task (No escape rope)
+// 3 Bedroom Tasks + 2 Balcony Tasks (Fast Click + Star Spelling Quest)
 const tasks = [
   {
     id: 'pack',
@@ -96,9 +97,9 @@ const tasks = [
     hard: false
   },
   {
-    id: 'note',
+    id: 'love_letter',
     area: 'room',
-    label: '🪶 Write Alibi Note',
+    label: '💌 Write Love Letter',
     xPct: 0.50,
     y: 515,
     done: false,
@@ -114,15 +115,31 @@ const tasks = [
     hard: false
   },
   {
-    id: 'balcony_check',
+    id: 'star_click',
     area: 'balcony',
-    label: '🌙 Night-Air Signal Check (HARD)',
-    xPct: 0.72,
+    label: '✦ Catch Falling Stars',
+    xPct: 0.55,
+    y: 555,
+    done: false,
+    hard: true
+  },
+  {
+    id: 'star_spell',
+    area: 'balcony',
+    label: '✨ Name the Stars Quest',
+    xPct: 0.80,
     y: 560,
     done: false,
     hard: true
   }
 ];
+
+function getCurrentMovementSpeed() {
+  if (!isPanicking) return baseSpeed;
+  // Each time she gets caught, her panic movement gets slower and slower!
+  const slowdown = Math.min(4.4, 2.5 + (caughtCount - 1) * 0.85);
+  return Math.max(1.4, baseSpeed - slowdown);
+}
 
 function resetAllTasks() {
   tasks.forEach((t) => {
@@ -141,6 +158,11 @@ const normalRoyalLines = [
   '"Knights, search every room down the hall! I will check the Princess\'s wing myself."',
   '"Keep watch by the courtyard till dawn. No one sneaks past tonight."',
   '"Hmm... thought I heard something rattle in here. Better stay sharp."'
+];
+
+const balconyShadowLines = [
+  '"Your Majesty! I see shadows moving out on the balcony! Check the balcony too!"',
+  '"Sire, I hear rustling by the balcony railing—could be someone out there!"'
 ];
 
 const susRoyalLines = [
@@ -217,11 +239,13 @@ function advanceMonologue() {
 
 pDialogueBox.addEventListener('click', advanceMonologue);
 
-// --- PANIC ATTACK & BREATHING SYSTEM ---
-function startPanicAttack() {
+// --- PANIC ATTACK & BREATHING SYSTEM (Post-Catch Only) ---
+function triggerPostCatchPanic() {
   isPanicking = true;
-  breathsNeeded = 3;
+  breathsNeeded = Math.min(5, 2 + caughtCount);
   worldLayer.classList.add('panic-blur');
+  panicStatus.classList.remove('hidden');
+  panicStatus.textContent = `💔 Panic #${caughtCount} (Slower!) • Press [B]`;
   panicPrompt.classList.remove('hidden');
   panicPrompt.textContent = `😮‍💨 Gasping for air! Press [B] to breathe steadily (${breathsNeeded} left)`;
   showEmote('💦', 2500);
@@ -235,15 +259,16 @@ function performSteadyBreath() {
     breathsNeeded = 0;
     worldLayer.classList.remove('panic-blur');
     panicPrompt.classList.add('hidden');
+    panicStatus.classList.add('hidden');
     showEmote('✨', 2000);
     queueMonologue([
       {
-        text: 'In... and out... okay, I can breathe again. Don\'t pass out now, stay strong!',
+        text: 'In... and out... okay, the blur is clearing. Why do I always spiral like that when I get scared?!',
         emote: '...'
       }
     ]);
   } else {
-    panicPrompt.textContent = `😮‍💨 Inhale... exhale... Press [B] again (${breathsNeeded} left)`;
+    panicPrompt.textContent = `😮‍💨 *Gasp*... breathe in, breathe out... Press [B] (${breathsNeeded} left)`;
   }
 }
 
@@ -336,7 +361,7 @@ function updateObjectiveHUD() {
   if (doneCount < tasks.length) {
     objectiveText.textContent = `Tasks: ${doneCount}/${tasks.length} Done • Quiet & fast!`;
   } else {
-    objectiveText.textContent = `All 4/4 tasks ready! Head to the Balcony edge to meet him!`;
+    objectiveText.textContent = `All ${tasks.length}/${tasks.length} tasks done! Ready for the night!`;
   }
 }
 
@@ -379,7 +404,7 @@ function openTaskModal(task) {
         <div class="pack-items">
           <div class="drag-item" draggable="true" data-item="cloak">🧥 Dark Travel Cloak</div>
           <div class="drag-item" draggable="true" data-item="lantern">🏮 Hooded Lantern</div>
-          <div class="drag-item" draggable="true" data-item="letter">💌 Knight's Map & Note</div>
+          <div class="drag-item" draggable="true" data-item="letter">💌 Old Love Letter</div>
         </div>
         <div class="satchel-dropzone" id="satchel-zone">
           <div>🎒 Drop items here</div>
@@ -420,15 +445,41 @@ function openTaskModal(task) {
         if (packed >= 3) completeTask(task);
       }
     });
+  } else if (task.id === 'love_letter') {
+    // Old-school "Write Love Letter" sequence with crisp 💌 / ✦ symbols
+    taskTitle.textContent = '💌 Task 2: Write Love Letter';
+    taskInstructions.textContent = 'Pen an old-school letter in order (1 → 2 → 3 → 4) without smudging!';
+    let nextStep = 1;
+    taskBody.innerHTML = `
+      <div class="rune-row">
+        <button class="rune-btn" data-step="3">3. Verse of Devotion</button>
+        <button class="rune-btn" data-step="1">1. ✦ Unfold Parchment</button>
+        <button class="rune-btn" data-step="4">4. 💌 Fold &amp; Seal</button>
+        <button class="rune-btn" data-step="2">2. Dip Nib in Ink</button>
+      </div>
+    `;
+    taskBody.querySelectorAll('.rune-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const step = parseInt(btn.dataset.step, 10);
+        if (step === nextStep) {
+          btn.classList.add('done');
+          nextStep++;
+          addNoise(8);
+          if (nextStep > 4) completeTask(task);
+        } else {
+          addNoise(45, '"Ink spilled?! Knights, search every chamber—I\'m checking the Princess\'s room myself!"');
+        }
+      });
+    });
   } else if (task.id === 'decoy') {
-    taskTitle.textContent = '🛏️ Task 2: Make Bed Decoy';
+    taskTitle.textContent = '🛏️ Task 3: Make Bed Decoy';
     taskInstructions.textContent = 'Arrange all 3 pillows under the blanket so it looks like you\'re sleeping!';
     let placed = 0;
     taskBody.innerHTML = `
       <div class="decoy-grid">
         <button class="pillow-btn" data-idx="1">🛏️ Fluff Pillow</button>
         <button class="pillow-btn" data-idx="2">🧸 Bolster Cushion</button>
-        <button class="pillow-btn" data-idx="3">🛌 Blanket Tuck</button>
+        <button class="pillow-btn" data-idx="3">✦ Blanket Tuck</button>
       </div>
     `;
     taskBody.querySelectorAll('.pillow-btn').forEach((btn) => {
@@ -441,95 +492,86 @@ function openTaskModal(task) {
         if (placed >= 3) completeTask(task);
       });
     });
-  } else if (task.id === 'note') {
-    taskTitle.textContent = '🪶 Task 3: Write Alibi Note';
-    taskInstructions.textContent = 'Click the seals in order (1 → 2 → 3 → 4) without spilling ink!';
-    let nextStep = 1;
+  } else if (task.id === 'star_click') {
+    // Balcony Fast-Click Task (No timing bar!)
+    const goal = 7;
+    let caughtStars = 0;
+    taskTitle.textContent = '✦ Balcony Task: Fast-Click Starlight';
+    taskInstructions.textContent = `Click the glowing stars quickly (${goal} stars) before they drift away!`;
     taskBody.innerHTML = `
-      <div class="rune-row">
-        <button class="rune-btn" data-step="3">3. Sign Name</button>
-        <button class="rune-btn" data-step="1">1. Dip Quill</button>
-        <button class="rune-btn" data-step="4">4. Wax Seal</button>
-        <button class="rune-btn" data-step="2">2. Write Excuse</button>
-      </div>
+      <div style="margin-bottom:8px;font-size:13px;color:#ffd166;" id="star-counter">Stars Gathered: 0 / ${goal}</div>
+      <div class="star-click-arena" id="star-arena"></div>
     `;
-    taskBody.querySelectorAll('.rune-btn').forEach((btn) => {
+    const arena = document.getElementById('star-arena');
+    const counterEl = document.getElementById('star-counter');
+
+    function spawnStar() {
+      if (!activeTask || activeTask.id !== 'star_click' || caughtStars >= goal) return;
+      arena.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.className = 'star-target-btn';
+      btn.textContent = '✦ STAR';
+      const leftPct = 15 + Math.random() * 70;
+      const topPct = 18 + Math.random() * 64;
+      btn.style.left = leftPct + '%';
+      btn.style.top = topPct + '%';
       btn.addEventListener('click', () => {
-        const step = parseInt(btn.dataset.step, 10);
-        if (step === nextStep) {
-          btn.classList.add('done');
-          nextStep++;
-          addNoise(8);
-          if (nextStep > 4) completeTask(task);
+        caughtStars++;
+        addNoise(7);
+        counterEl.textContent = `Stars Gathered: ${caughtStars} / ${goal}`;
+        if (caughtStars >= goal) {
+          completeTask(task);
         } else {
-          addNoise(45, '"Clatter?! Knights, search every chamber—I\'m checking the Princess\'s room myself!"');
+          spawnStar();
         }
       });
-    });
-  } else if (task.id === 'balcony_check') {
-    // HARD MULTI-ROUND BALCONY TASK (3 rounds, faster speed, narrow window)
-    const totalRounds = 3;
-    let round = 1;
-    let needlePos = 0;
-    let dir = 1;
-    const zoneStart = 44;
-    const zoneWidth = 12;
-
-    taskTitle.textContent = '🌙 Balcony Task (HARD): Night-Air Alignment';
-    taskInstructions.textContent = 'Complete all 3 rounds! Lock the marker inside the narrow green zone each round.';
-
-    taskBody.innerHTML = `
-      <div style="margin-bottom:8px;font-size:13px;color:#ffd166;" id="round-progress">Round: 1 / ${totalRounds}</div>
-      <div class="timing-bar">
-        <div class="timing-zone" style="left:${zoneStart}%;width:${zoneWidth}%;"></div>
-        <div class="timing-needle" id="timing-needle" style="left:0%;"></div>
-      </div>
-      <button class="timing-action-btn" id="lock-knot-btn">⚡ ALIGN SIGNAL [SPACE]</button>
-    `;
-
-    const needleEl = document.getElementById('timing-needle');
-    const progEl = document.getElementById('round-progress');
-    const lockBtn = document.getElementById('lock-knot-btn');
-
-    function animateNeedle() {
-      const roundSpeed = 2.1 + round * 0.65 + (isKingSus ? 0.45 : 0);
-      needlePos += dir * roundSpeed;
-      if (needlePos >= 98) {
-        needlePos = 98;
-        dir = -1;
-      } else if (needlePos <= 0) {
-        needlePos = 0;
-        dir = 1;
-      }
-      if (needleEl) needleEl.style.left = needlePos + '%';
-      timingAnimId = requestAnimationFrame(animateNeedle);
+      arena.appendChild(btn);
     }
-    timingAnimId = requestAnimationFrame(animateNeedle);
+    spawnStar();
+  } else if (task.id === 'star_spell') {
+    // Balcony Star Spelling Quest (No timing bar!)
+    const targetWord = 'LUNA';
+    const letters = ['N', 'L', 'A', 'U', 'S', 'R'];
+    let typed = '';
 
-    lockBtn.addEventListener('click', () => {
-      if (needlePos >= zoneStart && needlePos <= zoneStart + zoneWidth) {
-        if (round < totalRounds) {
-          round++;
-          progEl.textContent = `Round: ${round} / ${totalRounds} — Faster now!`;
+    taskTitle.textContent = '✨ Balcony Task: Name the Stars Quest';
+    taskInstructions.textContent = 'Click the star letters in order to spell the night-sky word!';
+    taskBody.innerHTML = `
+      <div class="spell-target-word">SPELL: ${targetWord} &nbsp;|&nbsp; <span id="typed-preview">____</span></div>
+      <div class="star-letter-grid" id="letter-grid"></div>
+    `;
+    const grid = document.getElementById('letter-grid');
+    const preview = document.getElementById('typed-preview');
+
+    letters.forEach((ch) => {
+      const btn = document.createElement('button');
+      btn.className = 'star-letter-btn';
+      btn.textContent = ch;
+      btn.addEventListener('click', () => {
+        const expected = targetWord[typed.length];
+        if (ch === expected) {
+          typed += ch;
+          btn.classList.add('picked');
+          preview.textContent = typed.padEnd(targetWord.length, '_');
+          addNoise(6);
+          if (typed === targetWord) {
+            completeTask(task);
+          }
         } else {
-          completeTask(task);
+          // Wrong star letter resets spelling & adds a little noise
+          typed = '';
+          preview.textContent = '____';
+          grid.querySelectorAll('.star-letter-btn').forEach((b) => b.classList.remove('picked'));
+          addNoise(20);
         }
-      } else {
-        // Missed round resets round progress & adds noise
-        round = 1;
-        progEl.textContent = `Round: 1 / ${totalRounds} — Slipped! Try again!`;
-        addNoise(45, '"What was that sound out by the balcony?! Knights, check every room—I\'m checking on her!"');
-      }
+      });
+      grid.appendChild(btn);
     });
   }
 }
 
 function closeTaskModal() {
   activeTask = null;
-  if (timingAnimId) {
-    cancelAnimationFrame(timingAnimId);
-    timingAnimId = null;
-  }
   taskModal.classList.add('hidden');
 }
 
@@ -553,7 +595,7 @@ function completeTask(task) {
   } else {
     queueMonologue([
       {
-        text: 'Aaaah everything is ready!! Okay, don\'t panic—he\'s waiting for me out there!',
+        text: 'Aaaah everything is ready!! Okay, don\'t panic—I\'m finally ready for tonight!',
         emote: '♥'
       }
     ]);
@@ -600,6 +642,7 @@ function startAnswerTimer() {
 
 function handleAnswerTimeout() {
   if (patrolState !== 'scolding') return;
+  caughtCount++;
   playCaughtSting();
   caughtFlash.classList.add('active');
   setTimeout(() => caughtFlash.classList.remove('active'), 550);
@@ -617,11 +660,14 @@ function startKingPatrol(customCallout = null) {
   clearPatrolTimers();
   closeTaskModal();
 
+  // Every 2nd patrol (or when on balcony), a knight may spot shadows on the balcony!
+  balconyThreatActive = (patrolCount % 2 === 1);
+
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
-  patrolText.textContent = isKingSus
-    ? 'Suspicious King approaching fast...'
-    : 'Footsteps & lantern approaching...';
+  patrolText.textContent = balconyThreatActive
+    ? 'Knight calls out about shadows on the balcony! Hide if out there!'
+    : (isKingSus ? 'Suspicious King approaching fast...' : 'Footsteps & lantern approaching...');
   torchSweep.classList.add('active');
   showEmote('!', 2000);
 
@@ -635,9 +681,13 @@ function startKingPatrol(customCallout = null) {
   patrolTimers.push(setTimeout(() => {
     patrolState = 'checking';
     patrolAlert.classList.add('danger');
-    patrolText.textContent = currentArea === 'balcony'
-      ? 'King checking room — you\'re safe on the balcony!'
-      : 'Press [E] to HIDE!';
+    if (currentArea === 'balcony') {
+      patrolText.textContent = balconyThreatActive
+        ? 'Knight saw balcony shadows! King is checking—HIDE [E]!'
+        : 'King checking room — safe on balcony (no shadow alert)!';
+    } else {
+      patrolText.textContent = 'Press [E] to HIDE!';
+    }
     kingShadowWrap.classList.remove('hidden');
     requestAnimationFrame(() => {
       kingShadowWrap.classList.add('visible');
@@ -652,6 +702,8 @@ function startKingPatrol(customCallout = null) {
     kingShadowWrap.classList.add('deep-scan');
     if (currentArea === 'room') {
       patrolText.textContent = 'He\'s looking in... STAY HIDDEN!';
+    } else if (balconyThreatActive) {
+      patrolText.textContent = 'King scanning the balcony too! STAY HIDDEN!';
     }
   }, checkDelay + 1600));
 
@@ -661,13 +713,22 @@ function startKingPatrol(customCallout = null) {
     patrolAlert.classList.remove('danger');
     stopAnswerTimer();
 
-    const pool = isKingSus ? susRoyalLines : normalRoyalLines;
-    const line = customCallout || pool[patrolCount % pool.length];
+    let line;
+    if (customCallout) {
+      line = customCallout;
+    } else if (balconyThreatActive) {
+      line = balconyShadowLines[patrolCount % balconyShadowLines.length];
+    } else {
+      const pool = isKingSus ? susRoyalLines : normalRoyalLines;
+      line = pool[patrolCount % pool.length];
+    }
     patrolCount++;
 
     royalDialogueCard.classList.remove('hidden', 'scolding');
     royalDialogueCard.classList.add('royal-gold');
-    royalSpeaker.textContent = isKingSus ? '👑 KING (SUSPICIOUS)' : '👑 KING';
+    royalSpeaker.textContent = balconyThreatActive
+      ? '👑 KING & KNIGHT WATCH'
+      : (isKingSus ? '👑 KING (SUSPICIOUS)' : '👑 KING');
     royalLine.textContent = line;
     dialogueChoices.classList.add('hidden');
     cardFooter.classList.remove('hidden');
@@ -678,6 +739,7 @@ function startKingPatrol(customCallout = null) {
 function triggerCaughtScolding() {
   clearPatrolTimers();
   closeTaskModal();
+  caughtCount++;
   patrolState = 'scolding';
   pendingOutcome = null;
   showEmote('💦', 2500);
@@ -724,7 +786,7 @@ function resolveScoldChoice(choice) {
     isKingSus = true;
     susBadge.classList.remove('hidden');
     pendingOutcome = 'sus_panic';
-    cardFooter.textContent = '[Space / E / Click] He bought it... for now';
+    cardFooter.textContent = '[Space / E / Click] He bought it... panic setting in';
   } else {
     pendingOutcome = 'reset_tasks';
     cardFooter.textContent = '[Space / E / Click] Guards searching your stuff...';
@@ -734,6 +796,7 @@ function resolveScoldChoice(choice) {
 function finishKingPatrol() {
   const outcome = pendingOutcome || 'normal';
   pendingOutcome = null;
+  balconyThreatActive = false;
 
   clearPatrolTimers();
   stopAnswerTimer();
@@ -753,28 +816,33 @@ function finishKingPatrol() {
     isHiding = false;
     princess.classList.remove('hidden-in-shadows');
     resetAllTasks();
+    triggerPostCatchPanic();
     queueMonologue([
       {
-        text: 'Ughhh no!! The guards went through everything and ruined my setup! I have to redo all my tasks from scratch...',
-        emote: '💦'
-      }
-    ]);
-  } else if (outcome === 'sus_panic') {
-    startPanicAttack();
-    queueMonologue([
-      {
-        text: 'He believed me... barely. Now he\'s suspicious of me—I can hear him muttering outside about how weird I\'m acting.',
+        text: 'Ughhh no!! The guards went through my stuff and ruined my tasks—I have to do it all over again...',
         emote: '💦'
       },
       {
-        text: 'I wish I just had freedom... I wish Father could actually see the good in me instead of locking me up like a prisoner.',
+        text: 'Why can\'t I breathe?! What if he locks me up forever... what if I mess everything up tonight?!',
+        emote: '...'
+      }
+    ]);
+  } else if (outcome === 'sus_panic') {
+    triggerPostCatchPanic();
+    queueMonologue([
+      {
+        text: 'He believed me... barely. Now he\'s suspicious of me—I can hear him talking outside about how sus I am.',
+        emote: '💦'
+      },
+      {
+        text: 'My chest feels tight... what if he figures out the truth? I wish I just had freedom and he saw the good in me instead of treating me like a threat.',
         emote: '...'
       }
     ]);
   } else if (isKingSus) {
     queueMonologue([
       {
-        text: 'Ugh, he\'s still talking out there like I\'m some kind of suspect... I just want to breathe freely for once.',
+        text: 'Ugh, he\'s still out there talking about how suspicious I am... I just want to breathe freely for once.',
         emote: '...'
       }
     ]);
@@ -813,7 +881,7 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 
-  // [B] to steady breathing during panic attack
+  // [B] to steady breathing during post-catch panic attack
   if (k === 'b' && isPanicking) {
     performSteadyBreath();
     return;
@@ -821,12 +889,6 @@ window.addEventListener('keydown', (e) => {
 
   if (k === 'escape' && activeTask) {
     closeTaskModal();
-    return;
-  }
-
-  if (activeTask && activeTask.id === 'balcony_check' && k === ' ') {
-    const btn = document.getElementById('lock-knot-btn');
-    if (btn) btn.click();
     return;
   }
 
@@ -859,7 +921,8 @@ window.addEventListener('keydown', (e) => {
       openTaskModal(nearTask);
       return;
     }
-    if (currentArea === 'room') {
+    // Can hide in the room OR on the balcony when a knight spots shadows there!
+    if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
       isHiding = !isHiding;
       princess.classList.toggle('hidden-in-shadows', isHiding);
     }
@@ -878,7 +941,7 @@ window.addEventListener('resize', renderTaskMarkers);
 // --- MAIN LOOP ---
 function gameLoop() {
   let pMoving = false;
-  const activeSpeed = isPanicking ? panicSpeed : normalSpeed;
+  const activeSpeed = getCurrentMovementSpeed();
   const locked =
     isMonologueActive ||
     Boolean(activeTask) ||
@@ -912,9 +975,11 @@ function gameLoop() {
     }
   }
 
-  // Balcony is safe from getting caught! Only unhidden in the room triggers getting caught.
-  if (patrolState === 'checking' && !isHiding && currentArea === 'room') {
-    triggerCaughtScolding();
+  // Caught if unhidden in room during check, OR unhidden on balcony when a knight spotted balcony shadows!
+  if (patrolState === 'checking' && !isHiding) {
+    if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
+      triggerCaughtScolding();
+    }
   }
 
   if (pY < 480) pY = 480;
@@ -923,7 +988,13 @@ function gameLoop() {
   const nearTask = getNearbyTask();
   if (currentArea === 'balcony' && (patrolState === 'approaching' || patrolState === 'checking')) {
     actionPrompt.classList.remove('hidden');
-    actionPrompt.textContent = '🌙 Safe on the Balcony while King checks!';
+    if (balconyThreatActive) {
+      actionPrompt.textContent = isHiding
+        ? 'Hidden on balcony — DO NOT MOVE!'
+        : '⚠️ Knight saw balcony shadows! Press [E] to HIDE!';
+    } else {
+      actionPrompt.textContent = '🌙 Safe on the Balcony while King checks!';
+    }
   } else if (patrolState === 'approaching' || patrolState === 'checking') {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = isHiding
@@ -948,7 +1019,7 @@ function gameLoop() {
       isHiding = false;
       princess.classList.remove('hidden-in-shadows');
       worldLayer.style.backgroundImage = "url('NightimeBalcony.png')";
-      locationBanner.textContent = "📍 Royal Balcony (Safe Zone)";
+      locationBanner.textContent = "📍 Royal Balcony";
       pX = Math.round(window.innerWidth * 0.18);
       pY = Math.max(pY, 540);
       renderTaskMarkers();
@@ -959,6 +1030,8 @@ function gameLoop() {
 
     if (pX <= Math.round(window.innerWidth * 0.12)) {
       currentArea = 'room';
+      isHiding = false;
+      princess.classList.remove('hidden-in-shadows');
       worldLayer.style.backgroundImage = "url('NightimePrincessRoom.png')";
       locationBanner.textContent = "📍 Princess's Chambers";
       pX = window.innerWidth - 170;
@@ -986,7 +1059,7 @@ queueMonologue(
       emote: '♥'
     },
     {
-      text: 'Okay, don\'t get ahead of yourself. If Father catches me sneaking out, I am SO dead... *gulp*.',
+      text: 'Okay, don\'t get ahead of yourself. If Father catches me, I am SO dead... *gulp*.',
       emote: '💦'
     },
     {
@@ -998,7 +1071,7 @@ queueMonologue(
       emote: '...'
     },
     {
-      text: 'At least out on the balcony I\'m out of sight when he checks—though the night-air task out there takes 3 rounds!',
+      text: 'On the balcony I\'m safe from room checks—unless a knight spots shadows out there and calls the King over!',
       emote: '💦'
     }
   ],
