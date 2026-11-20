@@ -8,23 +8,267 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background-color: #121024;
+  background-color: #0b0a14;
   background-image: url('NightimePrincessRoom.png');
   background-size: cover;
-  background-position: center;
+  background-position: center bottom;
   background-repeat: no-repeat;
   position: relative;
+  font-family: 'Courier New', Courier, monospace;
+  user-select: none;
+  transition: background-image 0.35s ease;
 }
 
-/* --- PRINCESS CONTAINER & FLIPPING --- */
+/* Subtle screen rumble for heavy royal footsteps */
+body.footstep-rumble {
+  animation: heavy-step 0.22s ease-in-out;
+}
+
+@keyframes heavy-step {
+  0%   { transform: translateY(0px); }
+  40%  { transform: translateY(3px); }
+  100% { transform: translateY(0px); }
+}
+
+/* --- HUD --- */
+#hud {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  background: rgba(11, 12, 24, 0.82);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 6px;
+  padding: 12px 16px;
+  color: #f4f1ea;
+  z-index: 30;
+  max-width: 460px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+
+#location-banner {
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffd966;
+  margin-bottom: 4px;
+}
+
+#objective {
+  font-size: 13px;
+  color: #e2dfd7;
+  line-height: 1.4;
+}
+
+#controls-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #9ea4c4;
+}
+
+/* --- PATROL ALERT BANNER --- */
+#patrol-alert {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: rgba(34, 12, 18, 0.9);
+  border: 1px solid #d4af37;
+  color: #ffe699;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 35;
+  box-shadow: 0 0 22px rgba(255, 166, 0, 0.35);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#patrol-alert.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+}
+
+.lantern-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffb703;
+  box-shadow: 0 0 10px #ffb703, 0 0 20px #fb8500;
+  animation: lantern-pulse 0.8s infinite alternate;
+}
+
+@keyframes lantern-pulse {
+  from { transform: scale(0.85); opacity: 0.7; }
+  to   { transform: scale(1.25); opacity: 1; }
+}
+
+/* --- HIDE PROMPT --- */
+#hide-prompt {
+  position: absolute;
+  bottom: 135px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(12, 14, 28, 0.88);
+  border: 1px solid rgba(255, 217, 102, 0.6);
+  color: #ffd966;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 28;
+  transition: opacity 0.25s ease;
+}
+
+#hide-prompt.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* --- BALCONY ARROW --- */
+#arrow-right {
+  position: absolute;
+  right: 28px;
+  top: 52%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 240, 200, 0.75);
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  z-index: 15;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+#arrow-right.highlight {
+  color: #ffd966;
+  transform: translateY(-50%) scale(1.12);
+}
+
+/* --- 1. ENVIRONMENTAL TORCHLIGHT SWEEP --- */
+#torch-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at 14% 55%,
+    rgba(255, 175, 55, 0.34) 0%,
+    rgba(255, 130, 30, 0.14) 28%,
+    rgba(0, 0, 0, 0.45) 72%
+  );
+  z-index: 12;
+  transition: opacity 0.7s ease;
+}
+
+#torch-sweep.active {
+  opacity: 1;
+  animation: torch-flicker 1.4s infinite alternate;
+}
+
+@keyframes torch-flicker {
+  0%   { filter: brightness(0.95); }
+  50%  { filter: brightness(1.12); }
+  100% { filter: brightness(0.98); }
+}
+
+/* --- 2. PURE-CSS KING SILHOUETTE --- */
+#king-shadow-wrap {
+  position: absolute;
+  left: 9%;
+  bottom: 95px;
+  width: 170px;
+  height: 320px;
+  pointer-events: none;
+  z-index: 14;
+  opacity: 0;
+  transform: translateX(-45px) skewX(-6deg);
+  transition: opacity 0.7s ease, transform 0.8s ease;
+  filter: blur(1.2px) drop-shadow(0 0 18px rgba(255, 165, 40, 0.45));
+}
+
+#king-shadow-wrap.visible {
+  opacity: 0.84;
+  transform: translateX(0px) skewX(-6deg);
+}
+
+#king-shadow-wrap.looking-in {
+  transform: translateX(18px) skewX(-2deg) scaleX(1.04);
+}
+
+#king-silhouette {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  animation: shadow-breathe 2.2s ease-in-out infinite;
+}
+
+@keyframes shadow-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(1.025); }
+}
+
+#king-silhouette .crown {
+  position: absolute;
+  top: 6px;
+  left: 52px;
+  width: 56px;
+  height: 26px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+#king-silhouette .crown span {
+  width: 15px;
+  height: 24px;
+  background: #07060d;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+#king-silhouette .head {
+  position: absolute;
+  top: 28px;
+  left: 50px;
+  width: 60px;
+  height: 64px;
+  background: #07060d;
+  border-radius: 45% 45% 40% 40%;
+}
+
+#king-silhouette .cloak {
+  position: absolute;
+  top: 86px;
+  left: 16px;
+  width: 132px;
+  height: 230px;
+  background: linear-gradient(to bottom, #07060d 65%, rgba(7, 6, 13, 0.85) 100%);
+  clip-path: polygon(22% 0%, 78% 0%, 100% 100%, 0% 100%);
+}
+
+#king-silhouette .sword-tip {
+  position: absolute;
+  top: 195px;
+  left: 126px;
+  width: 58px;
+  height: 10px;
+  background: #07060d;
+  transform: rotate(24deg);
+  border-radius: 2px;
+}
+
+/* --- PRINCESS SPRITE SETUP --- */
 #princess {
   width: 96px;
   height: 96px;
   position: absolute;
-  image-rendering: pixelated;
   transform: scale(3.5);
   transform-origin: center bottom;
-  z-index: 5;
+  image-rendering: pixelated;
+  z-index: 20;
+  transition: opacity 0.25s ease, filter 0.25s ease;
 }
 
 #princess.facing-right {
@@ -35,8 +279,13 @@ body {
   transform: scale(3.5, 3.5);
 }
 
-/* --- BULLETPROOF LAYER ALIGNMENT --- */
-#princess .layer {
+/* Hiding in shadows visual state */
+#princess.hidden-in-shadows {
+  opacity: 0.42;
+  filter: brightness(0.45) contrast(1.15);
+}
+
+#princess .sprite-layer {
   position: absolute;
   top: 0;
   left: 0;
@@ -46,110 +295,74 @@ body {
   background-repeat: no-repeat;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  animation: idle 0.8s steps(5) infinite;
+  animation: p-idle 0.8s steps(5) infinite;
 }
 
-/* --- WORKING 8-STEP WALK ANIMATION --- */
-#princess.running .layer {
-  animation: walk 0.8s steps(8) infinite;
+#princess .skin   { background-image: url('Female Skin1.png'); z-index: 1; }
+#princess .boots  { background-image: url('Boots.png');        z-index: 2; }
+#princess .outfit { background-image: url('Corset v2.png');    z-index: 3; }
+#princess .hair   { background-image: url('Female Hair3.png'); z-index: 4; }
+
+#princess.running .sprite-layer {
+  animation: p-walk 0.8s steps(8) infinite;
 }
 
-@keyframes idle {
+@keyframes p-idle {
   from { background-position: 0% 0%; }
-  to { background-position: 55.55% 0%; }
+  to   { background-position: 55.55% 0%; }
 }
 
-@keyframes walk {
+@keyframes p-walk {
   from { background-position: 0% 16.66%; }
-  to { background-position: 88.88% 16.66%; }
+  to   { background-position: 88.88% 16.66%; }
 }
 
-.hidden {
-  display: none !important;
-}
-
-/* --- UI BANNER & OBJECTIVES --- */
-#location-banner {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(12, 14, 28, 0.78);
-  color: #fff;
-  padding: 10px 18px;
-  font-family: monospace;
-  font-size: 16px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  z-index: 10;
-}
-
-#objective {
-  position: absolute;
-  top: 70px;
-  left: 20px;
-  background: rgba(12, 14, 28, 0.72);
-  color: #ffeb3b;
-  padding: 8px 14px;
-  font-family: sans-serif;
-  font-size: 14px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 235, 59, 0.25);
-  z-index: 10;
-}
-
-/* --- EDGE NAVIGATION INDICATORS --- */
-.edge-indicator {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(12, 14, 28, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #fff;
-  padding: 10px 16px;
-  font-family: monospace;
-  font-size: 14px;
-  letter-spacing: 1px;
-  border-radius: 4px;
-  z-index: 20;
-  opacity: 0.45;
-  transition: opacity 0.3s ease, background 0.3s ease, border-color 0.3s ease;
-  pointer-events: none;
-}
-
-.edge-indicator.right {
-  right: 15px;
-}
-
-.edge-indicator.highlight {
-  opacity: 0.95;
-  background: rgba(20, 22, 42, 0.9);
-  border-color: #ffdf00;
-  box-shadow: 0 0 12px rgba(255, 223, 0, 0.35);
-}
-
-.arrow-icon {
-  font-size: 16px;
-  color: #ffdf00;
-}
-
-/* --- PURE BLACK FADE OVERLAY --- */
-.fade-overlay {
+/* --- 3. DRAMATIC ROYAL DIALOGUE CARD --- */
+#royal-dialogue-card {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: #000000;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(680px, 92vw);
+  background: linear-gradient(145deg, rgba(24, 11, 20, 0.96), rgba(12, 10, 22, 0.98));
+  border: 2px solid #d4af37;
+  border-radius: 8px;
+  padding: 6px;
+  z-index: 50;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(212, 175, 55, 0.25);
+  cursor: pointer;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#royal-dialogue-card.hidden {
   opacity: 0;
   pointer-events: none;
-  z-index: 9999;
-  transition: opacity 1.5s ease-in-out;
+  transform: translateX(-50%) translateY(16px);
 }
 
-.fade-overlay.active {
-  opacity: 1;
-  pointer-events: auto;
+.card-border {
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 5px;
+  padding: 16px 22px;
+}
+
+.royal-crest {
+  color: #ffd966;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+#royal-line {
+  color: #f8f5ec;
+  font-size: 16px;
+  line-height: 1.55;
+  margin-bottom: 10px;
+}
+
+.card-footer {
+  text-align: right;
+  font-size: 11px;
+  color: #c9b37e;
 }
