@@ -12,16 +12,24 @@ window.addEventListener('DOMContentLoaded', removeOverlay);
 setTimeout(removeOverlay, 50);
 
 const princess = document.getElementById('princess');
+const princessEmote = document.getElementById('princess-emote');
 const gameBody = document.getElementById('game-body');
 const caughtFlash = document.getElementById('caught-flash');
 const locationBanner = document.getElementById('location-banner');
 const objectiveText = document.getElementById('objective');
+const noiseBarFill = document.getElementById('noise-bar-fill');
 const arrowRight = document.getElementById('arrow-right');
+const taskMarkersWrap = document.getElementById('task-markers');
+const actionPrompt = document.getElementById('action-prompt');
+
+// Princess Monologue Box (Ch.2 Sc.3 style)
+const pDialogueBox = document.getElementById('princess-dialogue-box');
+const pSpeaker = document.getElementById('p-speaker');
+const pDialogueText = document.getElementById('p-dialogue-text');
 
 // King Presence & Dialogue UI
 const patrolAlert = document.getElementById('patrol-alert');
 const patrolText = document.getElementById('patrol-text');
-const hidePrompt = document.getElementById('hide-prompt');
 const torchSweep = document.getElementById('torch-sweep');
 const kingShadowWrap = document.getElementById('king-shadow-wrap');
 const royalDialogueCard = document.getElementById('royal-dialogue-card');
@@ -35,31 +43,83 @@ const answerTimerWrap = document.getElementById('answer-timer-wrap');
 const answerTimerLabel = document.getElementById('answer-timer-label');
 const answerTimerFill = document.getElementById('answer-timer-fill');
 
+// Task Modal UI
+const taskModal = document.getElementById('task-modal');
+const taskTitle = document.getElementById('task-title');
+const taskInstructions = document.getElementById('task-instructions');
+const taskBody = document.getElementById('task-body');
+const closeTaskBtn = document.getElementById('close-task-btn');
+
 // Princess Coordinates & State
 let pX = 400;
 let pY = 570;
 const speed = 6;
 let currentArea = 'room'; // 'room' <-> 'balcony'
 let isHiding = false;
+let noiseLevel = 0;
 
-// King Patrol State Machine: 'idle' | 'approaching' | 'checking' | 'dialogue' | 'scolding' | 'scold_result'
-let patrolState = 'idle';
+// Dialogue Queue for Princess Monologue
+let monologueQueue = [];
+let isMonologueActive = false;
+
+// Patrol & Task State
+let patrolState = 'idle'; // 'idle' | 'approaching' | 'checking' | 'dialogue' | 'scolding' | 'scold_result'
 let patrolTimers = [];
 let patrolCount = 0;
 let scoldWasGrounded = false;
+let activeTask = null;
+let timingAnimId = null;
 
-// Countdown timer for answering when caught
-const ANSWER_TIME_LIMIT = 8.0; // seconds
+const ANSWER_TIME_LIMIT = 8.0;
 let answerCountdownInterval = null;
 let answerTimeLeft = ANSWER_TIME_LIMIT;
 
-const royalLines = [
-  '"Keep watch by the hall till dawn. No one leaves."',
-  '"Thought I heard footsteps... must be the wind."',
-  '"Check the east wall again before morning."'
+// 3 Bedroom Tasks + 1 Hard Exposed Balcony Task
+const tasks = [
+  {
+    id: 'pack',
+    area: 'room',
+    label: '🎒 Pack Escape Bag',
+    xPct: 0.25,
+    y: 540,
+    done: false,
+    hard: false
+  },
+  {
+    id: 'decoy',
+    area: 'room',
+    label: '🛏️ Fake Bed Decoy',
+    xPct: 0.78,
+    y: 545,
+    done: false,
+    hard: false
+  },
+  {
+    id: 'note',
+    area: 'room',
+    label: '🪶 Write Alibi Note',
+    xPct: 0.52,
+    y: 525,
+    done: false,
+    hard: false
+  },
+  {
+    id: 'rope',
+    area: 'balcony',
+    label: '🪢 Tie Escape Rope (HARD)',
+    xPct: 0.64,
+    y: 560,
+    done: false,
+    hard: true
+  }
 ];
 
-// Single consistent caught scenario & choices every time
+const royalLines = [
+  '"Knights, search every room down the hall! I will check the Princess\'s wing myself."',
+  '"Keep watch by the courtyard till dawn. No one sneaks past tonight."',
+  '"Hmm... thought I heard something rattle in here. Better stay sharp."'
+];
+
 const caughtEncounter = {
   scold: '"Why are you still awake?! Go to bed right now!"',
   choices: [
@@ -81,6 +141,39 @@ const caughtEncounter = {
   ]
 };
 
+// --- EMOTES & PRINCESS MONOLOGUE ---
+let emoteTimeout = null;
+function showEmote(symbol, duration = 2200) {
+  if (!princessEmote) return;
+  princessEmote.textContent = symbol;
+  princessEmote.classList.remove('hidden');
+  clearTimeout(emoteTimeout);
+  emoteTimeout = setTimeout(() => {
+    princessEmote.classList.add('hidden');
+  }, duration);
+}
+
+function queueMonologue(lines) {
+  monologueQueue = [...lines];
+  advanceMonologue();
+}
+
+function advanceMonologue() {
+  if (monologueQueue.length === 0) {
+    isMonologueActive = false;
+    pDialogueBox.classList.add('hidden');
+    return;
+  }
+  isMonologueActive = true;
+  const item = monologueQueue.shift();
+  pSpeaker.textContent = '💭 PRINCESS';
+  pDialogueText.textContent = item.text;
+  if (item.emote) showEmote(item.emote, 2400);
+  pDialogueBox.classList.remove('hidden');
+}
+
+pDialogueBox.addEventListener('click', advanceMonologue);
+
 // --- WEB AUDIO SOUND EFFECTS ---
 let audioCtx = null;
 function getAudioCtx() {
@@ -89,7 +182,6 @@ function getAudioCtx() {
   return audioCtx;
 }
 
-// Layered heavy boot thud + metallic armor/spur step sound
 function playFootstepSound() {
   try {
     const ctx = getAudioCtx();
@@ -121,7 +213,6 @@ function playFootstepSound() {
   } catch (e) {}
 }
 
-// Dramatic low brass/alarm sting when caught or timer expires
 function playCaughtSting() {
   try {
     const ctx = getAudioCtx();
@@ -149,6 +240,246 @@ function triggerFootstepPulse() {
   playFootstepSound();
 }
 
+// --- NOISE SYSTEM (Triggers King check if too loud!) ---
+function addNoise(amount, reasonText) {
+  noiseLevel = Math.min(100, noiseLevel + amount);
+  noiseBarFill.style.width = noiseLevel + '%';
+  showEmote('💦', 1600);
+
+  if (noiseLevel >= 100 && patrolState === 'idle') {
+    noiseLevel = 0;
+    noiseBarFill.style.width = '0%';
+    closeTaskModal();
+    startKingPatrol(
+      reasonText || '"I heard a noise! Knights, check every room—I\'ll inspect the Princess\'s wing myself!"'
+    );
+  }
+}
+
+function updateObjectiveHUD() {
+  const doneCount = tasks.filter((t) => t.done).length;
+  if (doneCount < tasks.length) {
+    objectiveText.textContent = `Tasks: ${doneCount}/${tasks.length} Done • Finish prep & escape!`;
+  } else {
+    objectiveText.textContent = `All 4/4 tasks ready! Head to the Balcony edge to meet the Sun Knight!`;
+  }
+}
+
+function renderTaskMarkers() {
+  taskMarkersWrap.innerHTML = '';
+  tasks.forEach((t) => {
+    if (t.area !== currentArea) return;
+    const el = document.createElement('div');
+    el.className = 'task-hotspot' + (t.done ? ' done' : '') + (t.hard ? ' hard' : '');
+    el.style.left = Math.round(window.innerWidth * t.xPct) + 'px';
+    el.style.top = (t.y - 75) + 'px';
+    el.textContent = t.done ? `✔ ${t.label}` : t.label;
+    taskMarkersWrap.appendChild(el);
+  });
+}
+
+function getNearbyTask() {
+  return tasks.find((t) => {
+    if (t.area !== currentArea || t.done) return false;
+    const tx = window.innerWidth * t.xPct;
+    return Math.abs(pX - tx) < 110 && Math.abs(pY - t.y) < 90;
+  });
+}
+
+// --- AMONG US STYLE MINI-TASKS ---
+function openTaskModal(task) {
+  if (patrolState !== 'idle' || isMonologueActive) return;
+  activeTask = task;
+  taskModal.classList.remove('hidden');
+  taskBody.innerHTML = '';
+
+  if (task.id === 'pack') {
+    taskTitle.textContent = '🎒 Task 1: Pack Escape Satchel';
+    taskInstructions.textContent = 'Drag all 3 items into your bag quietly!';
+    let packed = 0;
+    taskBody.innerHTML = `
+      <div class="pack-arena">
+        <div class="pack-items">
+          <div class="drag-item" draggable="true" data-item="cloak">🧥 Dark Travel Cloak</div>
+          <div class="drag-item" draggable="true" data-item="lantern">🏮 Hooded Lantern</div>
+          <div class="drag-item" draggable="true" data-item="letter">💌 Knight's Map & Note</div>
+        </div>
+        <div class="satchel-dropzone" id="satchel-zone">
+          <div>🎒 Drop items here</div>
+          <div id="pack-count">0 / 3 Packed</div>
+        </div>
+      </div>
+    `;
+    const zone = document.getElementById('satchel-zone');
+    const countEl = document.getElementById('pack-count');
+    taskBody.querySelectorAll('.drag-item').forEach((item) => {
+      item.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', item.dataset.item);
+      });
+      // Also allow click-to-pack as accessibility fallback
+      item.addEventListener('click', () => {
+        if (item.classList.contains('packed')) return;
+        item.classList.add('packed');
+        packed++;
+        addNoise(14);
+        countEl.textContent = `${packed} / 3 Packed`;
+        if (packed >= 3) completeTask(task);
+      });
+    });
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.classList.add('over');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('over');
+      const id = e.dataTransfer.getData('text/plain');
+      const el = taskBody.querySelector(`[data-item="${id}"]`);
+      if (el && !el.classList.contains('packed')) {
+        el.classList.add('packed');
+        packed++;
+        addNoise(12);
+        countEl.textContent = `${packed} / 3 Packed`;
+        if (packed >= 3) completeTask(task);
+      }
+    });
+  } else if (task.id === 'decoy') {
+    taskTitle.textContent = '🛏️ Task 2: Make Bed Decoy';
+    taskInstructions.textContent = 'Arrange all 3 pillows under the blanket so it looks like you\'re sleeping!';
+    let placed = 0;
+    taskBody.innerHTML = `
+      <div class="decoy-grid">
+        <button class="pillow-btn" data-idx="1">🛏️ Fluff Pillow</button>
+        <button class="pillow-btn" data-idx="2">🧸 Bolster Cushion</button>
+        <button class="pillow-btn" data-idx="3"> Blanket Tuck</button>
+      </div>
+    `;
+    taskBody.querySelectorAll('.pillow-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('placed')) return;
+        btn.classList.add('placed');
+        btn.textContent = '✔ Ready';
+        placed++;
+        addNoise(10);
+        if (placed >= 3) completeTask(task);
+      });
+    });
+  } else if (task.id === 'note') {
+    taskTitle.textContent = '🪶 Task 3: Write Alibi Note';
+    taskInstructions.textContent = 'Click the seals in order (1 → 2 → 3 → 4) without spilling ink!';
+    let nextStep = 1;
+    taskBody.innerHTML = `
+      <div class="rune-row">
+        <button class="rune-btn" data-step="3">3. Sign Name</button>
+        <button class="rune-btn" data-step="1">1. Dip Quill</button>
+        <button class="rune-btn" data-step="4">4. Wax Seal</button>
+        <button class="rune-btn" data-step="2">2. Write Excuse</button>
+      </div>
+    `;
+    taskBody.querySelectorAll('.rune-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const step = parseInt(btn.dataset.step, 10);
+        if (step === nextStep) {
+          btn.classList.add('done');
+          nextStep++;
+          addNoise(8);
+          if (nextStep > 4) completeTask(task);
+        } else {
+          // Dropped inkwell -> spikes noise!
+          addNoise(45, '"Clatter?! Knights, search every chamber—I\'m checking the Princess\'s room myself!"');
+        }
+      });
+    });
+  } else if (task.id === 'rope') {
+    // HARD BALCONY TASK: Exposed outside + fast timing bar (3 hits needed!)
+    taskTitle.textContent = '🪢 Balcony Task (HARD): Secure Silk Escape Rope';
+    taskInstructions.textContent = 'You\'re exposed outside! Lock the knot 3 times inside the green zone!';
+    let hits = 0;
+    let needlePos = 0;
+    let dir = 1;
+    const zoneStart = 42;
+    const zoneWidth = 16;
+
+    taskBody.innerHTML = `
+      <div style="margin-bottom:8px;font-size:13px;color:#ffd166;" id="rope-progress">Knots Locked: 0 / 3</div>
+      <div class="timing-bar">
+        <div class="timing-zone" style="left:${zoneStart}%;width:${zoneWidth}%;"></div>
+        <div class="timing-needle" id="timing-needle" style="left:0%;"></div>
+      </div>
+      <button class="timing-action-btn" id="lock-knot-btn">⚡ LOCK KNOT NOW [SPACE]</button>
+    `;
+
+    const needleEl = document.getElementById('timing-needle');
+    const progEl = document.getElementById('rope-progress');
+    const lockBtn = document.getElementById('lock-knot-btn');
+
+    function animateNeedle() {
+      needlePos += dir * 2.15; // Fast speed for higher balcony difficulty
+      if (needlePos >= 98) {
+        needlePos = 98;
+        dir = -1;
+      } else if (needlePos <= 0) {
+        needlePos = 0;
+        dir = 1;
+      }
+      if (needleEl) needleEl.style.left = needlePos + '%';
+      timingAnimId = requestAnimationFrame(animateNeedle);
+    }
+    timingAnimId = requestAnimationFrame(animateNeedle);
+
+    lockBtn.addEventListener('click', () => {
+      if (needlePos >= zoneStart && needlePos <= zoneStart + zoneWidth) {
+        hits++;
+        progEl.textContent = `Knots Locked: ${hits} / 3`;
+        if (hits >= 3) {
+          completeTask(task);
+        }
+      } else {
+        // Slipped rope makes loud noise!
+        addNoise(50, '"What was that noise by the balcony?! Guards, search every room—I\'m checking on her!"');
+      }
+    });
+  }
+}
+
+function closeTaskModal() {
+  activeTask = null;
+  if (timingAnimId) {
+    cancelAnimationFrame(timingAnimId);
+    timingAnimId = null;
+  }
+  taskModal.classList.add('hidden');
+}
+
+closeTaskBtn.addEventListener('click', closeTaskModal);
+
+function completeTask(task) {
+  task.done = true;
+  closeTaskModal();
+  renderTaskMarkers();
+  updateObjectiveHUD();
+  showEmote('✨', 2200);
+
+  const remaining = tasks.filter((t) => !t.done).length;
+  if (remaining > 0) {
+    queueMonologue([
+      {
+        text: `Okay, one down! Only ${remaining} left—gotta hurry before Father does his rounds!`,
+        emote: '✨'
+      }
+    ]);
+  } else {
+    queueMonologue([
+      {
+        text: 'Yes!! Everything is ready! Now let\'s get out to the balcony edge before anyone spots me!',
+        emote: '♥'
+      }
+    ]);
+  }
+}
+
+// --- KING PATROL & SCOLDING SYSTEM ---
 function clearPatrolTimers() {
   patrolTimers.forEach((id) => clearTimeout(id));
   patrolTimers = [];
@@ -181,8 +512,7 @@ function startAnswerTimer() {
     }
     answerTimerLabel.textContent = `⏱ ${answerTimeLeft.toFixed(1)}s`;
     answerTimerLabel.classList.toggle('urgent', answerTimeLeft <= 2.5);
-    const pct = Math.max(0, (answerTimeLeft / ANSWER_TIME_LIMIT) * 100);
-    answerTimerFill.style.width = pct + '%';
+    answerTimerFill.style.width = Math.max(0, (answerTimeLeft / ANSWER_TIME_LIMIT) * 100) + '%';
   }, tickMs);
 }
 
@@ -200,14 +530,18 @@ function handleAnswerTimeout() {
   cardFooter.textContent = '[Space / E / Click] Out of time...';
 }
 
-function startKingPatrol() {
+function startKingPatrol(customCallout = null) {
   if (patrolState !== 'idle') return;
   clearPatrolTimers();
+  closeTaskModal();
 
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
-  patrolText.textContent = 'Footsteps & lantern approaching...';
+  patrolText.textContent = customCallout
+    ? 'King heard you! Guards sweeping rooms—he\'s coming here!'
+    : 'Footsteps & lantern approaching...';
   torchSweep.classList.add('active');
+  showEmote('!', 2000);
 
   triggerFootstepPulse();
   patrolTimers.push(setTimeout(triggerFootstepPulse, 550));
@@ -237,7 +571,7 @@ function startKingPatrol() {
     patrolState = 'dialogue';
     patrolAlert.classList.remove('danger');
     stopAnswerTimer();
-    const line = royalLines[patrolCount % royalLines.length];
+    const line = customCallout || royalLines[patrolCount % royalLines.length];
     patrolCount++;
     royalDialogueCard.classList.remove('hidden', 'scolding');
     royalDialogueCard.classList.add('royal-gold');
@@ -251,8 +585,10 @@ function startKingPatrol() {
 
 function triggerCaughtScolding() {
   clearPatrolTimers();
+  closeTaskModal();
   patrolState = 'scolding';
   scoldWasGrounded = false;
+  showEmote('💦', 2500);
 
   playCaughtSting();
   caughtFlash.classList.add('active');
@@ -311,13 +647,24 @@ function finishKingPatrol(wasGrounded = false) {
     currentArea = 'room';
     gameBody.style.backgroundImage = "url('NightimePrincessRoom.png')";
     locationBanner.textContent = "📍 Princess's Chambers";
-    objectiveText.textContent = "Guards searched your room! Wait for the next chance.";
     pX = window.innerWidth - 260;
     pY = 560;
     isHiding = false;
     princess.classList.remove('hidden-in-shadows');
+    renderTaskMarkers();
+    queueMonologue([
+      {
+        text: 'Ugh, that was way too close! Good thing they didn\'t find my satchel. I have to be faster!',
+        emote: '💦'
+      }
+    ]);
   } else {
-    objectiveText.textContent = "Coast is clear. Head to the Balcony or keep exploring.";
+    queueMonologue([
+      {
+        text: 'Jeez, I almost got caught! Okay—back to work before he circles around again!',
+        emote: '💦'
+      }
+    ]);
   }
 
   patrolTimers.push(setTimeout(() => {
@@ -333,7 +680,7 @@ function scheduleNextPatrol() {
     if (patrolState === 'idle') {
       startKingPatrol();
     }
-  }, 11000));
+  }, 15000));
 }
 
 royalDialogueCard.addEventListener('click', () => {
@@ -344,12 +691,30 @@ royalDialogueCard.addEventListener('click', () => {
   }
 });
 
+// --- INPUT HANDLING ---
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) {
     e.preventDefault();
+  }
+
+  if (k === 'escape' && activeTask) {
+    closeTaskModal();
+    return;
+  }
+
+  // Spacebar locks knot during balcony rope task
+  if (activeTask && activeTask.id === 'rope' && k === ' ') {
+    const btn = document.getElementById('lock-knot-btn');
+    if (btn) btn.click();
+    return;
+  }
+
+  if (isMonologueActive && (k === ' ' || k === 'e' || k === 'enter')) {
+    advanceMonologue();
+    return;
   }
 
   if (patrolState === 'scolding' && ['1', '2', '3'].includes(k)) {
@@ -365,12 +730,17 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  if (k === 'k' && patrolState === 'idle') {
+  if (k === 'k' && patrolState === 'idle' && !activeTask) {
     startKingPatrol();
     return;
   }
 
-  if (k === 'e' && !['dialogue', 'scolding', 'scold_result'].includes(patrolState)) {
+  if (k === 'e' && !activeTask && !isMonologueActive && !['dialogue', 'scolding', 'scold_result'].includes(patrolState)) {
+    const nearTask = getNearbyTask();
+    if (nearTask && patrolState === 'idle') {
+      openTaskModal(nearTask);
+      return;
+    }
     isHiding = !isHiding;
     princess.classList.toggle('hidden-in-shadows', isHiding);
     return;
@@ -383,11 +753,17 @@ window.addEventListener('keyup', (e) => {
   keys[e.key.toLowerCase()] = false;
 });
 
+window.addEventListener('resize', renderTaskMarkers);
+
+// --- MAIN LOOP ---
 function gameLoop() {
   let pMoving = false;
-  const lockedInDialogue = ['dialogue', 'scolding', 'scold_result'].includes(patrolState);
+  const locked =
+    isMonologueActive ||
+    Boolean(activeTask) ||
+    ['dialogue', 'scolding', 'scold_result'].includes(patrolState);
 
-  if (!lockedInDialogue) {
+  if (!locked) {
     if (keys['w'] || keys['arrowup']) {
       pY -= speed;
       pMoving = true;
@@ -415,37 +791,44 @@ function gameLoop() {
     }
   }
 
-  if (patrolState === 'checking' && currentArea === 'room' && !isHiding) {
+  // Caught if King checks room while unhidden, OR if exposed on balcony during deep scan!
+  if (patrolState === 'checking' && !isHiding && currentArea === 'room') {
     triggerCaughtScolding();
   }
 
   if (pY < 480) pY = 480;
   if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
+  // Context prompt (Patrol hide vs Nearby Task)
+  const nearTask = getNearbyTask();
   if (patrolState === 'approaching' || patrolState === 'checking') {
-    hidePrompt.classList.remove('hidden');
-    hidePrompt.textContent = isHiding
+    actionPrompt.classList.remove('hidden');
+    actionPrompt.textContent = isHiding
       ? 'Hidden — DO NOT MOVE!'
       : '⚠️ Press [E] to HIDE!';
+  } else if (nearTask && !activeTask && !isMonologueActive) {
+    actionPrompt.classList.remove('hidden');
+    actionPrompt.textContent = `[E] ${nearTask.label}`;
   } else {
-    hidePrompt.classList.add('hidden');
+    actionPrompt.classList.add('hidden');
   }
 
+  // Room <-> Balcony transitions
   if (currentArea === 'room') {
     if (arrowRight) {
       arrowRight.style.display = 'flex';
       arrowRight.classList.toggle('highlight', pX > window.innerWidth - 280);
     }
-
     if (pX < 10) pX = 10;
 
     if (pX >= window.innerWidth - 130) {
       currentArea = 'balcony';
       gameBody.style.backgroundImage = "url('NightimeBalcony.png')";
-      locationBanner.textContent = "📍 Royal Balcony";
-      objectiveText.textContent = "Free Roam: On the Balcony. Head left back into your room.";
+      locationBanner.textContent = "📍 Royal Balcony (Exposed!)";
       pX = Math.round(window.innerWidth * 0.18);
       pY = Math.max(pY, 540);
+      renderTaskMarkers();
+      showEmote('!', 1800);
     }
   } else if (currentArea === 'balcony') {
     if (arrowRight) arrowRight.style.display = 'none';
@@ -454,8 +837,8 @@ function gameLoop() {
       currentArea = 'room';
       gameBody.style.backgroundImage = "url('NightimePrincessRoom.png')";
       locationBanner.textContent = "📍 Princess's Chambers";
-      objectiveText.textContent = "Free Roam: Walk around your room or head right to the Balcony.";
       pX = window.innerWidth - 170;
+      renderTaskMarkers();
     }
     if (pX > window.innerWidth - 130) pX = window.innerWidth - 130;
   }
@@ -468,6 +851,24 @@ function gameLoop() {
 
   requestAnimationFrame(gameLoop);
 }
+
+// Start Chapter 3 with Princess Internal Monologue!
+renderTaskMarkers();
+updateObjectiveHUD();
+queueMonologue([
+  {
+    text: 'Okay, focus... I\'m finally meeting him tonight, and I cannot mess this up!',
+    emote: '!'
+  },
+  {
+    text: 'I need to pack my bag, fake my bed decoy, leave an alibi note, and tie the escape rope out on the balcony.',
+    emote: '...'
+  },
+  {
+    text: 'I must be fast—if I make too much noise, Father will send the knights to search every room!',
+    emote: '💦'
+  }
+]);
 
 scheduleNextPatrol();
 gameLoop();
