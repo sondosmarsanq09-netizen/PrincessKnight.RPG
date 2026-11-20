@@ -45,7 +45,7 @@
     </div>
   </div>
 
-  <!-- Princess Multi-Layer Character (with Skirt restored!) -->
+  <!-- Princess Multi-Layer Character -->
   <div id="princess" class="facing-right">
     <div class="sprite-layer skin"></div>
     <div class="sprite-layer boots"></div>
@@ -54,14 +54,24 @@
     <div class="sprite-layer hair"></div>
   </div>
 
-  <!-- Dramatic Royal Dialogue & Multi-Choice Card -->
-  <div id="royal-dialogue-card" class="hidden">
+  <!-- Dialogue & Multi-Choice Box (Ch.2 Sc.3 style + Royal Gold / Angry Red variants) -->
+  <div id="royal-dialogue-card" class="hidden royal-gold">
+    <div class="gold-filigree top-bar">✦ ♛ ✦</div>
     <div class="card-border">
-      <div class="royal-crest" id="royal-speaker">👑 HIS MAJESTY THE KING</div>
+      <div class="card-header-row">
+        <div class="royal-crest" id="royal-speaker">👑 HIS MAJESTY THE KING</div>
+        <div id="answer-timer-wrap" class="hidden">
+          <span id="answer-timer-label">⏱ 8.0s</span>
+          <div class="timer-track">
+            <div id="answer-timer-fill"></div>
+          </div>
+        </div>
+      </div>
       <p id="royal-line">"Still awake at this hour? The castle gates are locked till dawn..."</p>
       <div id="dialogue-choices" class="hidden"></div>
       <div class="card-footer" id="card-footer">[Space / E / Click] Continue</div>
     </div>
+    <div class="gold-filigree bottom-bar">✦ ✦ ✦</div>
   </div>
 
   <script src="CH3.js"></script>
