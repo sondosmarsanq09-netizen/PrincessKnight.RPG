@@ -27,13 +27,14 @@ body {
   transition: background-image 0.35s ease, filter 0.35s ease;
 }
 
+/* Blur ONLY activates after getting caught during a panic attack */
 #world-layer.panic-blur {
-  animation: panic-blur-pulse 3.4s ease-in-out infinite;
+  animation: panic-blur-pulse 3.2s ease-in-out infinite;
 }
 
 @keyframes panic-blur-pulse {
   0%, 100% { filter: blur(0px) saturate(1); }
-  45%, 65% { filter: blur(4.2px) saturate(0.75); }
+  40%, 65% { filter: blur(5px) saturate(0.72); }
 }
 
 #world-layer.footstep-rumble {
@@ -72,7 +73,7 @@ body {
   padding: 12px 16px;
   color: #f4f1ea;
   z-index: 30;
-  max-width: 470px;
+  max-width: 480px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
 }
 
@@ -114,20 +115,31 @@ body {
   transition: width 0.2s ease;
 }
 
-#sus-badge {
-  margin-top: 7px;
+#sus-badge,
+#panic-status {
+  margin-top: 6px;
   display: inline-block;
-  background: rgba(255, 107, 107, 0.18);
-  border: 1px solid #ff6b6b;
-  color: #ffc2c2;
   font-size: 11.5px;
   font-weight: bold;
   padding: 3px 8px;
   border-radius: 4px;
+  margin-right: 6px;
 }
 
-#sus-badge.hidden {
-  display: none;
+#sus-badge {
+  background: rgba(255, 107, 107, 0.18);
+  border: 1px solid #ff6b6b;
+  color: #ffc2c2;
+}
+
+#panic-status {
+  background: rgba(164, 56, 104, 0.25);
+  border: 1px solid #ff8fab;
+  color: #ffe5ec;
+}
+
+.hidden {
+  display: none !important;
 }
 
 #controls-hint {
@@ -191,12 +203,6 @@ body {
   box-shadow: 0 0 28px rgba(255, 50, 50, 0.55);
 }
 
-#patrol-alert.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-8px);
-}
-
 .lantern-dot {
   width: 10px;
   height: 10px;
@@ -221,7 +227,6 @@ body {
   font-size: 12px;
   font-weight: bold;
   z-index: 28;
-  transition: opacity 0.2s ease;
 }
 
 #action-prompt {
@@ -232,23 +237,14 @@ body {
   padding: 7px 16px;
 }
 
-#action-prompt.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
 #panic-prompt {
-  bottom: 182px;
+  bottom: 184px;
   background: rgba(64, 14, 28, 0.94);
   border: 1.5px solid #ff758f;
   color: #ffd6e0;
   padding: 8px 18px;
   box-shadow: 0 0 20px rgba(255, 117, 143, 0.45);
   animation: panic-pulse 0.85s ease-in-out infinite alternate;
-}
-
-#panic-prompt.hidden {
-  display: none;
 }
 
 @keyframes panic-pulse {
@@ -438,10 +434,6 @@ body {
   transform: translateX(-50%) scaleX(-1);
 }
 
-#princess-emote.hidden {
-  display: none;
-}
-
 @keyframes emote-pop {
   from { top: -11px; }
   to   { top: -15px; }
@@ -497,10 +489,6 @@ body {
   cursor: pointer;
 }
 
-#princess-dialogue-box.hidden {
-  display: none;
-}
-
 .p-box-header {
   font-size: 12px;
   font-weight: bold;
@@ -553,12 +541,6 @@ body {
   background: linear-gradient(145deg, rgba(48, 8, 16, 0.98), rgba(16, 6, 12, 0.99));
   box-shadow: 0 12px 45px rgba(0, 0, 0, 0.95), 0 0 34px rgba(255, 60, 60, 0.45);
   cursor: default;
-}
-
-#royal-dialogue-card.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-50%) translateY(16px);
 }
 
 .gold-filigree {
@@ -616,10 +598,6 @@ body {
   min-width: 155px;
 }
 
-#answer-timer-wrap.hidden {
-  display: none;
-}
-
 #answer-timer-label {
   font-size: 12px;
   font-weight: bold;
@@ -662,10 +640,6 @@ body {
   margin-bottom: 6px;
 }
 
-#dialogue-choices.hidden {
-  display: none;
-}
-
 .choice-btn {
   text-align: left;
   background: rgba(255, 255, 255, 0.06);
@@ -703,12 +677,8 @@ body {
   z-index: 60;
 }
 
-#task-modal.hidden {
-  display: none;
-}
-
 #task-window {
-  width: min(540px, 92vw);
+  width: min(550px, 92vw);
   background: #14172b;
   border: 2px solid #ffd166;
   border-radius: 10px;
@@ -832,18 +802,19 @@ body {
 .rune-row {
   display: flex;
   justify-content: space-around;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .rune-btn {
-  flex: 1;
-  padding: 16px 8px;
+  flex: 1 1 110px;
+  padding: 14px 8px;
   background: #222644;
   border: 2px solid #8d99ae;
   color: #ffd166;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -853,45 +824,73 @@ body {
   border-color: #52b788;
 }
 
-/* Multi-Round Balcony Night-Air Signal Lock */
-.timing-bar {
+/* Fast-Click Stars Arena */
+.star-click-arena {
   position: relative;
   width: 100%;
-  height: 28px;
-  background: #0d101f;
-  border: 2px solid #ff6b6b;
-  border-radius: 6px;
+  height: 170px;
+  background: #0b0f22;
+  border: 1.5px solid rgba(255, 217, 102, 0.4);
+  border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 14px;
 }
 
-.timing-zone {
+.star-target-btn {
   position: absolute;
-  top: 0;
-  height: 100%;
-  background: rgba(82, 183, 136, 0.45);
-  border-left: 2px solid #52b788;
-  border-right: 2px solid #52b788;
-}
-
-.timing-needle {
-  position: absolute;
-  top: 0;
-  width: 6px;
-  height: 100%;
-  background: #ffd166;
-  box-shadow: 0 0 10px #ffd166;
-}
-
-.timing-action-btn {
-  width: 100%;
-  padding: 12px;
-  background: #e63946;
-  border: none;
-  border-radius: 6px;
-  color: #fff;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 217, 102, 0.18);
+  border: 2px solid #ffd166;
+  color: #fff3b0;
+  padding: 8px 12px;
+  border-radius: 999px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
   cursor: pointer;
+  box-shadow: 0 0 14px rgba(255, 217, 102, 0.5);
+}
+
+.star-target-btn:hover {
+  background: rgba(255, 217, 102, 0.38);
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+/* Star Spelling Quest */
+.spell-target-word {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  letter-spacing: 5px;
+  color: #ffd166;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  border: 1px dashed rgba(255, 217, 102, 0.45);
+}
+
+.star-letter-grid {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.star-letter-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #1c2240;
+  border: 2px solid #8ecae6;
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.star-letter-btn.picked {
+  background: #2b5947;
+  border-color: #52b788;
+  opacity: 0.65;
 }
