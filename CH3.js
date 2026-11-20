@@ -147,7 +147,7 @@ function finishKingPatrol(wasCaught = false) {
 
 function scheduleNextPatrol() {
   clearPatrolTimers();
-  // Automatically patrols every ~18 seconds during free roam
+  // Automatically patrols every ~10 seconds during free roam
   patrolTimers.push(setTimeout(() => {
     if (patrolState === 'idle') {
       startKingPatrol();
