@@ -30,6 +30,11 @@ const royalLine = document.getElementById('royal-line');
 const dialogueChoices = document.getElementById('dialogue-choices');
 const cardFooter = document.getElementById('card-footer');
 
+// Answer Timer UI
+const answerTimerWrap = document.getElementById('answer-timer-wrap');
+const answerTimerLabel = document.getElementById('answer-timer-label');
+const answerTimerFill = document.getElementById('answer-timer-fill');
+
 // Princess Coordinates & State
 let pX = 400;
 let pY = 570;
@@ -42,6 +47,11 @@ let patrolState = 'idle';
 let patrolTimers = [];
 let patrolCount = 0;
 let scoldWasGrounded = false;
+
+// Countdown timer for answering when caught
+const ANSWER_TIME_LIMIT = 8.0; // seconds
+let answerCountdownInterval = null;
+let answerTimeLeft = ANSWER_TIME_LIMIT;
 
 const royalLines = [
   '"Guards! Keep watch on the eastern corridor until sunrise. Nobody enters or leaves."',
@@ -66,7 +76,7 @@ const scoldScenarios = [
       {
         text: '3. "Uh... I was just practicing walking in the dark for no reason!"',
         safe: false,
-        reply: '"Nonsense! You\'re up to something! Straight to bed—I\'m posting a guard outside your door!"'
+        reply: '"Nonsense! You\'re up to something! Guards—search her room and go through her stuff at once!"'
       }
     ]
   },
@@ -86,7 +96,7 @@ const scoldScenarios = [
       {
         text: '3. "I\'m totally asleep right now! You\'re just seeing a sleepwalking ghost!"',
         safe: false,
-        reply: '"Do NOT test my patience at this hour! Back to your bed immediately!"'
+        reply: '"Nonsense! You\'re up to something! Guards—search her room and go through her stuff right now!"'
       }
     ]
   }
@@ -106,7 +116,6 @@ function playFootstepSound() {
     const ctx = getAudioCtx();
     const now = ctx.currentTime;
 
-    // Sound 1: Heavy boot heel thud
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'triangle';
@@ -119,7 +128,6 @@ function playFootstepSound() {
     osc1.start(now);
     osc1.stop(now + 0.19);
 
-    // Sound 2: Secondary sole / armor clink slightly delayed (0.07s)
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'sawtooth';
@@ -134,7 +142,7 @@ function playFootstepSound() {
   } catch (e) {}
 }
 
-// Dramatic low brass/alarm sting when caught
+// Dramatic low brass/alarm sting when caught or timer expires
 function playCaughtSting() {
   try {
     const ctx = getAudioCtx();
@@ -165,6 +173,52 @@ function triggerFootstepPulse() {
 function clearPatrolTimers() {
   patrolTimers.forEach((id) => clearTimeout(id));
   patrolTimers = [];
+}
+
+function stopAnswerTimer() {
+  if (answerCountdownInterval) {
+    clearInterval(answerCountdownInterval);
+    answerCountdownInterval = null;
+  }
+  answerTimerWrap.classList.add('hidden');
+  answerTimerLabel.classList.remove('urgent');
+}
+
+function startAnswerTimer() {
+  stopAnswerTimer();
+  answerTimeLeft = ANSWER_TIME_LIMIT;
+  answerTimerWrap.classList.remove('hidden');
+  answerTimerLabel.textContent = `⏱ ${answerTimeLeft.toFixed(1)}s`;
+  answerTimerFill.style.width = '100%';
+
+  const tickMs = 80;
+  answerCountdownInterval = setInterval(() => {
+    answerTimeLeft -= tickMs / 1000;
+    if (answerTimeLeft <= 0) {
+      answerTimeLeft = 0;
+      stopAnswerTimer();
+      handleAnswerTimeout();
+      return;
+    }
+    answerTimerLabel.textContent = `⏱ ${answerTimeLeft.toFixed(1)}s`;
+    answerTimerLabel.classList.toggle('urgent', answerTimeLeft <= 2.5);
+    const pct = Math.max(0, (answerTimeLeft / ANSWER_TIME_LIMIT) * 100);
+    answerTimerFill.style.width = pct + '%';
+  }, tickMs);
+}
+
+function handleAnswerTimeout() {
+  if (patrolState !== 'scolding') return;
+  playCaughtSting();
+  caughtFlash.classList.add('active');
+  setTimeout(() => caughtFlash.classList.remove('active'), 550);
+
+  patrolState = 'scold_result';
+  scoldWasGrounded = true;
+  dialogueChoices.classList.add('hidden');
+  royalLine.textContent = '"Speechless?! You\'re up to something! Guards—search her room and go through her stuff right now!"';
+  cardFooter.classList.remove('hidden');
+  cardFooter.textContent = '[Space / E / Click] Caught stalling...';
 }
 
 function startKingPatrol() {
@@ -198,19 +252,21 @@ function startKingPatrol() {
     kingShadowWrap.classList.add('looking-in');
   }, 2400));
 
-  // Second deeper scan across the room (harder & longer hold!)
+  // Second deeper scan across the room
   patrolTimers.push(setTimeout(() => {
     kingShadowWrap.classList.add('deep-scan');
     patrolText.textContent = 'He is scanning the room... STAY HIDDEN!';
   }, 3600));
 
-  // Survived! Normal royal line plays
+  // Survived! Ornate golden royal dialogue box pops up
   patrolTimers.push(setTimeout(() => {
     patrolState = 'dialogue';
     patrolAlert.classList.remove('danger');
+    stopAnswerTimer();
     const line = royalLines[patrolCount % royalLines.length];
     patrolCount++;
     royalDialogueCard.classList.remove('hidden', 'scolding');
+    royalDialogueCard.classList.add('royal-gold');
     royalSpeaker.textContent = '👑 HIS MAJESTY THE KING';
     royalLine.textContent = line;
     dialogueChoices.classList.add('hidden');
@@ -230,18 +286,17 @@ function triggerCaughtScolding() {
 
   kingShadowWrap.classList.add('visible', 'looking-in', 'deep-scan');
   patrolAlert.classList.add('danger');
-  patrolText.textContent = 'CAUGHT! The King spotted you awake!';
+  patrolText.textContent = 'CAUGHT! Answer quickly before time runs out!';
 
   const scenario = scoldScenarios[patrolCount % scoldScenarios.length];
   patrolCount++;
 
-  royalDialogueCard.classList.remove('hidden');
+  royalDialogueCard.classList.remove('hidden', 'royal-gold');
   royalDialogueCard.classList.add('scolding');
   royalSpeaker.textContent = '👑 FURIOUS KING — CAUGHT PAST CURFEW!';
   royalLine.textContent = scenario.scold;
   cardFooter.classList.add('hidden');
 
-  // Build multi-choice answer buttons
   dialogueChoices.innerHTML = '';
   dialogueChoices.classList.remove('hidden');
 
@@ -255,9 +310,12 @@ function triggerCaughtScolding() {
     });
     dialogueChoices.appendChild(btn);
   });
+
+  startAnswerTimer();
 }
 
 function resolveScoldChoice(choice) {
+  stopAnswerTimer();
   patrolState = 'scold_result';
   scoldWasGrounded = !choice.safe;
   dialogueChoices.classList.add('hidden');
@@ -265,13 +323,14 @@ function resolveScoldChoice(choice) {
   cardFooter.classList.remove('hidden');
   cardFooter.textContent = choice.safe
     ? '[Space / E / Click] Phew! Close call...'
-    : '[Space / E / Click] Sent back to bed...';
+    : '[Space / E / Click] Guards are searching her stuff...';
 }
 
 function finishKingPatrol(wasGrounded = false) {
   clearPatrolTimers();
+  stopAnswerTimer();
   royalDialogueCard.classList.add('hidden');
-  royalDialogueCard.classList.remove('scolding');
+  royalDialogueCard.classList.remove('scolding', 'royal-gold');
   dialogueChoices.classList.add('hidden');
   kingShadowWrap.classList.remove('visible', 'looking-in', 'deep-scan');
   torchSweep.classList.remove('active');
@@ -281,7 +340,7 @@ function finishKingPatrol(wasGrounded = false) {
     currentArea = 'room';
     gameBody.style.backgroundImage = "url('NightimePrincessRoom.png')";
     locationBanner.textContent = "📍 Princess's Chambers";
-    objectiveText.textContent = "You got grounded to your bed! Wait for the coast to clear before sneaking out.";
+    objectiveText.textContent = "The guards searched your room! Lay low and wait for your chance.";
     pX = window.innerWidth - 260;
     pY = 560;
     isHiding = false;
@@ -299,7 +358,6 @@ function finishKingPatrol(wasGrounded = false) {
 
 function scheduleNextPatrol() {
   clearPatrolTimers();
-  // Harder pacing: patrols every ~11 seconds
   patrolTimers.push(setTimeout(() => {
     if (patrolState === 'idle') {
       startKingPatrol();
@@ -307,7 +365,6 @@ function scheduleNextPatrol() {
   }, 11000));
 }
 
-// Click card to advance non-choice dialogue
 royalDialogueCard.addEventListener('click', () => {
   if (patrolState === 'dialogue') {
     finishKingPatrol(false);
@@ -385,23 +442,19 @@ function gameLoop() {
       princess.classList.add('facing-right');
     }
 
-    // Moving breaks stealth!
     if (pMoving && isHiding) {
       isHiding = false;
       princess.classList.remove('hidden-in-shadows');
     }
   }
 
-  // Harder stealth rule: While King is checking the room, you MUST be hidden in shadows!
   if (patrolState === 'checking' && currentArea === 'room' && !isHiding) {
     triggerCaughtScolding();
   }
 
-  // Vertical bounds
   if (pY < 480) pY = 480;
   if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
-  // Hide prompt during patrol
   if (patrolState === 'approaching' || patrolState === 'checking') {
     hidePrompt.classList.remove('hidden');
     hidePrompt.textContent = isHiding
@@ -411,7 +464,6 @@ function gameLoop() {
     hidePrompt.classList.add('hidden');
   }
 
-  // Area transitions (Room <-> Balcony with arched doorway spawn)
   if (currentArea === 'room') {
     if (arrowRight) {
       arrowRight.style.display = 'flex';
