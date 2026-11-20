@@ -20,21 +20,21 @@ const objectiveText = document.getElementById('objective');
 const noiseBarFill = document.getElementById('noise-bar-fill');
 const susBadge = document.getElementById('sus-badge');
 const panicStatus = document.getElementById('panic-status');
+const hallWaitHud = document.getElementById('hall-wait-hud');
+const hallWaitSec = document.getElementById('hall-wait-sec');
 const arrowRight = document.getElementById('arrow-right');
 const taskMarkersWrap = document.getElementById('task-markers');
 const actionPrompt = document.getElementById('action-prompt');
 const panicPrompt = document.getElementById('panic-prompt');
+const panicPromptText = document.getElementById('panic-prompt-text');
+const panicBarFill = document.getElementById('panic-bar-fill');
 
-// Princess Monologue Box (Ch.2 Sc.3 style)
+// Princess / Knight Dialogue Box (Ch.2 Sc.3 style)
 const pDialogueBox = document.getElementById('princess-dialogue-box');
 const pSpeaker = document.getElementById('p-speaker');
 const pDialogueText = document.getElementById('p-dialogue-text');
 
-// King Presence & Dialogue UI
-const patrolAlert = document.getElementById('patrol-alert');
-const patrolText = document.getElementById('patrol-text');
-const torchSweep = document.getElementById('torch-sweep');
-const kingShadowWrap = document.getElementById('king-shadow-wrap');
+// King's Special Gold / Angry Red Dialogue Card
 const royalDialogueCard = document.getElementById('royal-dialogue-card');
 const royalSpeaker = document.getElementById('royal-speaker');
 const royalLine = document.getElementById('royal-line');
@@ -45,6 +45,10 @@ const cardFooter = document.getElementById('card-footer');
 const answerTimerWrap = document.getElementById('answer-timer-wrap');
 const answerTimerLabel = document.getElementById('answer-timer-label');
 const answerTimerFill = document.getElementById('answer-timer-fill');
+
+// Escape Map Modal
+const escapeMapModal = document.getElementById('escape-map-modal');
+const closeMapBtn = document.getElementById('close-map-btn');
 
 // Task Modal UI
 const taskModal = document.getElementById('task-modal');
@@ -61,14 +65,27 @@ let currentArea = 'room'; // 'room' <-> 'balcony'
 let isHiding = false;
 let noiseLevel = 0;
 
-// Caught / Suspicion / Panic States (Panic & blur ONLY activate after getting caught!)
+// Caught / Suspicion / Panic States
 let caughtCount = 0;
 let isKingSus = false;
 let isPanicking = false;
 let breathsNeeded = 0;
-let balconyThreatActive = false; // True when a knight spots shadows on the balcony
+const PANIC_PASSOUT_LIMIT = 8.5; // seconds before passing out if not breathed through
+let panicTimeLeft = PANIC_PASSOUT_LIMIT;
+let panicCountdownInterval = null;
 
-// Dialogue Queue for Princess Monologue
+// Balcony Shadow Alert State (triggers a few seconds AFTER stepping on balcony)
+let firstBalconyVisitDone = false;
+let balconyAlertTimer = null;
+let balconyThreatActive = false;
+
+// End-of-Tasks Hallway Wait & Map State
+let allTasksFinished = false;
+let hallWaitActive = false;
+let hallWaitLeft = 12.0;
+let hallWaitInterval = null;
+
+// Dialogue Queue
 let monologueQueue = [];
 let isMonologueActive = false;
 let patrolsUnlocked = false;
@@ -78,14 +95,14 @@ let initialGraceTimer = null;
 let patrolState = 'idle'; // 'idle' | 'approaching' | 'checking' | 'dialogue' | 'scolding' | 'scold_result'
 let patrolTimers = [];
 let patrolCount = 0;
-let pendingOutcome = null; // 'sus_panic' | 'reset_tasks' | 'normal'
+let pendingOutcome = null; // 'sus_panic' | 'reset_tasks' | 'normal' | 'dismiss_guards'
 let activeTask = null;
 
 const ANSWER_TIME_LIMIT = 8.0;
 let answerCountdownInterval = null;
 let answerTimeLeft = ANSWER_TIME_LIMIT;
 
-// 3 Bedroom Tasks + 2 Balcony Tasks (Fast Click + Star Spelling Quest)
+// 3 Bedroom Tasks + 2 Balcony Tasks
 const tasks = [
   {
     id: 'pack',
@@ -136,15 +153,18 @@ const tasks = [
 
 function getCurrentMovementSpeed() {
   if (!isPanicking) return baseSpeed;
-  // Each time she gets caught, her panic movement gets slower and slower!
-  const slowdown = Math.min(4.4, 2.5 + (caughtCount - 1) * 0.85);
-  return Math.max(1.4, baseSpeed - slowdown);
+  const slowdown = Math.min(4.5, 2.6 + (caughtCount - 1) * 0.85);
+  return Math.max(1.3, baseSpeed - slowdown);
 }
 
 function resetAllTasks() {
   tasks.forEach((t) => {
     t.done = false;
   });
+  allTasksFinished = false;
+  hallWaitActive = false;
+  clearInterval(hallWaitInterval);
+  hallWaitHud.classList.add('hidden');
   renderTaskMarkers();
   updateObjectiveHUD();
 }
@@ -154,21 +174,17 @@ function getVisibleTasks() {
   return incomplete.slice(0, 2);
 }
 
+// Royal, authoritative lines fitting the King's role
 const normalRoyalLines = [
-  '"Knights, search every room down the hall! I will check the Princess\'s wing myself."',
-  '"Keep watch by the courtyard till dawn. No one sneaks past tonight."',
-  '"Hmm... thought I heard something rattle in here. Better stay sharp."'
-];
-
-const balconyShadowLines = [
-  '"Your Majesty! I see shadows moving out on the balcony! Check the balcony too!"',
-  '"Sire, I hear rustling by the balcony railing—could be someone out there!"'
+  '"Keep strict watch along the eastern corridor until daybreak. Let no one slip past."',
+  '"See that every post is manned. The castle stands under royal order tonight."',
+  '"Silence in the royal wing. Patrol the outer gallery and report any disturbance."'
 ];
 
 const susRoyalLines = [
-  '"Something feels off about the Princess tonight... way too sus. Keep an eye on her wing."',
-  '"She claims she\'s sleeping, yet she\'s up at all hours... I don\'t buy it for a second."',
-  '"Guards, stay alert! The Princess is acting suspiciously quiet in there."'
+  '"My daughter\'s behavior tonight does not sit right with me. Keep a close watch on her chambers."',
+  '"I will not be fooled by hurried excuses. Watch every entrance near the Princess\'s wing."',
+  '"Something in the royal quarters is amiss. Redouble your vigilance until dawn."'
 ];
 
 const caughtEncounter = {
@@ -177,12 +193,12 @@ const caughtEncounter = {
     {
       text: '1. "I woke up for some warm tea."',
       safe: true,
-      reply: '"Fine. Drink it and get to sleep... though I\'m keeping an eye on you."'
+      reply: '"Fine. Drink it and get to sleep... though I\'m keeping a close eye on you."'
     },
     {
       text: '2. "Forgive me, Father—a nightmare woke me up."',
       safe: true,
-      reply: '"A nightmare, huh...? Fine, rest now. Something about this feels off, though."'
+      reply: '"A nightmare, huh...? Very well, rest now. Yet I shall remain watchful."'
     },
     {
       text: '3. "Just walking around for fun."',
@@ -192,7 +208,7 @@ const caughtEncounter = {
   ]
 };
 
-// --- EMOTES & PRINCESS MONOLOGUE ---
+// --- EMOTES & DIALOGUE BOX ---
 let emoteTimeout = null;
 function showEmote(symbol, duration = 2200) {
   if (!princessEmote) return;
@@ -208,14 +224,14 @@ function beginGraceCountdownOnce() {
   if (patrolsUnlocked || initialGraceTimer) return;
   initialGraceTimer = setTimeout(() => {
     patrolsUnlocked = true;
-    if (patrolState === 'idle') {
+    if (patrolState === 'idle' && !allTasksFinished) {
       startKingPatrol();
     }
   }, 30000);
 }
 
-function queueMonologue(lines, onFinish = null) {
-  monologueQueue = [...lines];
+function queueMonologue(lines, onFinish = null, speakerLabel = '💭 PRINCESS') {
+  monologueQueue = lines.map((item) => ({ ...item, speaker: item.speaker || speakerLabel }));
   pDialogueBox._onFinish = onFinish;
   advanceMonologue();
 }
@@ -231,7 +247,7 @@ function advanceMonologue() {
   }
   isMonologueActive = true;
   const item = monologueQueue.shift();
-  pSpeaker.textContent = '💭 PRINCESS';
+  pSpeaker.textContent = item.speaker;
   pDialogueText.textContent = item.text;
   if (item.emote) showEmote(item.emote, 2400);
   pDialogueBox.classList.remove('hidden');
@@ -239,36 +255,110 @@ function advanceMonologue() {
 
 pDialogueBox.addEventListener('click', advanceMonologue);
 
-// --- PANIC ATTACK & BREATHING SYSTEM (Post-Catch Only) ---
+// --- ESCAPE MAP MODAL ---
+function openEscapeMap() {
+  escapeMapModal.classList.remove('hidden');
+}
+
+function closeEscapeMap() {
+  escapeMapModal.classList.add('hidden');
+}
+
+closeMapBtn.addEventListener('click', closeEscapeMap);
+
+// --- PANIC ATTACK & BREATHING TIMER (Post-Catch Only; Pass Out If Timer Hits 0) ---
+function stopPanicTimer() {
+  if (panicCountdownInterval) {
+    clearInterval(panicCountdownInterval);
+    panicCountdownInterval = null;
+  }
+}
+
 function triggerPostCatchPanic() {
+  stopPanicTimer();
   isPanicking = true;
   breathsNeeded = Math.min(5, 2 + caughtCount);
+  panicTimeLeft = PANIC_PASSOUT_LIMIT;
+
   worldLayer.classList.add('panic-blur');
   panicStatus.classList.remove('hidden');
   panicStatus.textContent = `💔 Panic #${caughtCount} (Slower!) • Press [B]`;
   panicPrompt.classList.remove('hidden');
-  panicPrompt.textContent = `😮‍💨 Gasping for air! Press [B] to breathe steadily (${breathsNeeded} left)`;
+  panicPromptText.textContent = `😮‍💨 Gasping for air! Press [B] (${breathsNeeded} breaths) before passing out!`;
+  panicBarFill.style.width = '100%';
   showEmote('💦', 2500);
+
+  const tickMs = 80;
+  panicCountdownInterval = setInterval(() => {
+    if (!isPanicking) {
+      stopPanicTimer();
+      return;
+    }
+    panicTimeLeft -= tickMs / 1000;
+    if (panicTimeLeft <= 0) {
+      panicTimeLeft = 0;
+      panicBarFill.style.width = '0%';
+      stopPanicTimer();
+      handlePanicPassOut();
+      return;
+    }
+    panicBarFill.style.width = Math.max(0, (panicTimeLeft / PANIC_PASSOUT_LIMIT) * 100) + '%';
+  }, tickMs);
+}
+
+function clearPanicState() {
+  isPanicking = false;
+  breathsNeeded = 0;
+  stopPanicTimer();
+  worldLayer.classList.remove('panic-blur');
+  panicPrompt.classList.add('hidden');
+  panicStatus.classList.add('hidden');
+}
+
+function handlePanicPassOut() {
+  clearPanicState();
+  closeTaskModal();
+  currentArea = 'room';
+  worldLayer.style.backgroundImage = "url('NightimePrincessRoom.png')";
+  locationBanner.textContent = "📍 Princess's Chambers";
+  pX = window.innerWidth - 260;
+  pY = 560;
+  isHiding = false;
+  princess.classList.remove('hidden-in-shadows');
+  renderTaskMarkers();
+
+  caughtFlash.classList.add('active');
+  setTimeout(() => caughtFlash.classList.remove('active'), 600);
+
+  queueMonologue([
+    {
+      text: 'Ugh... I couldn\'t catch my breath in time... I passed out on the floor for a bit...',
+      emote: '💦'
+    },
+    {
+      text: 'Okay, I\'m awake again. Gotta stay calm and watch my breathing if I get scared again!',
+      emote: '...'
+    }
+  ]);
 }
 
 function performSteadyBreath() {
   if (!isPanicking) return;
   breathsNeeded--;
+  // Give a tiny breathing time cushion when pressing [B]
+  panicTimeLeft = Math.min(PANIC_PASSOUT_LIMIT, panicTimeLeft + 1.1);
+
   if (breathsNeeded <= 0) {
-    isPanicking = false;
-    breathsNeeded = 0;
-    worldLayer.classList.remove('panic-blur');
-    panicPrompt.classList.add('hidden');
-    panicStatus.classList.add('hidden');
+    clearPanicState();
     showEmote('✨', 2000);
     queueMonologue([
       {
-        text: 'In... and out... okay, the blur is clearing. Why do I always spiral like that when I get scared?!',
+        text: 'In... and out... okay, I\'m breathing steadily again. I didn\'t pass out!',
         emote: '...'
       }
     ]);
   } else {
-    panicPrompt.textContent = `😮‍💨 *Gasp*... breathe in, breathe out... Press [B] (${breathsNeeded} left)`;
+    panicPromptText.textContent = `😮‍💨 *Gasp*... keep breathing! Press [B] (${breathsNeeded} left)`;
   }
 }
 
@@ -340,6 +430,7 @@ function triggerFootstepPulse() {
 
 // --- NOISE SYSTEM ---
 function addNoise(amount, reasonText) {
+  if (allTasksFinished) return;
   const mult = isKingSus ? 1.35 : 1.0;
   noiseLevel = Math.min(100, noiseLevel + amount * mult);
   noiseBarFill.style.width = noiseLevel + '%';
@@ -351,22 +442,23 @@ function addNoise(amount, reasonText) {
     patrolsUnlocked = true;
     closeTaskModal();
     startKingPatrol(
-      reasonText || '"I heard something! Knights, check every room—I\'ll inspect the Princess\'s wing myself!"'
+      reasonText || '"A sound came from the Princess\'s wing. Knights, sweep the halls—I shall inspect her chamber myself."'
     );
   }
 }
 
 function updateObjectiveHUD() {
   const doneCount = tasks.filter((t) => t.done).length;
-  if (doneCount < tasks.length) {
-    objectiveText.textContent = `Tasks: ${doneCount}/${tasks.length} Done • Quiet & fast!`;
+  if (allTasksFinished) {
+    objectiveText.textContent = `All ${tasks.length}/${tasks.length} tasks done! Wait in your room & check the escape map [M].`;
   } else {
-    objectiveText.textContent = `All ${tasks.length}/${tasks.length} tasks done! Ready for the night!`;
+    objectiveText.textContent = `Tasks: ${doneCount}/${tasks.length} Done • Quiet & fast!`;
   }
 }
 
 function renderTaskMarkers() {
   taskMarkersWrap.innerHTML = '';
+  if (allTasksFinished) return;
   const visible = getVisibleTasks();
   visible.forEach((t) => {
     if (t.area !== currentArea) return;
@@ -380,6 +472,7 @@ function renderTaskMarkers() {
 }
 
 function getNearbyTask() {
+  if (allTasksFinished) return null;
   const visible = getVisibleTasks();
   return visible.find((t) => {
     if (t.area !== currentArea || t.done) return false;
@@ -388,9 +481,90 @@ function getNearbyTask() {
   });
 }
 
+// --- BALCONY DELAYED KNIGHT SHADOW ALERT ---
+function scheduleBalconyShadowBeat() {
+  if (firstBalconyVisitDone || balconyAlertTimer) return;
+  firstBalconyVisitDone = true;
+
+  balconyAlertTimer = setTimeout(() => {
+    balconyAlertTimer = null;
+    if (currentArea !== 'balcony' || isMonologueActive || activeTask || patrolState !== 'idle') return;
+
+    balconyThreatActive = true;
+    showEmote('!', 2200);
+    queueMonologue(
+      [
+        {
+          speaker: '⚔️ KNIGHT WATCH',
+          text: 'Sire, I see shadows moving out by the balcony railing and hear faint rustling!',
+          emote: '!'
+        },
+        {
+          speaker: '💭 PRINCESS',
+          text: 'Shoot, I\'m doomed... they\'re going to check the balcony too now. Nowhere is safe!',
+          emote: '💦'
+        }
+      ],
+      () => {
+        if (patrolState === 'idle') {
+          startKingPatrol('"The watch reports movement on the balcony! I will inspect the balcony myself."', true);
+        }
+      }
+    );
+  }, 3500);
+}
+
+// --- HALLWAY WAIT & ESCAPE MAP AFTER ALL TASKS ---
+function startHallwayWaitAndMap() {
+  allTasksFinished = true;
+  renderTaskMarkers();
+  updateObjectiveHUD();
+  clearPatrolTimers();
+
+  // King announces everyone is asleep and guards can go now
+  patrolState = 'dialogue';
+  pendingOutcome = 'dismiss_guards';
+  royalDialogueCard.classList.remove('hidden', 'scolding');
+  royalDialogueCard.classList.add('royal-gold');
+  royalSpeaker.textContent = '👑 KING';
+  royalLine.textContent = '"All seems quiet and everyone is asleep. You may stand down and return to your quarters for the night."';
+  dialogueChoices.classList.add('hidden');
+  cardFooter.classList.remove('hidden');
+  cardFooter.textContent = '[Space / E / Click] Continue';
+}
+
+function beginHallClearTimer() {
+  hallWaitActive = true;
+  hallWaitLeft = 12.0;
+  hallWaitHud.classList.remove('hidden');
+  hallWaitSec.textContent = `${hallWaitLeft.toFixed(1)}s`;
+  openEscapeMap();
+
+  clearInterval(hallWaitInterval);
+  hallWaitInterval = setInterval(() => {
+    hallWaitLeft -= 0.1;
+    if (hallWaitLeft <= 0) {
+      hallWaitLeft = 0;
+      clearInterval(hallWaitInterval);
+      hallWaitActive = false;
+      hallWaitSec.textContent = '0.0s';
+      hallWaitHud.classList.add('hidden');
+      closeEscapeMap();
+      queueMonologue([
+        {
+          text: 'The halls are finally empty... I have the Knight\'s route memorized. Time to slip out to him!',
+          emote: '♥'
+        }
+      ]);
+      return;
+    }
+    hallWaitSec.textContent = `${hallWaitLeft.toFixed(1)}s`;
+  }, 100);
+}
+
 // --- AMONG US STYLE MINI-TASKS ---
 function openTaskModal(task) {
-  if (patrolState !== 'idle' || isMonologueActive) return;
+  if (patrolState !== 'idle' || isMonologueActive || allTasksFinished) return;
   activeTask = task;
   taskModal.classList.remove('hidden');
   taskBody.innerHTML = '';
@@ -446,9 +620,8 @@ function openTaskModal(task) {
       }
     });
   } else if (task.id === 'love_letter') {
-    // Old-school "Write Love Letter" sequence with crisp 💌 / ✦ symbols
     taskTitle.textContent = '💌 Task 2: Write Love Letter';
-    taskInstructions.textContent = 'Pen an old-school letter in order (1 → 2 → 3 → 4) without smudging!';
+    taskInstructions.textContent = 'Pen an old-school love letter in order (1 → 2 → 3 → 4) without smudging!';
     let nextStep = 1;
     taskBody.innerHTML = `
       <div class="rune-row">
@@ -467,7 +640,7 @@ function openTaskModal(task) {
           addNoise(8);
           if (nextStep > 4) completeTask(task);
         } else {
-          addNoise(45, '"Ink spilled?! Knights, search every chamber—I\'m checking the Princess\'s room myself!"');
+          addNoise(45, '"Ink spilled?! Knights, search every chamber—I shall check the Princess\'s room myself."');
         }
       });
     });
@@ -493,7 +666,6 @@ function openTaskModal(task) {
       });
     });
   } else if (task.id === 'star_click') {
-    // Balcony Fast-Click Task (No timing bar!)
     const goal = 7;
     let caughtStars = 0;
     taskTitle.textContent = '✦ Balcony Task: Fast-Click Starlight';
@@ -529,7 +701,6 @@ function openTaskModal(task) {
     }
     spawnStar();
   } else if (task.id === 'star_spell') {
-    // Balcony Star Spelling Quest (No timing bar!)
     const targetWord = 'LUNA';
     const letters = ['N', 'L', 'A', 'U', 'S', 'R'];
     let typed = '';
@@ -558,7 +729,6 @@ function openTaskModal(task) {
             completeTask(task);
           }
         } else {
-          // Wrong star letter resets spelling & adds a little noise
           typed = '';
           preview.textContent = '____';
           grid.querySelectorAll('.star-letter-btn').forEach((b) => b.classList.remove('picked'));
@@ -593,12 +763,7 @@ function completeTask(task) {
       }
     ]);
   } else {
-    queueMonologue([
-      {
-        text: 'Aaaah everything is ready!! Okay, don\'t panic—I\'m finally ready for tonight!',
-        emote: '♥'
-      }
-    ]);
+    startHallwayWaitAndMap();
   }
 }
 
@@ -655,18 +820,17 @@ function handleAnswerTimeout() {
   cardFooter.textContent = '[Space / E / Click] Out of time (Tasks resetting)...';
 }
 
-function startKingPatrol(customCallout = null) {
-  if (patrolState !== 'idle') return;
+function startKingPatrol(customCallout = null, forceBalconyCheck = false) {
+  if (patrolState !== 'idle' || allTasksFinished) return;
   clearPatrolTimers();
   closeTaskModal();
 
-  // Every 2nd patrol (or when on balcony), a knight may spot shadows on the balcony!
-  balconyThreatActive = (patrolCount % 2 === 1);
+  balconyThreatActive = forceBalconyCheck;
 
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
   patrolText.textContent = balconyThreatActive
-    ? 'Knight calls out about shadows on the balcony! Hide if out there!'
+    ? 'King heading toward the balcony! Hide [E] if out there!'
     : (isKingSus ? 'Suspicious King approaching fast...' : 'Footsteps & lantern approaching...');
   torchSweep.classList.add('active');
   showEmote('!', 2000);
@@ -683,8 +847,8 @@ function startKingPatrol(customCallout = null) {
     patrolAlert.classList.add('danger');
     if (currentArea === 'balcony') {
       patrolText.textContent = balconyThreatActive
-        ? 'Knight saw balcony shadows! King is checking—HIDE [E]!'
-        : 'King checking room — safe on balcony (no shadow alert)!';
+        ? 'King checking the balcony! Press [E] to HIDE!'
+        : 'King checking room — safe on balcony!';
     } else {
       patrolText.textContent = 'Press [E] to HIDE!';
     }
@@ -703,7 +867,7 @@ function startKingPatrol(customCallout = null) {
     if (currentArea === 'room') {
       patrolText.textContent = 'He\'s looking in... STAY HIDDEN!';
     } else if (balconyThreatActive) {
-      patrolText.textContent = 'King scanning the balcony too! STAY HIDDEN!';
+      patrolText.textContent = 'King scanning the balcony! STAY HIDDEN!';
     }
   }, checkDelay + 1600));
 
@@ -713,22 +877,13 @@ function startKingPatrol(customCallout = null) {
     patrolAlert.classList.remove('danger');
     stopAnswerTimer();
 
-    let line;
-    if (customCallout) {
-      line = customCallout;
-    } else if (balconyThreatActive) {
-      line = balconyShadowLines[patrolCount % balconyShadowLines.length];
-    } else {
-      const pool = isKingSus ? susRoyalLines : normalRoyalLines;
-      line = pool[patrolCount % pool.length];
-    }
+    const pool = isKingSus ? susRoyalLines : normalRoyalLines;
+    const line = customCallout || pool[patrolCount % pool.length];
     patrolCount++;
 
     royalDialogueCard.classList.remove('hidden', 'scolding');
     royalDialogueCard.classList.add('royal-gold');
-    royalSpeaker.textContent = balconyThreatActive
-      ? '👑 KING & KNIGHT WATCH'
-      : (isKingSus ? '👑 KING (SUSPICIOUS)' : '👑 KING');
+    royalSpeaker.textContent = isKingSus ? '👑 KING (WATCHFUL)' : '👑 KING';
     royalLine.textContent = line;
     dialogueChoices.classList.add('hidden');
     cardFooter.classList.remove('hidden');
@@ -807,6 +962,24 @@ function finishKingPatrol() {
   torchSweep.classList.remove('active');
   patrolAlert.classList.add('hidden', 'danger');
 
+  if (outcome === 'dismiss_guards') {
+    patrolState = 'idle';
+    queueMonologue(
+      [
+        {
+          text: 'Phew, close call... now I have to wait a bit in my room to make sure the halls are empty.',
+          emote: '✨'
+        },
+        {
+          text: 'Let me check the escape map the Knight gave me so I know how to slip out past the King\'s wing...',
+          emote: '...'
+        }
+      ],
+      beginHallClearTimer
+    );
+    return;
+  }
+
   if (outcome === 'reset_tasks') {
     currentArea = 'room';
     worldLayer.style.backgroundImage = "url('NightimePrincessRoom.png')";
@@ -823,7 +996,7 @@ function finishKingPatrol() {
         emote: '💦'
       },
       {
-        text: 'Why can\'t I breathe?! What if he locks me up forever... what if I mess everything up tonight?!',
+        text: 'Why can\'t I catch my breath?! What if he locks me up forever... what if I ruin everything tonight?!',
         emote: '...'
       }
     ]);
@@ -831,18 +1004,18 @@ function finishKingPatrol() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: 'He believed me... barely. Now he\'s suspicious of me—I can hear him talking outside about how sus I am.',
+        text: 'He believed me... barely. Now he\'s suspicious of me—I can hear him ordering a closer watch on my wing.',
         emote: '💦'
       },
       {
-        text: 'My chest feels tight... what if he figures out the truth? I wish I just had freedom and he saw the good in me instead of treating me like a threat.',
+        text: 'My heart is pounding... I wish I just had freedom and he saw the good in me instead of treating me like a threat.',
         emote: '...'
       }
     ]);
   } else if (isKingSus) {
     queueMonologue([
       {
-        text: 'Ugh, he\'s still out there talking about how suspicious I am... I just want to breathe freely for once.',
+        text: 'Ugh, he\'s still keeping a close eye on my chambers... I just want to breathe freely for once.',
         emote: '...'
       }
     ]);
@@ -851,16 +1024,16 @@ function finishKingPatrol() {
   patrolTimers.push(setTimeout(() => {
     kingShadowWrap.classList.add('hidden');
     patrolState = 'idle';
-    scheduleNextPatrol();
+    if (!allTasksFinished) scheduleNextPatrol();
   }, 650));
 }
 
 function scheduleNextPatrol() {
   clearPatrolTimers();
-  if (!patrolsUnlocked) return;
+  if (!patrolsUnlocked || allTasksFinished) return;
   const intervalMs = isKingSus ? 12000 : 18000;
   patrolTimers.push(setTimeout(() => {
-    if (patrolState === 'idle') {
+    if (patrolState === 'idle' && !allTasksFinished) {
       startKingPatrol();
     }
   }, intervalMs));
@@ -879,6 +1052,16 @@ window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) {
     e.preventDefault();
+  }
+
+  // Toggle Escape Map with [M] or close with [Esc]
+  if (k === 'm' && allTasksFinished) {
+    escapeMapModal.classList.toggle('hidden');
+    return;
+  }
+  if (k === 'escape' && !escapeMapModal.classList.contains('hidden')) {
+    closeEscapeMap();
+    return;
   }
 
   // [B] to steady breathing during post-catch panic attack
@@ -909,7 +1092,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  if (k === 'k' && patrolState === 'idle' && !activeTask) {
+  if (k === 'k' && patrolState === 'idle' && !activeTask && !allTasksFinished) {
     patrolsUnlocked = true;
     startKingPatrol();
     return;
@@ -921,7 +1104,6 @@ window.addEventListener('keydown', (e) => {
       openTaskModal(nearTask);
       return;
     }
-    // Can hide in the room OR on the balcony when a knight spots shadows there!
     if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
       isHiding = !isHiding;
       princess.classList.toggle('hidden-in-shadows', isHiding);
@@ -945,6 +1127,7 @@ function gameLoop() {
   const locked =
     isMonologueActive ||
     Boolean(activeTask) ||
+    !escapeMapModal.classList.contains('hidden') ||
     ['dialogue', 'scolding', 'scold_result'].includes(patrolState);
 
   if (!locked) {
@@ -975,7 +1158,7 @@ function gameLoop() {
     }
   }
 
-  // Caught if unhidden in room during check, OR unhidden on balcony when a knight spotted balcony shadows!
+  // Caught if unhidden in room during check, OR unhidden on balcony when knights reported shadows there!
   if (patrolState === 'checking' && !isHiding) {
     if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
       triggerCaughtScolding();
@@ -991,9 +1174,9 @@ function gameLoop() {
     if (balconyThreatActive) {
       actionPrompt.textContent = isHiding
         ? 'Hidden on balcony — DO NOT MOVE!'
-        : '⚠️ Knight saw balcony shadows! Press [E] to HIDE!';
+        : '⚠️ King checking balcony! Press [E] to HIDE!';
     } else {
-      actionPrompt.textContent = '🌙 Safe on the Balcony while King checks!';
+      actionPrompt.textContent = '🌙 Safe on the Balcony while King checks room!';
     }
   } else if (patrolState === 'approaching' || patrolState === 'checking') {
     actionPrompt.classList.remove('hidden');
@@ -1024,6 +1207,7 @@ function gameLoop() {
       pY = Math.max(pY, 540);
       renderTaskMarkers();
       showEmote('...', 1800);
+      scheduleBalconyShadowBeat();
     }
   } else if (currentArea === 'balcony') {
     if (arrowRight) arrowRight.style.display = 'none';
@@ -1049,29 +1233,29 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// Start Chapter 3 with excited-yet-nervous internal speech & rule setup
+// Clearer Opening Monologue explaining the whole plan & rules
 renderTaskMarkers();
 updateObjectiveHUD();
 queueMonologue(
   [
     {
-      text: 'Okay, deep breath... I\'m actually doing this! I get to see him tonight—my heart is literally racing!',
+      text: 'Okay, deep breath... I\'m finally meeting him tonight! My heart is racing, and I am SO excited—yet terrified of getting caught.',
       emote: '♥'
     },
     {
-      text: 'Okay, don\'t get ahead of yourself. If Father catches me, I am SO dead... *gulp*.',
-      emote: '💦'
-    },
-    {
-      text: 'I have about 30 seconds before his patrol checks start, so I can get some tasks done first—just gotta hurry!',
+      text: 'Here\'s the plan: I have 30 seconds before Father\'s patrol checks start, so I can get tasks done first with WASD/Arrows and [E].',
       emote: '!'
     },
     {
-      text: 'The more noise I make, the bigger the danger. If I get too loud, he\'ll hear and come check on me himself.',
+      text: 'The Noise bar shows how loud I\'m being—too much noise brings Father to check my wing right away.',
       emote: '...'
     },
     {
-      text: 'On the balcony I\'m safe from room checks—unless a knight spots shadows out there and calls the King over!',
+      text: 'When he checks my room, I have to press [E] to hide in the shadows. The balcony is safe at first, though knights might spot shadows out there later!',
+      emote: '💦'
+    },
+    {
+      text: 'And if I do get caught, I\'ll have to pick an excuse fast—if I panic afterward, I\'ll move slower and must press [B] to breathe before passing out!',
       emote: '💦'
     }
   ],
