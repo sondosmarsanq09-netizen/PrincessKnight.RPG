@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chapter 3 - Midnight Chambers</title>
+  <title>Chapter 3 - Midnight Escape Prep</title>
   <link rel="stylesheet" href="CH3.css" />
 </head>
 <body id="game-body">
@@ -13,8 +13,14 @@
   <!-- HUD -->
   <div id="hud">
     <div id="location-banner">📍 Princess's Chambers</div>
-    <div id="objective">Free Roam: Walk around your room or head right to the Balcony.</div>
-    <div id="controls-hint">[WASD / Arrows] Move • [E] Hide in Shadows • [K] Test Patrol</div>
+    <div id="objective">Tasks: 0/4 Done • Prepare to meet the Sun Knight!</div>
+    <div id="noise-meter-wrap">
+      <span>🔊 Noise:</span>
+      <div id="noise-bar-track">
+        <div id="noise-bar-fill"></div>
+      </div>
+    </div>
+    <div id="controls-hint">[WASD / Arrows] Move • [E] Task / Hide • [K] Test Patrol</div>
   </div>
 
   <!-- Tension / Stealth Status Pill -->
@@ -23,8 +29,11 @@
     <span id="patrol-text">Heavy footsteps approaching the corridor...</span>
   </div>
 
-  <!-- Hiding Spot Prompt -->
-  <div id="hide-prompt" class="hidden">[E] Duck into the shadows</div>
+  <!-- Hiding / Task Prompt -->
+  <div id="action-prompt" class="hidden">[E] Interact</div>
+
+  <!-- Task Hotspots in Room & Balcony -->
+  <div id="task-markers"></div>
 
   <!-- Balcony Arrow Hint -->
   <div id="arrow-right">
@@ -45,8 +54,9 @@
     </div>
   </div>
 
-  <!-- Princess Multi-Layer Character -->
+  <!-- Princess Multi-Layer Character + Floating Emote -->
   <div id="princess" class="facing-right">
+    <div id="princess-emote" class="hidden">!</div>
     <div class="sprite-layer skin"></div>
     <div class="sprite-layer boots"></div>
     <div class="sprite-layer outfit"></div>
@@ -54,7 +64,14 @@
     <div class="sprite-layer hair"></div>
   </div>
 
-  <!-- Dialogue & Multi-Choice Box (Ch.2 Sc.3 style + Royal Gold / Angry Red variants) -->
+  <!-- Chapter 2 Scene 3 Style Princess Monologue Box -->
+  <div id="princess-dialogue-box" class="hidden">
+    <div class="p-box-header" id="p-speaker">💭 PRINCESS (THOUGHTS)</div>
+    <p id="p-dialogue-text">Okay, deep breaths... I need to pack and get out to the balcony before anyone notices.</p>
+    <div class="p-box-footer">[Space / E / Click] Continue</div>
+  </div>
+
+  <!-- King's Special Gold / Angry Red Dialogue Card -->
   <div id="royal-dialogue-card" class="hidden royal-gold">
     <div class="gold-filigree top-bar">✦ ♛ ✦</div>
     <div class="card-border">
@@ -67,11 +84,23 @@
           </div>
         </div>
       </div>
-      <p id="royal-line">"Still awake at this hour? The castle gates are locked till dawn..."</p>
+      <p id="royal-line">"Still awake at this hour?"</p>
       <div id="dialogue-choices" class="hidden"></div>
       <div class="card-footer" id="card-footer">[Space / E / Click] Continue</div>
     </div>
     <div class="gold-filigree bottom-bar">✦ ✦ ✦</div>
+  </div>
+
+  <!-- Among Us Style Task Modal -->
+  <div id="task-modal" class="hidden">
+    <div id="task-window">
+      <div id="task-header">
+        <span id="task-title">Task</span>
+        <button id="close-task-btn" title="Close [Esc]">✕</button>
+      </div>
+      <p id="task-instructions">Complete the prep task quietly!</p>
+      <div id="task-body"></div>
+    </div>
   </div>
 
   <script src="CH3.js"></script>
