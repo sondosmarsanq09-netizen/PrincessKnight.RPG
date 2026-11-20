@@ -495,6 +495,11 @@ function getNearbyTask() {
   });
 }
 
+function setHidingState(nextHidden) {
+  isHiding = Boolean(nextHidden);
+  princess.classList.toggle('hidden-in-shadows', isHiding);
+}
+
 // --- KNIGHT CALLOUT ONLY ON THE MOMENT PRINCESS WALKS INTO BALCONY (ONCE PER PATROL) ---
 function triggerBalconyEntryCalloutOnce() {
   if (currentArea !== 'balcony' || balconyCalledOutThisPatrol) return;
@@ -510,7 +515,7 @@ function triggerBalconyEntryCalloutOnce() {
   patrolState = 'checking';
   patrolAlert.classList.remove('hidden');
   patrolAlert.classList.add('danger');
-  patrolText.textContent = 'Knights spotted you stepping onto the balcony — hide [E]!';
+  patrolText.textContent = 'Knights spotted you stepping onto the balcony — press [E] to hide!';
   showEmote('!', 1600);
 
   queueMonologue(
@@ -522,7 +527,7 @@ function triggerBalconyEntryCalloutOnce() {
       },
       {
         speaker: 'PRINCESS',
-        text: 'They called me out the second I stepped out here! I have to hide right now!',
+        text: 'They called me out the second I stepped out here! Press [E] to hide right now!',
         emote: '...'
       }
     ],
@@ -543,7 +548,7 @@ function triggerBalconyEntryCalloutOnce() {
             return;
           }
           presentKingPatrolDialogue();
-        }, 1800)
+        }, 2200)
       );
     }
   );
@@ -1061,6 +1066,7 @@ function finishKingPatrol() {
   kingShadowWrap.classList.remove('visible', 'looking-in', 'deep-scan');
   torchSweep.classList.remove('active');
   patrolAlert.classList.add('hidden', 'danger');
+  setHidingState(false);
 
   if (outcome === 'dismiss_guards') {
     patrolState = 'idle';
@@ -1086,8 +1092,7 @@ function finishKingPatrol() {
     locationBanner.textContent = "📍 Princess's Chambers";
     pX = window.innerWidth - 260;
     pY = 560;
-    isHiding = false;
-    princess.classList.remove('hidden-in-shadows');
+    setHidingState(false);
     resetAllTasks();
     triggerPostCatchPanic();
     queueMonologue([
@@ -1169,6 +1174,27 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
+  const canHideNow =
+    !activeTask &&
+    !['dialogue', 'scolding', 'scold_result'].includes(patrolState) &&
+    (currentArea === 'room' ||
+      (currentArea === 'balcony' &&
+        (balconyThreatActive || ['approaching', 'checking'].includes(patrolState))));
+
+  if (k === 'e' && canHideNow) {
+    if (currentArea === 'balcony' && ['approaching', 'checking'].includes(patrolState)) {
+      setHidingState(!isHiding);
+      if (isMonologueActive) advanceMonologue();
+      return;
+    }
+
+    const nearTask = !isMonologueActive ? getNearbyTask() : null;
+    if (!nearTask && ['approaching', 'checking'].includes(patrolState)) {
+      setHidingState(!isHiding);
+      return;
+    }
+  }
+
   if (isMonologueActive && (k === ' ' || k === 'e' || k === 'enter')) {
     advanceMonologue();
     return;
@@ -1187,23 +1213,14 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (k === 'e' && !activeTask && !isMonologueActive && !['dialogue', 'scolding', 'scold_result'].includes(patrolState)) {
-    if (patrolState === 'approaching' || patrolState === 'checking') {
-      if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
-        isHiding = !isHiding;
-        princess.classList.toggle('hidden-in-shadows', isHiding);
-      }
-      return;
-    }
-
     const nearTask = getNearbyTask();
     if (nearTask && patrolState === 'idle') {
       openTaskModal(nearTask);
       return;
     }
 
-    if (currentArea === 'room' || (currentArea === 'balcony' && balconyThreatActive)) {
-      isHiding = !isHiding;
-      princess.classList.toggle('hidden-in-shadows', isHiding);
+    if (canHideNow) {
+      setHidingState(!isHiding);
     }
     return;
   }
@@ -1250,8 +1267,7 @@ function gameLoop() {
     }
 
     if (pMoving && isHiding) {
-      isHiding = false;
-      princess.classList.remove('hidden-in-shadows');
+      setHidingState(false);
     }
   }
 
@@ -1282,12 +1298,10 @@ function gameLoop() {
 
     if (pX >= window.innerWidth - 130) {
       currentArea = 'balcony';
-      balconyThreatActive = false;
-      isHiding = false;
-      princess.classList.remove('hidden-in-shadows');
+      setHidingState(false);
       worldLayer.style.backgroundImage = "url('NightimeBalcony.png')";
       locationBanner.textContent = "📍 Royal Balcony";
-      pX = Math.round(window.innerWidth * 0.18);
+      pX = Math.round(window.innerWidth * 0.22);
       pY = Math.max(pY, 540);
       renderTaskMarkers();
       showEmote('...', 1600);
@@ -1302,8 +1316,7 @@ function gameLoop() {
     if (pX <= Math.round(window.innerWidth * 0.12)) {
       balconyThreatActive = false;
       currentArea = 'room';
-      isHiding = false;
-      princess.classList.remove('hidden-in-shadows');
+      setHidingState(false);
       worldLayer.style.backgroundImage = "url('NightimePrincessRoom.png')";
       locationBanner.textContent = "📍 Princess's Chambers";
       pX = window.innerWidth - 170;
