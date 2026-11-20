@@ -3,80 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chapter 3 - Midnight Escape Prep</title>
+  <title>Chapter 3 - Midnight Chambers</title>
   <link rel="stylesheet" href="CH3.css" />
 </head>
 <body id="game-body">
   <div id="transition-overlay"></div>
   <div id="caught-flash"></div>
 
-  <!-- HUD -->
-  <div id="hud">
-    <div id="location-banner">📍 Princess's Chambers</div>
-    <div id="objective">Tasks: 0/4 Done • Prepare to meet the Sun Knight!</div>
-    <div id="noise-meter-wrap">
-      <span>🔊 Noise:</span>
-      <div id="noise-bar-track">
-        <div id="noise-bar-fill"></div>
+  <!-- World & Panic Blur Wrapper -->
+  <div id="world-layer">
+    <!-- HUD -->
+    <div id="hud">
+      <div id="location-banner">📍 Princess's Chambers</div>
+      <div id="objective">Tasks: 0/4 Done • Quiet & fast!</div>
+      <div id="noise-meter-wrap">
+        <span>🔊 Noise:</span>
+        <div id="noise-bar-track">
+          <div id="noise-bar-fill"></div>
+        </div>
+      </div>
+      <div id="sus-badge" class="hidden">👀 King is Suspicious — Harder Patrols!</div>
+      <div id="controls-hint">[WASD / Arrows] Move • [E] Task / Hide • [B] Breathe • [K] Test</div>
+    </div>
+
+    <!-- Tension / Stealth Status Pill -->
+    <div id="patrol-alert" class="hidden">
+      <span class="lantern-dot"></span>
+      <span id="patrol-text">Heavy footsteps approaching the corridor...</span>
+    </div>
+
+    <!-- Hiding / Task Prompt -->
+    <div id="action-prompt" class="hidden">[E] Interact</div>
+
+    <!-- Panic / Breathe Prompt -->
+    <div id="panic-prompt" class="hidden">😮‍💨 Gasping for air! Press [B] to breathe steadily!</div>
+
+    <!-- Task Hotspots in Room & Balcony -->
+    <div id="task-markers"></div>
+
+    <!-- Balcony Arrow Hint -->
+    <div id="arrow-right">
+      <span>Balcony</span>
+      <span class="arrow-icon">▶</span>
+    </div>
+
+    <!-- Environmental Torchlight & Pure-CSS King Silhouette -->
+    <div id="torch-sweep"></div>
+    <div id="king-shadow-wrap" class="hidden">
+      <div id="king-silhouette">
+        <div class="crown">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="head"></div>
+        <div class="cloak"></div>
+        <div class="sword-tip"></div>
       </div>
     </div>
-    <div id="controls-hint">[WASD / Arrows] Move • [E] Task / Hide • [K] Test Patrol</div>
-  </div>
 
-  <!-- Tension / Stealth Status Pill -->
-  <div id="patrol-alert" class="hidden">
-    <span class="lantern-dot"></span>
-    <span id="patrol-text">Heavy footsteps approaching the corridor...</span>
-  </div>
-
-  <!-- Hiding / Task Prompt -->
-  <div id="action-prompt" class="hidden">[E] Interact</div>
-
-  <!-- Task Hotspots in Room & Balcony -->
-  <div id="task-markers"></div>
-
-  <!-- Balcony Arrow Hint -->
-  <div id="arrow-right">
-    <span>Balcony</span>
-    <span class="arrow-icon">▶</span>
-  </div>
-
-  <!-- Environmental Torchlight & Pure-CSS King Silhouette -->
-  <div id="torch-sweep"></div>
-  <div id="king-shadow-wrap" class="hidden">
-    <div id="king-silhouette">
-      <div class="crown">
-        <span></span><span></span><span></span>
-      </div>
-      <div class="head"></div>
-      <div class="cloak"></div>
-      <div class="sword-tip"></div>
+    <!-- Princess Multi-Layer Character + Floating Emote -->
+    <div id="princess" class="facing-right">
+      <div id="princess-emote" class="hidden">!</div>
+      <div class="sprite-layer skin"></div>
+      <div class="sprite-layer boots"></div>
+      <div class="sprite-layer outfit"></div>
+      <div class="sprite-layer skirt"></div>
+      <div class="sprite-layer hair"></div>
     </div>
-  </div>
-
-  <!-- Princess Multi-Layer Character + Floating Emote -->
-  <div id="princess" class="facing-right">
-    <div id="princess-emote" class="hidden">!</div>
-    <div class="sprite-layer skin"></div>
-    <div class="sprite-layer boots"></div>
-    <div class="sprite-layer outfit"></div>
-    <div class="sprite-layer skirt"></div>
-    <div class="sprite-layer hair"></div>
   </div>
 
   <!-- Chapter 2 Scene 3 Style Princess Monologue Box -->
   <div id="princess-dialogue-box" class="hidden">
     <div class="p-box-header" id="p-speaker">💭 PRINCESS (THOUGHTS)</div>
-    <p id="p-dialogue-text">Okay, deep breaths... I need to pack and get out to the balcony before anyone notices.</p>
+    <p id="p-dialogue-text">Okay, deep breath...</p>
     <div class="p-box-footer">[Space / E / Click] Continue</div>
   </div>
 
-  <!-- King's Special Gold / Angry Red Dialogue Card -->
+  <!-- King's Special Gold / Angry Red Dialogue Box -->
   <div id="royal-dialogue-card" class="hidden royal-gold">
     <div class="gold-filigree top-bar">✦ ♛ ✦</div>
     <div class="card-border">
       <div class="card-header-row">
-        <div class="royal-crest" id="royal-speaker">👑 HIS MAJESTY THE KING</div>
+        <div class="royal-crest" id="royal-speaker">👑 KING</div>
         <div id="answer-timer-wrap" class="hidden">
           <span id="answer-timer-label">⏱ 8.0s</span>
           <div class="timer-track">
@@ -84,7 +91,7 @@
           </div>
         </div>
       </div>
-      <p id="royal-line">"Still awake at this hour?"</p>
+      <p id="royal-line">"Why are you still awake?!"</p>
       <div id="dialogue-choices" class="hidden"></div>
       <div class="card-footer" id="card-footer">[Space / E / Click] Continue</div>
     </div>
