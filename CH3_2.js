@@ -17,7 +17,9 @@ const worldLayer = document.getElementById('world-layer');
 const ambientMotes = document.getElementById('ambient-motes');
 const kingSightlineStrip = document.getElementById('king-sightline-strip');
 const kingSightlineBeam = document.getElementById('king-sightline-beam');
+const librarySpotsWrap = document.getElementById('library-spots');
 const caughtFlash = document.getElementById('caught-flash');
+const chapterFadeOut = document.getElementById('chapter-fade-out');
 const locationBanner = document.getElementById('location-banner');
 const noiseBarFill = document.getElementById('noise-bar-fill');
 const susBadge = document.getElementById('sus-badge');
@@ -157,7 +159,9 @@ const baseSpeed = 6;
 let currentArea = 'room'; // 'room' | 'hallway' | 'balcony' | 'chambers' | 'library'
 let isHiding = false;
 let noiseLevel = 0;
-let escapedToLibrary = false;
+let libraryExitTriggered = false;
+let libraryReadyToExit = false;
+let libraryIntroShown = false;
 let triggeredObstacleIdsThisPass = new Set();
 
 // King's floor sightline sweep state inside Chambers
@@ -182,6 +186,32 @@ let pendingOutcome = null;
 let activeObstacle = null;
 let caughtTriggeredThisCheck = false;
 let activeMiniGameTimer = null;
+
+// Simple, no-challenge Library interactions (distraction + finding something)
+const librarySpots = [
+  {
+    id: 'tip_candles',
+    label: '🕯️ Knock Candle Stand (Distraction)',
+    xPct: 0.52,
+    y: 555,
+    done: false,
+    kind: 'distraction',
+    noiseAdded: 24,
+    line: "Tipped that candle stand over on the far side of the shelves... if anyone's listening, it'll pull their attention away from the left exit.",
+    emote: '✦'
+  },
+  {
+    id: 'find_pass',
+    label: '📜 Grab Night Pass & Key',
+    xPct: 0.30,
+    y: 560,
+    done: false,
+    kind: 'find',
+    noiseAdded: 6,
+    line: "Aha—a brass side-gate key and a scribbled night-watch note tucked between two thick tomes. Score.",
+    emote: '✦'
+  }
+];
 
 const obstacles = [
   {
@@ -268,7 +298,7 @@ const caughtEncounter = {
     {
       text: '3. "Do not mind me—I am slipping past the royal wing tonight."',
       safe: false,
-      reply: '"Forgive me, Your Highness, I am bound by orders! Guards—secure the chambers at once!"'
+      reply: '"Forgive me, Your Highness, I am bound by orders! Guards—secure the wing at once!"'
     }
   ]
 };
@@ -298,9 +328,10 @@ function playSoftStepSound() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(currentArea === 'hallway' ? 135 : 105, now);
+    const baseFreq = currentArea === 'hallway' ? 135 : currentArea === 'library' ? 120 : 105;
+    osc.frequency.setValueAtTime(baseFreq, now);
     osc.frequency.exponentialRampToValueAtTime(48, now + 0.08);
-    gain.gain.setValueAtTime(currentArea === 'hallway' ? 0.065 : 0.04, now);
+    gain.gain.setValueAtTime(currentArea === 'hallway' || currentArea === 'library' ? 0.065 : 0.04, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
     osc.connect(gain);
     gain.connect(ctx.destination);
@@ -510,17 +541,17 @@ function updateMapHighlight() {
     hallway: 'West Corridor (Watch your step in the dark toward the side chambers)',
     balcony: 'Balcony (Exposed to the open night—no cover out here)',
     chambers: 'Side Chambers (King\'s watch strip, hazards & puzzles toward the library)',
-    library: 'Library (Entered through the right archway—ready for library puzzles)'
+    library: 'Library (Make a distraction & grab what you need, then head left to exit)'
   };
   if (mapCurrentStatus) {
     mapCurrentStatus.innerHTML =
       `<div>• Where I am: ${areaNames[currentArea] || currentArea} • Noise: ${Math.round(noiseLevel)}%</div>` +
-      `<div>• In the chambers, watch the King's floor sightline strip and stay hidden [E] when patrols close in.</div>`;
+      `<div>• Walking makes noise—if it hits 100%, a guard comes to check. Press [E] to interact or hide.</div>`;
   }
 }
 
 function openWingMap() {
-  if (escapedToLibrary) return;
+  if (libraryExitTriggered) return;
   closeObstacleModal();
   updateMapHighlight();
   wingMapModal.classList.remove('hidden');
@@ -636,7 +667,7 @@ function syncNoiseUI() {
 }
 
 function addNoise(amount, reasonText, rippleText = null) {
-  if (escapedToLibrary) return;
+  if (libraryExitTriggered) return;
   const mult = (isKingSus ? 1.35 : 1.0) * (1 + caughtCount * 0.15);
   noiseLevel = Math.min(100, noiseLevel + amount * mult);
   syncNoiseUI();
@@ -651,13 +682,16 @@ function addNoise(amount, reasonText, rippleText = null) {
     syncNoiseUI();
     closeObstacleModal();
     startGuardCheck(
-      reasonText || '"A sound carried through the wing—check if Her Highness is there!"'
+      reasonText ||
+        (currentArea === 'library'
+          ? '"Footsteps echoed inside the library! Guard, go check who is in there!"'
+          : '"A sound carried through the wing—check if Her Highness is there!"')
     );
   }
 }
 
 setInterval(() => {
-  if (escapedToLibrary || patrolState !== 'idle') return;
+  if (libraryExitTriggered || patrolState !== 'idle') return;
   if (noiseLevel > 0) {
     noiseLevel = Math.max(0, noiseLevel - 1.4);
     syncNoiseUI();
@@ -669,6 +703,92 @@ function resetObstaclesInArea(targetArea) {
     if (o.area === targetArea) o.cleared = false;
   });
   triggeredObstacleIdsThisPass.clear();
+}
+
+function resetLibrarySpots() {
+  librarySpots.forEach((s) => {
+    s.done = false;
+  });
+  libraryReadyToExit = false;
+  renderLibrarySpots();
+}
+
+function getLibrarySpotX(spot) {
+  return Math.max(150, Math.min(window.innerWidth - 180, Math.round(window.innerWidth * spot.xPct)));
+}
+
+function renderLibrarySpots() {
+  if (!librarySpotsWrap) return;
+  const inLib = currentArea === 'library';
+  librarySpotsWrap.classList.toggle('hidden', !inLib);
+  if (!inLib) return;
+
+  librarySpotsWrap.innerHTML = '';
+  librarySpots.forEach((spot) => {
+    const el = document.createElement('div');
+    el.className = 'library-spot-badge' + (spot.done ? ' done' : '');
+    const sx = getLibrarySpotX(spot);
+    const sy = Math.max(180, Math.min(window.innerHeight - 160, spot.y - 75));
+    el.style.left = sx + 'px';
+    el.style.top = sy + 'px';
+    el.textContent = spot.done ? `✔ ${spot.label}` : spot.label;
+    librarySpotsWrap.appendChild(el);
+  });
+}
+
+function getNearbyLibrarySpot() {
+  if (currentArea !== 'library' || libraryExitTriggered) return null;
+  return librarySpots.find((spot) => {
+    if (spot.done) return false;
+    const sx = getLibrarySpotX(spot);
+    return Math.abs(pX - sx) < 130 && Math.abs(pY - spot.y) < 120;
+  });
+}
+
+function checkLibraryMainCharacterMonologue() {
+  if (libraryReadyToExit) return;
+  const allSpotsDone = librarySpots.every((s) => s.done);
+  if (!allSpotsDone) return;
+
+  libraryReadyToExit = true;
+  queueMonologue([
+    {
+      text: "Okay, distraction set, key and note secured... look at me actually pulling this off. If someone told me a week ago I'd be sneaking through the castle library at midnight with a whole plan, I would've laughed.",
+      emote: '✦'
+    },
+    {
+      text: "No challenges left here, just me, my footsteps, and the door out on the left. Main character moment, don't trip on the way out.",
+      emote: '...'
+    },
+    {
+      text: "Alright—time to head out the left side and see what's waiting on the other side.",
+      emote: '✦'
+    }
+  ]);
+}
+
+function interactWithLibrarySpot(spot) {
+  if (!spot || spot.done || isMonologueActive || patrolState !== 'idle') return;
+  spot.done = true;
+  if (spot.kind === 'distraction') {
+    playPorcelainChimeSound(false);
+    addNoise(spot.noiseAdded, null, 'clatter...');
+  } else {
+    playSilverClinkSound(false);
+    addNoise(spot.noiseAdded, null, 'rustle...');
+  }
+  showEmote(spot.emote || '✦', 1500);
+  renderLibrarySpots();
+
+  queueMonologue(
+    [
+      {
+        text: spot.line,
+        emote: spot.emote || '✦'
+      }
+    ],
+    checkLibraryMainCharacterMonologue
+  );
 }
 
 function syncChambersVisuals() {
@@ -747,6 +867,7 @@ function setArea(nextArea, nextX, nextY) {
 
   triggeredObstacleIdsThisPass.clear();
   syncChambersVisuals();
+  renderLibrarySpots();
   updateMapHighlight();
 }
 
@@ -755,7 +876,7 @@ function getObstacleScreenX(obs) {
 }
 
 function getNearbyObstacle() {
-  if (escapedToLibrary) return null;
+  if (libraryExitTriggered || currentArea === 'library') return null;
   return obstacles.find((obs) => {
     if (obs.area !== currentArea || obs.cleared) return false;
     const ox = getObstacleScreenX(obs);
@@ -816,7 +937,7 @@ function completeObstacle(obs) {
 }
 
 function openObstacleModal(obs) {
-  if (patrolState !== 'idle' || isMonologueActive || escapedToLibrary) return;
+  if (patrolState !== 'idle' || isMonologueActive || libraryExitTriggered) return;
   clearMiniGameTimer();
   activeObstacle = obs;
   taskModal.classList.remove('hidden');
@@ -1016,7 +1137,7 @@ function clearPatrolTimers() {
 }
 
 function startGuardCheck(customCallout = null) {
-  if (patrolState !== 'idle' || escapedToLibrary) return;
+  if (patrolState !== 'idle' || libraryExitTriggered) return;
   clearPatrolTimers();
   closeObstacleModal();
   closeWingMap();
@@ -1170,7 +1291,9 @@ function finishGuardCheck() {
   if (outcome === 'reset_area') {
     noiseLevel = 55;
     syncNoiseUI();
-    if (currentArea === 'chambers') {
+    if (currentArea === 'library') {
+      setArea('library', Math.round(window.innerWidth * 0.72), 560);
+    } else if (currentArea === 'chambers') {
       setArea('chambers', Math.round(window.innerWidth * 0.8), 560);
       resetObstaclesInArea('chambers');
     } else {
@@ -1206,35 +1329,65 @@ royalDialogueCard.addEventListener('click', () => {
   }
 });
 
-// --- ENTER LIBRARY THROUGH RIGHT-SIDE ARCHWAY ---
-function reachLibrary() {
-  if (escapedToLibrary) return;
-  escapedToLibrary = true;
+// --- ENTER LIBRARY THROUGH RIGHT-SIDE ARCHWAY & EXIT LEFT TO BLACK FADE-OUT ---
+function enterLibraryFromChambers() {
+  // Place Princess aligned with the tall stone archway on the right side of Library.png
+  setArea('library', Math.round(window.innerWidth * 0.73), 560);
+  setHidingState(false);
+  princess.classList.add('facing-left');
+  princess.classList.remove('facing-right');
+  playSoftStepSound();
+  showEmote('✦', 1600);
+
+  if (!libraryIntroShown) {
+    libraryIntroShown = true;
+    queueMonologue([
+      {
+        text: "Made it into the library through the right arch... okay, breathe. No crazy obstacle courses here—just keep an eye on my walking noise so I don't bring a guard running.",
+        emote: '✦'
+      },
+      {
+        text: "Let me set a quick distraction and grab something useful before I head out the left side.",
+        emote: '...'
+      }
+    ]);
+  }
+}
+
+function exitLibraryLeftToNextChapter() {
+  if (libraryExitTriggered) return;
+  libraryExitTriggered = true;
   clearPatrolTimers();
   closeObstacleModal();
   closeWingMap();
   clearPanicState();
   playSuccessChime();
-  showEmote('✦', 1800);
+  showEmote('✦', 1600);
 
-  // Place Princess aligned with the tall stone archway on the right side of Library.png
-  setArea('library', Math.round(window.innerWidth * 0.73), 560);
-  princess.classList.add('facing-left');
-  princess.classList.remove('facing-right');
+  if (chapterFadeOut) {
+    chapterFadeOut.classList.add('fading');
+  }
 
-  escapeSummaryText.textContent =
-    caughtCount === 0
-      ? 'You stepped through the library archway unseen—ready for the library trials ahead.'
-      : `You entered the library archway (Spotted: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
-  escapeCompleteModal.classList.remove('hidden');
+  setTimeout(() => {
+    escapeSummaryText.textContent =
+      caughtCount === 0
+        ? 'You slipped through the library unseen and stepped out into the next chapter.'
+        : `You made it out of the library (Spotted: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
+    escapeCompleteModal.classList.remove('hidden');
+  }, 1150);
 }
 
 replayScene2Btn.addEventListener('click', () => {
-  escapedToLibrary = false;
+  libraryExitTriggered = false;
+  libraryIntroShown = false;
+  if (chapterFadeOut) {
+    chapterFadeOut.classList.remove('fading');
+  }
   noiseLevel = 0;
   syncNoiseUI();
   resetObstaclesInArea('hallway');
   resetObstaclesInArea('chambers');
+  resetLibrarySpots();
   setArea('room', startX, startY);
   setHidingState(false);
   escapeCompleteModal.classList.add('hidden');
@@ -1255,7 +1408,7 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 
-  if (k === 'm' && !escapedToLibrary) {
+  if (k === 'm' && !libraryExitTriggered) {
     toggleWingMap();
     return;
   }
@@ -1298,6 +1451,12 @@ window.addEventListener('keydown', (e) => {
       return;
     }
 
+    const nearLibSpot = getNearbyLibrarySpot();
+    if (nearLibSpot && patrolState === 'idle') {
+      interactWithLibrarySpot(nearLibSpot);
+      return;
+    }
+
     const nearObs = getNearbyObstacle();
     if (nearObs && patrolState === 'idle') {
       openObstacleModal(nearObs);
@@ -1315,7 +1474,7 @@ window.addEventListener('keyup', (e) => {
   keys[e.key.toLowerCase()] = false;
 });
 
-window.addEventListener('resize', () => {});
+window.addEventListener('resize', renderLibrarySpots);
 
 // --- MAIN LOOP ---
 let lastStepSoundAt = 0;
@@ -1324,7 +1483,7 @@ function gameLoop() {
   let pMoving = false;
   const activeSpeed = getCurrentMovementSpeed();
   const locked =
-    escapedToLibrary ||
+    libraryExitTriggered ||
     isMonologueActive ||
     Boolean(activeObstacle) ||
     !wingMapModal.classList.contains('hidden') ||
@@ -1359,11 +1518,19 @@ function gameLoop() {
 
     if (pMoving) {
       const moveNoise =
-        currentArea === 'chambers' ? 0.52 : currentArea === 'hallway' ? 0.42 : 0.16;
+        currentArea === 'chambers'
+          ? 0.52
+          : currentArea === 'hallway'
+            ? 0.42
+            : currentArea === 'library'
+              ? 0.48
+              : 0.16;
       addNoise(
         moveNoise,
         null,
-        currentArea === 'hallway' || currentArea === 'chambers' ? 'tap...' : null
+        currentArea === 'hallway' || currentArea === 'chambers' || currentArea === 'library'
+          ? 'tap...'
+          : null
       );
 
       const now = performance.now();
@@ -1391,11 +1558,16 @@ function gameLoop() {
     openObstacleModal(nearObs);
   }
 
+  const nearLibSpot = getNearbyLibrarySpot();
+
   if (['approaching', 'checking'].includes(patrolState)) {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = isHiding
       ? "Hidden in the shadows — don't move!"
       : 'Watch & footsteps nearby! Hide with [E]!';
+  } else if (nearLibSpot && !isMonologueActive) {
+    actionPrompt.classList.remove('hidden');
+    actionPrompt.textContent = `[E] ${nearLibSpot.label}`;
   } else if (nearObs && !activeObstacle && !isMonologueActive) {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = `Something is right here... [E]`;
@@ -1503,7 +1675,7 @@ function gameLoop() {
 
     if (pX <= 55) {
       if (allChamberCleared) {
-        reachLibrary();
+        enterLibraryFromChambers();
       } else {
         pX = 65;
         addNoise(8, null, 'blocked...');
@@ -1521,6 +1693,47 @@ function gameLoop() {
 
     if (pX >= window.innerWidth - 110) {
       setArea('hallway', 145, Math.max(pY, 555));
+      setHidingState(false);
+      showEmote('...', 1500);
+    }
+  } else if (currentArea === 'library') {
+    const remainingSpots = librarySpots.filter((s) => !s.done).length;
+
+    if (arrowLeft) {
+      arrowLeft.style.display = 'flex';
+      arrowLeft.innerHTML =
+        remainingSpots === 0
+          ? '<span class="arrow-icon">◀</span><span>Exit to Next Chapter</span>'
+          : `<span class="arrow-icon">◀</span><span>Left Exit (${remainingSpots} spot${remainingSpots === 1 ? '' : 's'} left)</span>`;
+      arrowLeft.classList.toggle('highlight', pX < 240 && remainingSpots === 0);
+    }
+    if (arrowRight) {
+      arrowRight.style.display = 'flex';
+      arrowRight.innerHTML = '<span>Side Chambers</span><span class="arrow-icon">▶</span>';
+      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 260);
+    }
+
+    if (pX <= 45) {
+      if (remainingSpots === 0 && !isMonologueActive) {
+        exitLibraryLeftToNextChapter();
+      } else {
+        pX = 55;
+        if (!isMonologueActive && patrolState === 'idle') {
+          queueMonologue([
+            {
+              text:
+                remainingSpots > 0
+                  ? "Hold on—I still haven't set my distraction or grabbed what I came for in here."
+                  : "Okay, let me finish my thought before stepping out...",
+              emote: '...'
+            }
+          ]);
+        }
+      }
+    }
+
+    if (pX >= window.innerWidth - 110) {
+      setArea('chambers', 145, Math.max(pY, 555));
       setHidingState(false);
       showEmote('...', 1500);
     }
