@@ -57,6 +57,40 @@ body {
   100% { transform: translateY(0px); }
 }
 
+/* --- KING'S FLOOR SIGHTLINE STRIP (CHAMBERS) --- */
+#king-sightline-strip {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 84px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(255, 190, 60, 0.09);
+  border: 1px dashed rgba(255, 210, 105, 0.35);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 9;
+}
+
+#king-sightline-beam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24%;
+  left: 0%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 120, 60, 0.05),
+    rgba(255, 200, 75, 0.42),
+    rgba(255, 80, 70, 0.55),
+    rgba(255, 200, 75, 0.42),
+    rgba(255, 120, 60, 0.05)
+  );
+  box-shadow: 0 0 18px rgba(255, 175, 55, 0.55);
+  transition: left 0.05s linear;
+}
+
 /* --- ATMOSPHERIC MOONLIGHT VIGNETTE & FLOATING DUST MOTES --- */
 #atmosphere-vignette {
   position: absolute;
@@ -339,7 +373,7 @@ body {
   transform: translateY(-50%) scale(1.12);
 }
 
-/* --- TORCHLIGHT & CLEAN KNIGHT SILHOUETTE --- */
+/* --- TORCHLIGHT & CLEAN KNIGHT / KING SILHOUETTE --- */
 #torch-sweep {
   position: absolute;
   inset: 0;
@@ -380,6 +414,18 @@ body {
   filter: drop-shadow(0 0 18px rgba(255, 175, 60, 0.58));
 }
 
+#guard-shadow-wrap.king-overwatch {
+  right: auto;
+  left: 50%;
+  bottom: auto;
+  top: 155px;
+  transform: translateX(-50%) scale(0.76);
+}
+
+#guard-shadow-wrap.king-overwatch.visible {
+  transform: translateX(-50%) scale(0.76);
+}
+
 #guard-shadow-wrap.visible {
   opacity: 0.96;
   transform: translateX(0px);
@@ -391,6 +437,11 @@ body {
 
 #guard-shadow-wrap.deep-scan {
   transform: translateX(-32px) scale(1.06);
+}
+
+#guard-shadow-wrap.king-overwatch.looking-in,
+#guard-shadow-wrap.king-overwatch.deep-scan {
+  transform: translateX(-50%) scale(0.8);
 }
 
 #guard-silhouette {
@@ -407,7 +458,6 @@ body {
   height: 380px;
   overflow: visible;
 }
-
 
 @keyframes shadow-breathe {
   0%, 100% { transform: scaleY(1); }
@@ -551,7 +601,7 @@ body {
   margin-top: 8px;
 }
 
-/* --- ROYAL KNIGHT DIALOGUE CARD --- */
+/* --- ROYAL KNIGHT / KING DIALOGUE CARD --- */
 #royal-dialogue-card {
   position: fixed;
   bottom: 22px;
@@ -676,7 +726,7 @@ body {
 #wing-map-card,
 #escape-complete-card,
 #task-window {
-  width: min(680px, 92vw);
+  width: min(740px, 94vw);
   background: linear-gradient(160deg, #1b172e, #110f20);
   border: 2.5px solid #d4af37;
   border-radius: 12px;
@@ -732,7 +782,7 @@ body {
 }
 
 .map-node {
-  flex: 1 1 135px;
+  flex: 1 1 125px;
   padding: 10px;
   border-radius: 8px;
   font-size: 12px;
