@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chapter 3 - Scene 2: Slipping Out</title>
+  <title>Chapter 3 - Scene 2: Midnight Corridor</title>
   <link rel="stylesheet" href="CH3_2.css" />
 </head>
 <body id="game-body">
@@ -12,10 +12,14 @@
 
   <!-- World & Post-Catch Panic Blur Wrapper -->
   <div id="world-layer">
-    <!-- HUD (Updates to Declare Scene 2 Start) -->
+    <!-- Atmospheric Moonlight Vignette & Floating Dust Motes -->
+    <div id="atmosphere-vignette"></div>
+    <div id="ambient-motes"></div>
+
+    <!-- HUD -->
     <div id="hud">
       <div id="location-banner">📍 Princess's Chambers</div>
-      <div id="objective">Scene 2: Sneak Out Unseen • Reach the Left Chambers</div>
+      <div id="objective">Sneak Out Unseen • Reach the Side Chambers</div>
       <div id="noise-meter-wrap">
         <span>🔊 Noise:</span>
         <div id="noise-bar-track">
@@ -30,7 +34,7 @@
     <!-- Tension / Stealth Status Pill -->
     <div id="patrol-alert" class="hidden">
       <span class="lantern-dot"></span>
-      <span id="patrol-text">Guards coming to check on the noise...</span>
+      <span id="patrol-text">Armored footsteps in the corridor — hide in the shadows [E]!</span>
     </div>
 
     <!-- Hiding / Obstacle Prompt -->
@@ -44,27 +48,29 @@
       </div>
     </div>
 
-    <!-- Hallway / Room / Balcony Obstacle Hotspots -->
-    <div id="obstacle-markers"></div>
-
     <!-- Directional Arrows -->
     <div id="arrow-left">
       <span class="arrow-icon">◀</span>
-      <span>Escape Hallway</span>
+      <span>West Corridor</span>
     </div>
     <div id="arrow-right">
       <span>Balcony</span>
       <span class="arrow-icon">▶</span>
     </div>
 
-    <!-- Environmental Torchlight & Guard Silhouette -->
+    <!-- Environmental Torchlight & Knight Silhouette -->
     <div id="torch-sweep"></div>
     <div id="guard-shadow-wrap" class="hidden">
       <div id="guard-silhouette">
+        <div class="plume"></div>
         <div class="helm"></div>
-        <div class="head"></div>
-        <div class="cloak"></div>
-        <div class="spear"></div>
+        <div class="visor"></div>
+        <div class="pauldron-left"></div>
+        <div class="pauldron-right"></div>
+        <div class="chestplate"></div>
+        <div class="cape"></div>
+        <div class="sword"></div>
+        <div class="crossguard"></div>
       </div>
     </div>
 
@@ -82,52 +88,52 @@
   <!-- Frosted Translucent White Dialogue Box -->
   <div id="princess-dialogue-box" class="hidden">
     <div class="p-box-header" id="p-speaker">PRINCESS</div>
-    <p id="p-dialogue-text">Scene 2 starts now...</p>
+    <p id="p-dialogue-text">Alright...</p>
     <div class="p-box-footer">[Space / E / Click] Continue</div>
   </div>
 
-  <!-- Guard Dialogue Card -->
+  <!-- Royal Knight Dialogue Card -->
   <div id="royal-dialogue-card" class="hidden royal-gold">
     <div class="gold-filigree top-bar">✦ ♛ ✦</div>
     <div class="card-border">
       <div class="card-header-row">
-        <div class="royal-crest" id="royal-speaker">⚔️ ROYAL GUARD</div>
+        <div class="royal-crest" id="royal-speaker">⚔️ ROYAL KNIGHT</div>
       </div>
-      <p id="royal-line">"Halt! What is making noise out here?!"</p>
+      <p id="royal-line">"Your Highness?! Forgive me—what are you doing out here at this hour?"</p>
       <div id="dialogue-choices" class="hidden"></div>
       <div class="card-footer" id="card-footer">[Space / E / Click] Continue</div>
     </div>
     <div class="gold-filigree bottom-bar">✦ ✦ ✦</div>
   </div>
 
-  <!-- [M] Wing Layout Map Modal (Blurs Everything Behind It) -->
+  <!-- [M] Wing Layout Map Modal -->
   <div id="wing-map-modal" class="hidden">
     <div id="wing-map-card">
       <div class="map-header">
-        <span>🗺️ CASTLE WING MAP (SCENE 2)</span>
+        <span>🗺️ CASTLE WING MAP</span>
         <button id="close-map-btn">Close [M / Esc]</button>
       </div>
-      <p class="map-sub">Walk left from your room into the hallway, keep noise low, and reach the Left Chambers.</p>
+      <p class="map-sub">Slip left out of your chambers into the west corridor, keep quiet, and reach the side chambers.</p>
       <div class="castle-blueprint">
         <div class="map-node safe-zone" data-zone="safe_chambers">
-          🚪 Left Chambers<br><small>(Safe goal left of hallway)</small>
+          🚪 Side Chambers<br><small>(Safe goal west of corridor)</small>
         </div>
         <div class="map-arrow">◀──</div>
         <div class="map-node danger-zone" data-zone="hallway">
-          🕯️ Escape Hallway<br><small>(Left of room • high risk)</small>
+          🕯️ West Corridor<br><small>(Hidden hazards • watch your step)</small>
         </div>
         <div class="map-arrow">◀── ──▶</div>
         <div class="map-node start-node" data-zone="room">
-          🛏️ Princess's Room<br><small>(Center • walk left to hall)</small>
+          🛏️ My Chambers<br><small>(Center • west door to corridor)</small>
         </div>
         <div class="map-arrow">──▶</div>
         <div class="map-node" data-zone="balcony">
-          🌙 Balcony<br><small>(Right of room • no safety)</small>
+          🌙 Balcony<br><small>(East • open night air)</small>
         </div>
       </div>
       <div class="map-notes" id="map-current-status">
-        • Stay quiet—if noise hits 100%, guards come check on you.<br>
-        • Press [E] near hallway obstacles or to hide in shadows.
+        • Stay quiet—if noise hits 100%, knights on patrol will investigate.<br>
+        • Press [E] to hide in the shadows when lantern light sweeps near.
       </div>
     </div>
   </div>
@@ -144,15 +150,15 @@
     </div>
   </div>
 
-  <!-- Left Chambers Escape Complete Modal -->
+  <!-- Safe Escape Complete Modal -->
   <div id="escape-complete-modal" class="hidden">
     <div id="escape-complete-card">
       <div class="map-header">
-        <span>✨ REACHED THE LEFT CHAMBERS</span>
-        <button id="replay-scene2-btn">Replay Scene 2</button>
+        <span>✨ REACHED THE SIDE CHAMBERS</span>
+        <button id="replay-scene2-btn">Replay</button>
       </div>
       <p id="escape-summary-text" class="map-sub">
-        You slipped through the hallway unseen and reached the chambers to the left!
+        You slipped through the west corridor unseen and reached the side chambers!
       </p>
     </div>
   </div>
