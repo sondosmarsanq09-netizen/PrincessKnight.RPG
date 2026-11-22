@@ -211,6 +211,182 @@ const caughtEncounter = {
   ]
 };
 
+// --- WEB AUDIO SOUND EFFECTS (MATCHING SCENE 2) ---
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+function playSoftStepSound() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(105, now);
+    osc.frequency.exponentialRampToValueAtTime(48, now + 0.08);
+    gain.gain.setValueAtTime(0.04, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.09);
+  } catch (e) {}
+}
+
+function playKnightFootstepSound() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(78, now);
+    osc1.frequency.exponentialRampToValueAtTime(28, now + 0.18);
+    gain1.gain.setValueAtTime(0.24, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.19);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(620, now + 0.04);
+    osc2.frequency.exponentialRampToValueAtTime(340, now + 0.14);
+    gain2.gain.setValueAtTime(0.05, now + 0.04);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.04);
+    osc2.stop(now + 0.15);
+  } catch (e) {}
+}
+
+function playWoodCreakSound(loud = false) {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(loud ? 160 : 210, now);
+    osc.frequency.linearRampToValueAtTime(loud ? 95 : 175, now + 0.22);
+    gain.gain.setValueAtTime(loud ? 0.14 : 0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } catch (e) {}
+}
+
+function playSilverClinkSound(loud = false) {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    [loud ? 1180 : 1420, loud ? 890 : 1780].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.05);
+      gain.gain.setValueAtTime(loud ? 0.11 : 0.05, now + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.05);
+      osc.stop(now + i * 0.05 + 0.23);
+    });
+  } catch (e) {}
+}
+
+function playPorcelainChimeSound(loud = false) {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(loud ? 520 : 880, now);
+    osc.frequency.exponentialRampToValueAtTime(loud ? 180 : 660, now + 0.28);
+    gain.gain.setValueAtTime(loud ? 0.14 : 0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.31);
+  } catch (e) {}
+}
+
+function playSuccessChime() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+      gain.gain.setValueAtTime(0.08, now + idx * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.32);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.09);
+      osc.stop(now + idx * 0.09 + 0.33);
+    });
+  } catch (e) {}
+}
+
+function playBreathSound() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(160, now + 0.35);
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.37);
+  } catch (e) {}
+}
+
+function playCaughtSting() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    [110, 103.8].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.58);
+    });
+  } catch (e) {}
+}
+
+function triggerFootstepPulse() {
+  worldLayer.classList.remove('footstep-rumble');
+  void worldLayer.offsetWidth;
+  worldLayer.classList.add('footstep-rumble');
+  playKnightFootstepSound();
+}
+
 // --- PULSE-AND-FADEOUT EMOTES (NO BOX, NO HEART, NO WATER) ---
 let emoteTimeout = null;
 function showEmote(symbol = '!', duration = 1600) {
@@ -382,6 +558,7 @@ function handlePanicPassOut() {
 
 function performSteadyBreath() {
   if (!isPanicking) return;
+  playBreathSound();
   breathsNeeded--;
   panicTimeLeft = Math.min(PANIC_PASSOUT_LIMIT, panicTimeLeft + 1.1);
 
@@ -397,72 +574,6 @@ function performSteadyBreath() {
   } else {
     panicPromptText.textContent = `💔 DANGER: Still panicking! Press [B] to calm her down (${breathsNeeded} left)`;
   }
-}
-
-// --- WEB AUDIO SOUND EFFECTS ---
-let audioCtx = null;
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx;
-}
-
-function playFootstepSound() {
-  try {
-    const ctx = getAudioCtx();
-    const now = ctx.currentTime;
-
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'triangle';
-    osc1.frequency.setValueAtTime(78, now);
-    osc1.frequency.exponentialRampToValueAtTime(28, now + 0.18);
-    gain1.gain.setValueAtTime(0.24, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.19);
-
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sawtooth';
-    osc2.frequency.setValueAtTime(190, now + 0.07);
-    osc2.frequency.exponentialRampToValueAtTime(65, now + 0.17);
-    gain2.gain.setValueAtTime(0.08, now + 0.07);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.07);
-    osc2.stop(now + 0.18);
-  } catch (e) {}
-}
-
-function playCaughtSting() {
-  try {
-    const ctx = getAudioCtx();
-    const now = ctx.currentTime;
-    [110, 103.8].forEach((freq) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
-      gain.gain.setValueAtTime(0.16, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.58);
-    });
-  } catch (e) {}
-}
-
-function triggerFootstepPulse() {
-  worldLayer.classList.remove('footstep-rumble');
-  void worldLayer.offsetWidth;
-  worldLayer.classList.add('footstep-rumble');
-  playFootstepSound();
 }
 
 // --- NOISE SYSTEM ---
@@ -487,7 +598,7 @@ function addNoise(amount, reasonText) {
 function updateObjectiveHUD() {
   const doneCount = tasks.filter((t) => t.done).length;
   if (allTasksFinished) {
-    objectiveText.textContent = `Getting Ready Done! Wait for the halls to clear`;
+    objectiveText.textContent = 'Getting Ready Done! Wait for the halls to clear';
   } else {
     objectiveText.textContent = `Getting Ready: ${doneCount}/${tasks.length} Done • Stay quiet!`;
   }
@@ -700,6 +811,7 @@ function openTaskModal(task) {
         if (item.classList.contains('packed')) return;
         item.classList.add('packed');
         packed++;
+        playSilverClinkSound(false);
         addNoise(14);
         countEl.textContent = `${packed} / 3 Packed`;
         if (packed >= 3) completeTask(task);
@@ -718,6 +830,7 @@ function openTaskModal(task) {
       if (el && !el.classList.contains('packed')) {
         el.classList.add('packed');
         packed++;
+        playSilverClinkSound(false);
         addNoise(12);
         countEl.textContent = `${packed} / 3 Packed`;
         if (packed >= 3) completeTask(task);
@@ -741,9 +854,11 @@ function openTaskModal(task) {
         if (step === nextStep) {
           btn.classList.add('done');
           nextStep++;
+          playSoftStepSound();
           addNoise(8);
           if (nextStep > 4) completeTask(task);
         } else {
+          playWoodCreakSound(true);
           addNoise(45, '"Ink spilled?! Knights, search every chamber—I shall check the Princess\'s room myself."');
         }
       });
@@ -765,6 +880,7 @@ function openTaskModal(task) {
         btn.classList.add('placed');
         btn.textContent = '✔ Ready';
         placed++;
+        playWoodCreakSound(false);
         addNoise(10);
         if (placed >= 3) completeTask(task);
       });
@@ -793,6 +909,7 @@ function openTaskModal(task) {
         caughtStars = 0;
         timeLeft = 9.5;
         counterEl.textContent = `Time's up! Try again: 0 / ${goal}`;
+        playPorcelainChimeSound(true);
         addNoise(15);
         spawnStar();
       }
@@ -809,6 +926,7 @@ function openTaskModal(task) {
       btn.style.top = (15 + Math.random() * 70) + '%';
       btn.addEventListener('click', () => {
         caughtStars++;
+        playPorcelainChimeSound(false);
         addNoise(8);
         counterEl.textContent = `Stars Caught: ${caughtStars} / ${goal}`;
         if (caughtStars >= goal) {
@@ -850,6 +968,7 @@ function openTaskModal(task) {
       timeLeft -= 0.1;
       if (!timerEl) return;
       if (timeLeft <= 0) {
+        playPorcelainChimeSound(true);
         addNoise(16);
         resetSpellRound('Reset! ');
         return;
@@ -867,12 +986,14 @@ function openTaskModal(task) {
           typed += ch;
           btn.classList.add('picked');
           preview.textContent = typed.padEnd(targetWord.length, '_');
+          playPorcelainChimeSound(false);
           addNoise(7);
           if (typed === targetWord) {
             clearMiniGameTimer();
             completeTask(task);
           }
         } else {
+          playPorcelainChimeSound(true);
           addNoise(22);
           resetSpellRound('Wrong star! ');
         }
@@ -894,6 +1015,7 @@ function completeTask(task) {
   clearMiniGameTimer();
   task.done = true;
   closeTaskModal();
+  playSuccessChime();
   renderTaskMarkers();
   updateObjectiveHUD();
   showEmote('✦', 1600);
@@ -1267,6 +1389,8 @@ window.addEventListener('keyup', (e) => {
 window.addEventListener('resize', renderTaskMarkers);
 
 // --- MAIN LOOP ---
+let lastStepSoundAt = 0;
+
 function gameLoop() {
   let pMoving = false;
   const activeSpeed = getCurrentMovementSpeed();
@@ -1300,6 +1424,14 @@ function gameLoop() {
 
     if (pMoving && isHiding) {
       setHidingState(false);
+    }
+
+    if (pMoving) {
+      const now = performance.now();
+      if (now - lastStepSoundAt > 260) {
+        lastStepSoundAt = now;
+        playSoftStepSound();
+      }
     }
   }
 
@@ -1392,204 +1524,7 @@ queueMonologue(
       emote: '...'
     }
   ],
+  beginGraceCountdownOnce
+);
 
-(() => {
-  if (window.__scene1SfxInstalled) return;
-  window.__scene1SfxInstalled = true;
-
-  let sfxCtx = null;
-  function getCtx() {
-    if (!sfxCtx) {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (Ctx) sfxCtx = new Ctx();
-    }
-    if (sfxCtx && sfxCtx.state === 'suspended') {
-      sfxCtx.resume().catch(() => {});
-    }
-    return sfxCtx;
-  }
-
-  function playSoftStep() {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(115, now);
-      osc.frequency.exponentialRampToValueAtTime(48, now + 0.08);
-      gain.gain.setValueAtTime(0.045, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.09);
-    } catch (e) {}
-  }
-
-  function playKnightStep() {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'triangle';
-      osc1.frequency.setValueAtTime(78, now);
-      osc1.frequency.exponentialRampToValueAtTime(28, now + 0.18);
-      gain1.gain.setValueAtTime(0.22, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.19);
-
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(620, now + 0.04);
-      osc2.frequency.exponentialRampToValueAtTime(340, now + 0.14);
-      gain2.gain.setValueAtTime(0.05, now + 0.04);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(now + 0.04);
-      osc2.stop(now + 0.15);
-    } catch (e) {}
-  }
-
-  function playWoodCreak(loud = false) {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(loud ? 160 : 210, now);
-      osc.frequency.linearRampToValueAtTime(loud ? 95 : 175, now + 0.22);
-      gain.gain.setValueAtTime(loud ? 0.14 : 0.06, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.25);
-    } catch (e) {}
-  }
-
-  function playSilverClink(loud = false) {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      [loud ? 1180 : 1420, loud ? 890 : 1780].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + i * 0.05);
-        gain.gain.setValueAtTime(loud ? 0.11 : 0.05, now + i * 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.22);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + i * 0.05);
-        osc.stop(now + i * 0.05 + 0.23);
-      });
-    } catch (e) {}
-  }
-
-  function playPorcelainChime(loud = false) {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(loud ? 520 : 880, now);
-      osc.frequency.exponentialRampToValueAtTime(loud ? 180 : 660, now + 0.28);
-      gain.gain.setValueAtTime(loud ? 0.14 : 0.05, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.31);
-    } catch (e) {}
-  }
-
-  function playSuccessChime() {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      [523.25, 659.25, 783.99].forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
-        gain.gain.setValueAtTime(0.08, now + idx * 0.09);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.32);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + idx * 0.09);
-        osc.stop(now + idx * 0.09 + 0.33);
-      });
-    } catch (e) {}
-  }
-
-  function playBreath() {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(240, now);
-      osc.frequency.exponentialRampToValueAtTime(160, now + 0.35);
-      gain.gain.setValueAtTime(0.06, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.37);
-    } catch (e) {}
-  }
-
-  function playCaughtSting() {
-    try {
-      const ctx = getCtx();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      [110, 103.8].forEach((freq) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, now);
-        osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
-        gain.gain.setValueAtTime(0.16, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.58);
-      });
-    } catch (e) {}
-  }
-
-  // Expose helper so any existing Scene 1 code can call window.Scene1SFX.play('softStep') if desired
-  window.Scene1SFX = {
-    play(name, loud = false) {
-      switch (name) {
-        case 'softStep': return playSoftStep();
-        case 'knightStep': return playKnightStep();
-        case 'woodCreak': return playWoodCreak(loud);
-        case 'silverClink': return playSilverClink(loud);
-        case 'porcelainChime': return playPorcelainChime(loud);
-        case 'successChime': return playSuccessChime();
-        case 'breath': return playBreath();
-        case 'caughtSting': return playCaughtSting();
-      }
-    }
-  };
+gameLoop();
