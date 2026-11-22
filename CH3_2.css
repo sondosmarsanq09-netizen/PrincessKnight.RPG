@@ -47,6 +47,7 @@ html, body {
   background-size: cover;
   background-position: center bottom;
   background-repeat: no-repeat;
+  image-rendering: pixelated;
   transition: filter 0.25s ease, transform 0.14s ease;
 }
 
@@ -186,16 +187,17 @@ html, body {
   border: 1px solid rgba(255, 205, 115, 0.25);
 }
 
-/* Princess Sprite */
+/* Pixel-Art Princess Sprite */
 #princess {
   position: fixed;
   left: 0;
   top: 0;
-  width: 64px;
-  height: 96px;
+  width: 56px;
+  height: 92px;
   transform: translate(-50%, -85%);
   z-index: 15;
   pointer-events: none;
+  image-rendering: pixelated;
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
@@ -213,17 +215,58 @@ html, body {
 }
 
 #princess-sprite {
+  position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #e07a5f 0% 26%, #b52b3c 26% 56%, #f4efe6 56% 100%);
-  border: 2px solid rgba(255, 232, 194, 0.65);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.65));
   transition: transform 0.1s ease;
 }
 
+/* Auburn Hair + Flowing Back Locks */
+#princess-sprite::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 11px;
+  width: 34px;
+  height: 44px;
+  border-radius: 14px 14px 6px 10px;
+  background:
+    radial-gradient(circle at 55% 28%, #b84a32 0 14px, transparent 15px),
+    linear-gradient(180deg, #9c3824 0%, #6e2214 100%);
+  box-shadow: -4px 6px 0 -1px #7c2818;
+}
+
+/* Face, Crimson Bodice & Cream Gown */
+#princess-sprite::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 15px;
+  width: 26px;
+  height: 74px;
+  background:
+    /* Eyes & blush */
+    radial-gradient(circle at 34% 13%, #231618 2px, transparent 2.5px),
+    radial-gradient(circle at 66% 13%, #231618 2px, transparent 2.5px),
+    radial-gradient(circle at 26% 18%, rgba(235, 94, 112, 0.65) 3px, transparent 3.5px),
+    radial-gradient(circle at 74% 18%, rgba(235, 94, 112, 0.65) 3px, transparent 3.5px),
+    /* Peach face */
+    linear-gradient(180deg, #f6c4a8 0 26%, transparent 26%),
+    /* Crimson corset/bodice */
+    linear-gradient(180deg, transparent 26%, #b52b3c 26% 49%, transparent 49%),
+    /* Cream flowing gown with fold shading */
+    linear-gradient(90deg, #d8cfc0 0%, #f5efe4 32%, #f5efe4 74%, #cfc4b2 100%);
+  clip-path: polygon(
+    18% 0%, 82% 0%,
+    84% 26%, 94% 48%,
+    100% 100%, 0% 100%,
+    6% 48%, 16% 26%
+  );
+}
+
 #princess.running #princess-sprite {
-  animation: stepBob 0.28s infinite alternate ease-in-out;
+  animation: stepBob 0.24s infinite alternate ease-in-out;
 }
 
 @keyframes stepBob {
@@ -272,11 +315,11 @@ html, body {
   position: fixed;
   top: 16px;
   left: 16px;
-  width: 345px;
+  width: 355px;
   padding: 13px 15px;
   border-radius: 10px;
-  background: rgba(12, 15, 26, 0.86);
-  border: 1px solid rgba(255, 214, 130, 0.28);
+  background: rgba(12, 15, 26, 0.88);
+  border: 1px solid rgba(255, 214, 130, 0.35);
   backdrop-filter: blur(4px);
   z-index: 20;
   display: flex;
