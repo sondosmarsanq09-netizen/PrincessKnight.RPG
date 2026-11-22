@@ -57,6 +57,22 @@ body {
   100% { transform: translateY(0px); }
 }
 
+/* --- BLACK SCREEN FADE-OUT TO NEXT CHAPTER --- */
+#chapter-fade-out {
+  position: fixed;
+  inset: 0;
+  background: #040408;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 90;
+  transition: opacity 1.1s ease;
+}
+
+#chapter-fade-out.fading {
+  opacity: 1;
+  pointer-events: all;
+}
+
 /* --- KING'S FLOOR SIGHTLINE STRIP (CHAMBERS) --- */
 #king-sightline-strip {
   position: absolute;
@@ -89,6 +105,29 @@ body {
   );
   box-shadow: 0 0 18px rgba(255, 175, 55, 0.55);
   transition: left 0.05s linear;
+}
+
+/* --- LIBRARY INTERACTIVE SPOTS --- */
+.library-spot-badge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: rgba(16, 18, 34, 0.9);
+  border: 1.5px solid #ffd166;
+  color: #fff3b0;
+  padding: 5px 11px;
+  border-radius: 16px;
+  font-size: 11.5px;
+  font-weight: bold;
+  z-index: 18;
+  pointer-events: none;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.42);
+}
+
+.library-spot-badge.done {
+  border-color: #52b788;
+  color: #b7e4c7;
+  opacity: 0.72;
+  box-shadow: none;
 }
 
 /* --- ATMOSPHERIC MOONLIGHT VIGNETTE & FLOATING DUST MOTES --- */
