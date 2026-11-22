@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chapter 3 — Scene 2: The Escape Hallway</title>
+  <link rel="stylesheet" href="CH3_2.css" />
+</head>
+<body>
+  <div id="transition-overlay" class="active"></div>
+
+  <div id="game-viewport">
+    <div id="world-layer" style="background-image: url('EscapeHallway.jpg');">
+      <div id="torch-sweep"></div>
+      <div id="caught-flash"></div>
+
+      <!-- Directional Arrows -->
+      <div id="arrow-left" class="nav-arrow" style="display: none;">◀ Safe Chambers</div>
+      <div id="arrow-right" class="nav-arrow" style="display: flex;">Princess's Chambers ▶</div>
+
+      <!-- Hallway / Room / Balcony Obstacles -->
+      <div id="obstacle-markers"></div>
+
+      <!-- Guard / King Shadow Silhouette -->
+      <div id="guard-shadow-wrap" class="hidden">
+        <div id="guard-silhouette"></div>
+      </div>
+
+      <!-- Princess Sprite -->
+      <div id="princess" class="facing-left">
+        <div id="princess-emote" class="hidden">!</div>
+        <div id="princess-sprite"></div>
+      </div>
+
+      <!-- Floating Action Prompt -->
+      <div id="action-prompt" class="hidden"></div>
+    </div>
+
+    <!-- Top-Left HUD Box (Updated for Scene 2) -->
+    <div id="hud-top-left">
+      <div id="location-banner">📍 Castle Hallway</div>
+      <div id="objective">Slip Past the Guards Unseen • Reach the Left Chambers</div>
+
+      <div id="noise-row">
+        <span class="noise-label">🔊 Noise:</span>
+        <div id="noise-bar-track">
+          <div id="noise-bar-fill"></div>
+        </div>
+      </div>
+
+      <div id="sus-badge" class="hidden">👑 King Is Suspicious — Watch Closely</div>
+      <div id="panic-status" class="hidden">💔 DANGER: Princess is having a panic attack — calm her down [B]!</div>
+
+      <div id="controls-hint">
+        [WASD / Arrows] Move • [E] Obstacle / Hide • [M] Map • [B] Breathe
+      </div>
+    </div>
+
+    <!-- Top-Right Patrol / Guard Alert -->
+    <div id="patrol-alert" class="hidden">
+      <span class="alert-dot"></span>
+      <span id="patrol-text">Guards sweeping the corridor!</span>
+    </div>
+
+    <!-- Panic Breathing Bar -->
+    <div id="panic-prompt" class="hidden">
+      <div id="panic-prompt-text"></div>
+      <div id="panic-bar-track">
+        <div id="panic-bar-fill"></div>
+      </div>
+    </div>
+
+    <!-- Princess / Knight / Guard Dialogue Box -->
+    <div id="princess-dialogue-box" class="hidden">
+      <div id="p-speaker">PRINCESS</div>
+      <div id="p-dialogue-text"></div>
+      <div id="p-dialogue-footer">[Space / E / Click] Continue</div>
+    </div>
+
+    <!-- Guard / Royal Dialogue Card -->
+    <div id="royal-dialogue-card" class="hidden">
+      <div id="royal-speaker">⚔️ ROYAL GUARD</div>
+      <div id="royal-line"></div>
+      <div id="dialogue-choices" class="hidden"></div>
+      <div id="card-footer" class="hidden">[Space / E / Click] Continue</div>
+    </div>
+
+    <!-- Obstacle / Stealth Challenge Modal -->
+    <div id="task-modal" class="hidden">
+      <div id="task-card">
+        <div id="task-header">
+          <h2 id="task-title">Obstacle</h2>
+          <button id="close-task-btn" type="button">✕</button>
+        </div>
+        <p id="task-instructions"></p>
+        <div id="task-body"></div>
+      </div>
+    </div>
+
+    <!-- [M] Wing Layout Map Modal (Blurs Background) -->
+    <div id="wing-map-modal" class="hidden">
+      <div id="wing-map-card">
+        <div class="map-top-bar">
+          <div>
+            <h2>🗺️ Royal Wing &amp; Escape Map</h2>
+            <p class="map-sub">Watch the corridor—stay quiet and head left to the Safe Chambers.</p>
+          </div>
+          <button id="close-map-btn" type="button">✕ [M / Esc]</button>
+        </div>
+
+        <div class="map-diagram">
+          <div class="map-node safe-zone" data-zone="safe_chambers">
+            <div class="node-tag">GOAL</div>
+            <div class="node-title">🚪 Left Chambers</div>
+            <div class="node-desc">Safe sanctuary beyond the hall</div>
+          </div>
+
+          <div class="map-connector">◀──</div>
+
+          <div class="map-node danger-zone" data-zone="hallway">
+            <div class="node-tag">HIGH RISK</div>
+            <div class="node-title">🕯️ Escape Hallway</div>
+            <div class="node-desc">Creaky boards, cart &amp; guard checks</div>
+          </div>
+
+          <div class="map-connector">◀── ──▶</div>
+
+          <div class="map-node" data-zone="room">
+            <div class="node-tag">CENTER</div>
+            <div class="node-title">🛏️ Princess's Room</div>
+            <div class="node-desc">Connects hallway (left) &amp; balcony (right)</div>
+          </div>
+
+          <div class="map-connector">──▶</div>
+
+          <div class="map-node" data-zone="balcony">
+            <div class="node-tag">RIGHT</div>
+            <div class="node-title">🌙 Royal Balcony</div>
+            <div class="node-desc">Exposed night air — no safety if spotted</div>
+          </div>
+        </div>
+
+        <div id="map-current-status"></div>
+      </div>
+    </div>
+
+    <!-- Scene 2 Complete / Safe Chambers Overlay -->
+    <div id="escape-complete-modal" class="hidden">
+      <div id="escape-complete-card">
+        <h2>✨ Reached the Left Chambers!</h2>
+        <p id="escape-summary-text">
+          You slipped through the hallway without being caught and reached the chambers to the left.
+        </p>
+        <button id="replay-scene2-btn" type="button">Replay Scene 2</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="CH3_2.js"></script>
+</body>
+</html>
