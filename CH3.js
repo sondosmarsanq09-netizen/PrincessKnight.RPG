@@ -273,6 +273,32 @@ function closeEscapeMap() {
 
 closeMapBtn.addEventListener('click', closeEscapeMap);
 
+// --- SCENE 1 -> SCENE 2 TRANSITION ---
+function transitionToScene2() {
+  try {
+    sessionStorage.setItem(
+      'ch3_s2_carryover',
+      JSON.stringify({
+        caughtCount: typeof caughtCount === 'number' ? caughtCount : 0,
+        isKingSus: Boolean(isKingSus)
+      })
+    );
+  } catch (e) {}
+
+  const overlay = document.getElementById('transition-overlay');
+  if (overlay) {
+    overlay.innerHTML = '';
+    overlay.classList.add('active');
+    overlay.style.pointerEvents = 'all';
+    overlay.style.opacity = '1';
+    setTimeout(() => {
+      window.location.href = 'CH3_2.html';
+    }, 350);
+  } else {
+    window.location.href = 'CH3_2.html';
+  }
+}
+
 // --- PANIC ATTACK & BREATHING TIMER (Post-Catch Only) ---
 function stopPanicTimer() {
   if (panicCountdownInterval) {
@@ -614,12 +640,15 @@ function beginHallClearTimer() {
       hallWaitSec.textContent = '0.0s';
       hallWaitHud.classList.add('hidden');
       closeEscapeMap();
-      queueMonologue([
-        {
-          text: 'Okay, the halls look empty now. I\'ve got the route down—time to go meet him.',
-          emote: '✦'
-        }
-      ]);
+      queueMonologue(
+        [
+          {
+            text: 'Okay, the halls look empty now. I\'ve got the route down—time to slip into the hallway.',
+            emote: '✦'
+          }
+        ],
+        transitionToScene2
+      );
       return;
     }
     hallWaitSec.textContent = `${hallWaitLeft.toFixed(1)}s`;
