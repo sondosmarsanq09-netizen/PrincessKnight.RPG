@@ -9,6 +9,7 @@
 <body id="game-body">
   <div id="transition-overlay"></div>
   <div id="caught-flash"></div>
+  <div id="chapter-fade-out"></div>
 
   <!-- World & Post-Catch Panic Blur Wrapper -->
   <div id="world-layer">
@@ -20,6 +21,9 @@
     <div id="king-sightline-strip" class="hidden" aria-hidden="true">
       <div id="king-sightline-beam"></div>
     </div>
+
+    <!-- Library Interactive Spots (Distraction & Find Item) -->
+    <div id="library-spots" class="hidden"></div>
 
     <!-- HUD -->
     <div id="hud">
@@ -33,7 +37,7 @@
       </div>
       <div id="sus-badge" class="hidden">👑 King is Suspicious — Watch Closely</div>
       <div id="panic-status" class="hidden">💔 DANGER: Princess is having a panic attack — calm her down [B]!</div>
-      <div id="controls-hint">[WASD / Arrows] Move • [E] Obstacle / Hide • [M] Map • [B] Breathe</div>
+      <div id="controls-hint">[WASD / Arrows] Move • [E] Interact / Hide • [M] Map • [B] Breathe</div>
     </div>
 
     <!-- Tension / Stealth Status Pill -->
@@ -42,12 +46,12 @@
       <span id="patrol-text">Armored footsteps in the corridor — hide in the shadows [E]!</span>
     </div>
 
-    <!-- Hiding / Obstacle Prompt -->
+    <!-- Hiding / Obstacle / Library Prompt -->
     <div id="action-prompt" class="hidden">[E] Interact</div>
 
     <!-- Panic Timer & Breathe Prompt -->
     <div id="panic-prompt" class="hidden">
-      <div id="panic-prompt-text">💔 DANGER: Princess is having a panic attack — calm her down with [B]!</div>
+      <div id="panic-prompt-text">💔 DANGER: Panic attack! Calm her down with [B]!</div>
       <div class="panic-bar-track">
         <div id="panic-bar-fill"></div>
       </div>
@@ -118,10 +122,10 @@
         <span>🗺️ CASTLE WING MAP</span>
         <button id="close-map-btn">Close [M / Esc]</button>
       </div>
-      <p class="map-sub">Slip left out of your chambers into the west corridor, pass the side chambers past the King's watch, and enter the library.</p>
+      <p class="map-sub">Slip left out of your chambers into the west corridor, pass the side chambers past the King's watch, and head through the library.</p>
       <div class="castle-blueprint">
-        <div class="map-node" data-zone="library">
-          📚 Library<br><small>(West beyond chambers)</small>
+        <div class="map-node safe-zone" data-zone="library">
+          📚 Library<br><small>(Distraction, clue &amp; left exit)</small>
         </div>
         <div class="map-arrow">◀──</div>
         <div class="map-node safe-zone" data-zone="chambers">
@@ -147,7 +151,7 @@
     </div>
   </div>
 
-  <!-- Obstacle / Puzzle Challenge Modal -->
+  <!-- Obstacle Challenge Modal -->
   <div id="task-modal" class="hidden">
     <div id="task-window">
       <div id="task-header">
@@ -163,11 +167,11 @@
   <div id="escape-complete-modal" class="hidden">
     <div id="escape-complete-card">
       <div class="map-header">
-        <span>✨ REACHED THE LIBRARY</span>
+        <span>✨ CHAPTER 3 COMPLETE</span>
         <button id="replay-scene2-btn">Replay</button>
       </div>
       <p id="escape-summary-text" class="map-sub">
-        You slipped past the King's watch in the chambers and entered the library!
+        You slipped through the library and stepped into the night beyond.
       </p>
     </div>
   </div>
