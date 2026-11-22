@@ -279,6 +279,9 @@ function transitionToScene2() {
     sessionStorage.setItem(
       'ch3_s2_carryover',
       JSON.stringify({
+        pX: typeof pX === 'number' ? pX : 400,
+        pY: typeof pY === 'number' ? pY : 570,
+        currentArea: typeof currentArea === 'string' ? currentArea : 'room',
         caughtCount: typeof caughtCount === 'number' ? caughtCount : 0,
         isKingSus: Boolean(isKingSus)
       })
