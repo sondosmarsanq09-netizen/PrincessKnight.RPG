@@ -3,25 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chapter 3 — Scene 2: The Escape Hallway</title>
+  <title>Chapter 3 — Scene 2: Slipping Out</title>
   <link rel="stylesheet" href="CH3_2.css" />
 </head>
 <body>
   <div id="transition-overlay" class="active"></div>
 
   <div id="game-viewport">
-    <div id="world-layer" style="background-image: url('EscapeHallway.jpg');">
+    <div id="world-layer" style="background-image: url('NightimePrincessRoom.png');">
       <div id="torch-sweep"></div>
       <div id="caught-flash"></div>
 
       <!-- Directional Arrows -->
-      <div id="arrow-left" class="nav-arrow" style="display: none;">◀ Safe Chambers</div>
-      <div id="arrow-right" class="nav-arrow" style="display: flex;">Princess's Chambers ▶</div>
+      <div id="arrow-left" class="nav-arrow" style="display: flex;">◀ Escape Hallway</div>
+      <div id="arrow-right" class="nav-arrow" style="display: flex;">Balcony ▶</div>
 
       <!-- Hallway / Room / Balcony Obstacles -->
       <div id="obstacle-markers"></div>
 
-      <!-- Guard / King Shadow Silhouette -->
+      <!-- Guard Silhouette -->
       <div id="guard-shadow-wrap" class="hidden">
         <div id="guard-silhouette"></div>
       </div>
@@ -29,17 +29,17 @@
       <!-- Princess Sprite -->
       <div id="princess" class="facing-left">
         <div id="princess-emote" class="hidden">!</div>
-        <div id="princess-sprite"></div>
+        <div id="princess-sprite" aria-label="Princess"></div>
       </div>
 
       <!-- Floating Action Prompt -->
       <div id="action-prompt" class="hidden"></div>
     </div>
 
-    <!-- Top-Left HUD Box (Updated for Scene 2) -->
+    <!-- Top-Left HUD Box (Changes to Declare Scene 2 Start) -->
     <div id="hud-top-left">
-      <div id="location-banner">📍 Castle Hallway</div>
-      <div id="objective">Slip Past the Guards Unseen • Reach the Left Chambers</div>
+      <div id="location-banner">📍 Princess's Chambers</div>
+      <div id="objective">Scene 2 • Sneak Out Unseen • Reach the Left Chambers</div>
 
       <div id="noise-row">
         <span class="noise-label">🔊 Noise:</span>
@@ -103,7 +103,7 @@
         <div class="map-top-bar">
           <div>
             <h2>🗺️ Royal Wing &amp; Escape Map</h2>
-            <p class="map-sub">Watch the corridor—stay quiet and head left to the Safe Chambers.</p>
+            <p class="map-sub">Walk left out of your room into the hallway, keep noise low, and reach the Left Chambers.</p>
           </div>
           <button id="close-map-btn" type="button">✕ [M / Esc]</button>
         </div>
@@ -112,7 +112,7 @@
           <div class="map-node safe-zone" data-zone="safe_chambers">
             <div class="node-tag">GOAL</div>
             <div class="node-title">🚪 Left Chambers</div>
-            <div class="node-desc">Safe sanctuary beyond the hall</div>
+            <div class="node-desc">Safe sanctuary beyond the hallway</div>
           </div>
 
           <div class="map-connector">◀──</div>
@@ -120,15 +120,15 @@
           <div class="map-node danger-zone" data-zone="hallway">
             <div class="node-tag">HIGH RISK</div>
             <div class="node-title">🕯️ Escape Hallway</div>
-            <div class="node-desc">Creaky boards, cart &amp; guard checks</div>
+            <div class="node-desc">Left of room • creaky boards, cart &amp; vases</div>
           </div>
 
           <div class="map-connector">◀── ──▶</div>
 
           <div class="map-node" data-zone="room">
-            <div class="node-tag">CENTER</div>
+            <div class="node-tag">START</div>
             <div class="node-title">🛏️ Princess's Room</div>
-            <div class="node-desc">Connects hallway (left) &amp; balcony (right)</div>
+            <div class="node-desc">Walk left to hallway or right to balcony</div>
           </div>
 
           <div class="map-connector">──▶</div>
@@ -136,7 +136,7 @@
           <div class="map-node" data-zone="balcony">
             <div class="node-tag">RIGHT</div>
             <div class="node-title">🌙 Royal Balcony</div>
-            <div class="node-desc">Exposed night air — no safety if spotted</div>
+            <div class="node-desc">Right of room • no safety if spotted</div>
           </div>
         </div>
 
