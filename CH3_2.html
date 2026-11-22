@@ -16,6 +16,11 @@
     <div id="atmosphere-vignette"></div>
     <div id="ambient-motes"></div>
 
+    <!-- King's Sightline Strip on the Floor (Chambers) -->
+    <div id="king-sightline-strip" class="hidden" aria-hidden="true">
+      <div id="king-sightline-beam"></div>
+    </div>
+
     <!-- HUD -->
     <div id="hud">
       <div id="location-banner">📍 Princess's Chambers</div>
@@ -113,10 +118,14 @@
         <span>🗺️ CASTLE WING MAP</span>
         <button id="close-map-btn">Close [M / Esc]</button>
       </div>
-      <p class="map-sub">Slip left out of your chambers into the west corridor, keep quiet, and reach the side chambers.</p>
+      <p class="map-sub">Slip left out of your chambers into the west corridor, pass the side chambers past the King's watch, and enter the library.</p>
       <div class="castle-blueprint">
-        <div class="map-node safe-zone" data-zone="safe_chambers">
-          🚪 Side Chambers<br><small>(Safe goal west of corridor)</small>
+        <div class="map-node" data-zone="library">
+          📚 Library<br><small>(West beyond chambers)</small>
+        </div>
+        <div class="map-arrow">◀──</div>
+        <div class="map-node safe-zone" data-zone="chambers">
+          🔥 Side Chambers<br><small>(King's watch &amp; hazards)</small>
         </div>
         <div class="map-arrow">◀──</div>
         <div class="map-node danger-zone" data-zone="hallway">
@@ -138,7 +147,7 @@
     </div>
   </div>
 
-  <!-- Hallway Obstacle Challenge Modal -->
+  <!-- Obstacle / Puzzle Challenge Modal -->
   <div id="task-modal" class="hidden">
     <div id="task-window">
       <div id="task-header">
@@ -154,11 +163,11 @@
   <div id="escape-complete-modal" class="hidden">
     <div id="escape-complete-card">
       <div class="map-header">
-        <span>✨ REACHED THE SIDE CHAMBERS</span>
+        <span>✨ REACHED THE LIBRARY</span>
         <button id="replay-scene2-btn">Replay</button>
       </div>
       <p id="escape-summary-text" class="map-sub">
-        You slipped through the west corridor unseen and reached the side chambers!
+        You slipped past the King's watch in the chambers and entered the library!
       </p>
     </div>
   </div>
