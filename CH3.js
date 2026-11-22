@@ -1392,6 +1392,232 @@ queueMonologue(
       emote: '...'
     }
   ],
+
+(() => {
+  if (window.__scene1SfxInstalled) return;
+  window.__scene1SfxInstalled = true;
+
+  let sfxCtx = null;
+  function getCtx() {
+    if (!sfxCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) sfxCtx = new Ctx();
+    }
+    if (sfxCtx && sfxCtx.state === 'suspended') {
+      sfxCtx.resume().catch(() => {});
+    }
+    return sfxCtx;
+  }
+
+  function playSoftStep() {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(115, now);
+      osc.frequency.exponentialRampToValueAtTime(48, now + 0.08);
+      gain.gain.setValueAtTime(0.045, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.09);
+    } catch (e) {}
+  }
+
+  function playKnightStep() {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(78, now);
+      osc1.frequency.exponentialRampToValueAtTime(28, now + 0.18);
+      gain1.gain.setValueAtTime(0.22, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.19);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(620, now + 0.04);
+      osc2.frequency.exponentialRampToValueAtTime(340, now + 0.14);
+      gain2.gain.setValueAtTime(0.05, now + 0.04);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.04);
+      osc2.stop(now + 0.15);
+    } catch (e) {}
+  }
+
+  function playWoodCreak(loud = false) {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(loud ? 160 : 210, now);
+      osc.frequency.linearRampToValueAtTime(loud ? 95 : 175, now + 0.22);
+      gain.gain.setValueAtTime(loud ? 0.14 : 0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } catch (e) {}
+  }
+
+  function playSilverClink(loud = false) {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [loud ? 1180 : 1420, loud ? 890 : 1780].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + i * 0.05);
+        gain.gain.setValueAtTime(loud ? 0.11 : 0.05, now + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.22);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.05);
+        osc.stop(now + i * 0.05 + 0.23);
+      });
+    } catch (e) {}
+  }
+
+  function playPorcelainChime(loud = false) {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(loud ? 520 : 880, now);
+      osc.frequency.exponentialRampToValueAtTime(loud ? 180 : 660, now + 0.28);
+      gain.gain.setValueAtTime(loud ? 0.14 : 0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.31);
+    } catch (e) {}
+  }
+
+  function playSuccessChime() {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+        gain.gain.setValueAtTime(0.08, now + idx * 0.09);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.32);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.09);
+        osc.stop(now + idx * 0.09 + 0.33);
+      });
+    } catch (e) {}
+  }
+
+  function playBreath() {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.35);
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.37);
+    } catch (e) {}
+  }
+
+  function playCaughtSting() {
+    try {
+      const ctx = getCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      [110, 103.8].forEach((freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.58);
+      });
+    } catch (e) {}
+  }
+
+  // Expose helper so any existing Scene 1 code can call window.Scene1SFX.play('softStep') if desired
+  window.Scene1SFX = {
+    play(name, loud = false) {
+      switch (name) {
+        case 'softStep': return playSoftStep();
+        case 'knightStep': return playKnightStep();
+        case 'woodCreak': return playWoodCreak(loud);
+        case 'silverClink': return playSilverClink(loud);
+        case 'porcelainChime': return playPorcelainChime(loud);
+        case 'successChime': return playSuccessChime();
+        case 'breath': return playBreath();
+        case 'caughtSting': return playCaughtSting();
+      }
+    }
+  };
+
+  // Gentle movement step audio while holding WASD / Arrow keys
+  const moveKeys = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
+  const heldMoveKeys = new Set();
+  let lastStepTime = 0;
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (moveKeys.has(k)) heldMoveKeys.add(k);
+    if (k === 'b') playBreath();
+  });
+
+  window.addEventListener('keyup', (e) => {
+    heldMoveKeys.delete(e.key.toLowerCase());
+  });
+
+  setInterval(() => {
+    if (heldMoveKeys.size === 0) return;
+    const now = performance.now();
+    if (now - lastStepTime >= 260) {
+      lastStepTime = now;
+      playSoftStep();
+    }
+  }, 60);
+})();
   beginGraceCountdownOnce
 );
 
