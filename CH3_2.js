@@ -15,6 +15,8 @@ const princess = document.getElementById('princess');
 const princessEmote = document.getElementById('princess-emote');
 const worldLayer = document.getElementById('world-layer');
 const ambientMotes = document.getElementById('ambient-motes');
+const kingSightlineStrip = document.getElementById('king-sightline-strip');
+const kingSightlineBeam = document.getElementById('king-sightline-beam');
 const caughtFlash = document.getElementById('caught-flash');
 const locationBanner = document.getElementById('location-banner');
 const noiseBarFill = document.getElementById('noise-bar-fill');
@@ -152,11 +154,16 @@ const startY = Number.isFinite(carryover.pY) ? carryover.pY : 570;
 let pX = startX;
 let pY = startY;
 const baseSpeed = 6;
-let currentArea = 'room';
+let currentArea = 'room'; // 'room' | 'hallway' | 'balcony' | 'chambers' | 'library'
 let isHiding = false;
 let noiseLevel = 0;
-let escapedToLeftChambers = false;
+let escapedToLibrary = false;
 let triggeredObstacleIdsThisPass = new Set();
+
+// King's floor sightline sweep state inside Chambers
+let sightlinePosPct = 10;
+let sightlineDir = 1;
+let lastSightlineHitAt = 0;
 
 let caughtCount = Number.isFinite(carryover.caughtCount) ? carryover.caughtCount : 0;
 let isKingSus = Boolean(carryover.isKingSus);
@@ -200,6 +207,30 @@ const obstacles = [
     xPct: 0.25,
     y: 550,
     cleared: false
+  },
+  {
+    id: 'hearth_embers',
+    area: 'chambers',
+    name: 'popping hearth embers',
+    xPct: 0.72,
+    y: 560,
+    cleared: false
+  },
+  {
+    id: 'chamber_cipher',
+    area: 'chambers',
+    name: 'iron latch lock',
+    xPct: 0.48,
+    y: 555,
+    cleared: false
+  },
+  {
+    id: 'watch_railing',
+    area: 'chambers',
+    name: 'creaking timber planks',
+    xPct: 0.26,
+    y: 565,
+    cleared: false
   }
 ];
 
@@ -215,24 +246,29 @@ const guardSusLines = [
   '"Hold your lantern steady and watch both ends of the corridor."'
 ];
 
+const kingOverwatchLines = [
+  '"My eyes are on the chamber floor tonight. A single reckless step will give you away."',
+  '"The watch stands close and the floorboards carry far. Keep to the shadows."'
+];
+
 const caughtEncounter = {
-  scold: '"Your Highness?! Forgive me—what brings you out in the corridor at this hour? His Majesty asked for extra watch tonight."',
-  hint: 'Keep your tone calm and royal so he has no reason to press further.',
+  scold: '"Your Highness?! Forgive me—what brings you out here at this hour? His Majesty ordered a strict watch tonight."',
+  hint: 'Keep your tone calm and royal so they have no reason to press further.',
   choices: [
     {
-      text: '1. "I could not sleep, Sir Knight—I only stepped out for a breath of night air."',
+      text: '1. "I could not sleep—I only stepped out for a breath of night air."',
       safe: true,
-      reply: '"Of course, Your Highness. Pray head back inside before His Majesty wakes and worries."'
+      reply: '"Of course, Your Highness. Pray head back before His Majesty wakes and worries."'
     },
     {
-      text: '2. "A draft stirred the corridor—I came to see what rattled out here."',
+      text: '2. "A draft stirred the wing—I came to see what rattled out here."',
       safe: true,
-      reply: '"Leave the corridor to us, Princess. We will check it at once—please rest inside."'
+      reply: '"Leave the wing to us, Princess. We will check it at once—please be careful."'
     },
     {
-      text: '3. "Do not mind me, Sir Knight—I am slipping past the royal wing tonight."',
+      text: '3. "Do not mind me—I am slipping past the royal wing tonight."',
       safe: false,
-      reply: '"Forgive me, Your Highness, I am bound by His Majesty\'s orders! Knights—secure the west corridor at once!"'
+      reply: '"Forgive me, Your Highness, I am bound by orders! Guards—secure the chambers at once!"'
     }
   ]
 };
@@ -472,17 +508,19 @@ function updateMapHighlight() {
   const areaNames = {
     room: 'My Chambers (West door leads to the corridor; balcony is east)',
     hallway: 'West Corridor (Watch your step in the dark toward the side chambers)',
-    balcony: 'Balcony (Exposed to the open night—no cover out here)'
+    balcony: 'Balcony (Exposed to the open night—no cover out here)',
+    chambers: 'Side Chambers (King\'s watch strip, hazards & puzzles toward the library)',
+    library: 'Library (Entered through the right archway—ready for library puzzles)'
   };
   if (mapCurrentStatus) {
     mapCurrentStatus.innerHTML =
       `<div>• Where I am: ${areaNames[currentArea] || currentArea} • Noise: ${Math.round(noiseLevel)}%</div>` +
-      `<div>• Heavy steps or clatter will draw the knights on watch—and getting spotted makes them listen closer.</div>`;
+      `<div>• In the chambers, watch the King's floor sightline strip and stay hidden [E] when patrols close in.</div>`;
   }
 }
 
 function openWingMap() {
-  if (escapedToLeftChambers) return;
+  if (escapedToLibrary) return;
   closeObstacleModal();
   updateMapHighlight();
   wingMapModal.classList.remove('hidden');
@@ -598,7 +636,7 @@ function syncNoiseUI() {
 }
 
 function addNoise(amount, reasonText, rippleText = null) {
-  if (escapedToLeftChambers) return;
+  if (escapedToLibrary) return;
   const mult = (isKingSus ? 1.35 : 1.0) * (1 + caughtCount * 0.15);
   noiseLevel = Math.min(100, noiseLevel + amount * mult);
   syncNoiseUI();
@@ -613,24 +651,75 @@ function addNoise(amount, reasonText, rippleText = null) {
     syncNoiseUI();
     closeObstacleModal();
     startGuardCheck(
-      reasonText || '"A sound carried down the west corridor—check if Her Highness is safe!"'
+      reasonText || '"A sound carried through the wing—check if Her Highness is there!"'
     );
   }
 }
 
 setInterval(() => {
-  if (escapedToLeftChambers || patrolState !== 'idle') return;
+  if (escapedToLibrary || patrolState !== 'idle') return;
   if (noiseLevel > 0) {
     noiseLevel = Math.max(0, noiseLevel - 1.4);
     syncNoiseUI();
   }
 }, 250);
 
-function resetHallwayObstacles() {
+function resetObstaclesInArea(targetArea) {
   obstacles.forEach((o) => {
-    o.cleared = false;
+    if (o.area === targetArea) o.cleared = false;
   });
   triggeredObstacleIdsThisPass.clear();
+}
+
+function syncChambersVisuals() {
+  const inChambers = currentArea === 'chambers';
+  if (kingSightlineStrip) {
+    kingSightlineStrip.classList.toggle('hidden', !inChambers);
+  }
+  if (guardShadowWrap) {
+    guardShadowWrap.classList.toggle('king-overwatch', inChambers);
+  }
+}
+
+function updateKingSightlineSweep(locked) {
+  if (currentArea !== 'chambers' || !kingSightlineBeam) return;
+  if (!locked) {
+    sightlinePosPct += sightlineDir * 0.72;
+    if (sightlinePosPct >= 76) {
+      sightlinePosPct = 76;
+      sightlineDir = -1;
+    } else if (sightlinePosPct <= 0) {
+      sightlinePosPct = 0;
+      sightlineDir = 1;
+    }
+  }
+  kingSightlineBeam.style.left = sightlinePosPct + '%';
+
+  // Check if Princess is crossing the active watching beam while not hidden
+  const stripLeft = window.innerWidth * 0.14;
+  const stripWidth = window.innerWidth * 0.72;
+  const beamStart = stripLeft + (sightlinePosPct / 100) * stripWidth;
+  const beamEnd = beamStart + stripWidth * 0.24;
+  const princessCenterX = pX + 48;
+
+  if (
+    !locked &&
+    !isHiding &&
+    patrolState === 'idle' &&
+    princessCenterX >= beamStart &&
+    princessCenterX <= beamEnd
+  ) {
+    const now = performance.now();
+    if (now - lastSightlineHitAt > 950) {
+      lastSightlineHitAt = now;
+      playWoodCreakSound(true);
+      addNoise(
+        26,
+        '"The King\'s gaze caught movement across the chamber floor! Knights, inspect the chambers!"',
+        'WATCHED!'
+      );
+    }
+  }
 }
 
 // --- AREA TRANSITIONS ---
@@ -648,9 +737,16 @@ function setArea(nextArea, nextX, nextY) {
   } else if (currentArea === 'balcony') {
     worldLayer.style.backgroundImage = "url('NightimeBalcony.png')";
     locationBanner.textContent = '📍 Balcony';
+  } else if (currentArea === 'chambers') {
+    worldLayer.style.backgroundImage = "url('Chambers.png')";
+    locationBanner.textContent = '📍 Side Chambers (King\'s Watch)';
+  } else if (currentArea === 'library') {
+    worldLayer.style.backgroundImage = "url('Library.png')";
+    locationBanner.textContent = '📍 Castle Library';
   }
 
   triggeredObstacleIdsThisPass.clear();
+  syncChambersVisuals();
   updateMapHighlight();
 }
 
@@ -659,7 +755,7 @@ function getObstacleScreenX(obs) {
 }
 
 function getNearbyObstacle() {
-  if (escapedToLeftChambers) return null;
+  if (escapedToLibrary) return null;
   return obstacles.find((obs) => {
     if (obs.area !== currentArea || obs.cleared) return false;
     const ox = getObstacleScreenX(obs);
@@ -672,7 +768,7 @@ function setHidingState(nextHidden) {
   princess.classList.toggle('hidden-in-shadows', isHiding);
 }
 
-// --- HALLWAY OBSTACLE CHALLENGES ---
+// --- OBSTACLE & CHAMBER PUZZLE CHALLENGES ---
 function clearMiniGameTimer() {
   if (activeMiniGameTimer) {
     clearInterval(activeMiniGameTimer);
@@ -691,7 +787,7 @@ closeTaskBtn.addEventListener('click', () => {
     const skipped = activeObstacle;
     closeObstacleModal();
     playWoodCreakSound(true);
-    addNoise(36, '"A sharp creak echoed in the west corridor! Knights, check Her Highness\'s wing!"', 'CLATTER!');
+    addNoise(36, '"A sharp sound echoed through the wing! Guards, check right there!"', 'CLATTER!');
     if (patrolState === 'idle') {
       queueMonologue([
         {
@@ -720,7 +816,7 @@ function completeObstacle(obs) {
 }
 
 function openObstacleModal(obs) {
-  if (patrolState !== 'idle' || isMonologueActive || escapedToLeftChambers) return;
+  if (patrolState !== 'idle' || isMonologueActive || escapedToLibrary) return;
   clearMiniGameTimer();
   activeObstacle = obs;
   taskModal.classList.remove('hidden');
@@ -788,7 +884,7 @@ function openObstacleModal(obs) {
         if (steadied >= 2) completeObstacle(obs);
       } else {
         playSilverClinkSound(true);
-        addNoise(44, '"Clink-clatter!! Silverware rattled near the royal corridor! Knights, go look!"', 'CLATTER!!');
+        addNoise(44, '"Clink-clatter!! Silverware rattled near the corridor! Knights, go look!"', 'CLATTER!!');
       }
     });
   } else if (obs.id === 'moon_vases') {
@@ -818,17 +914,109 @@ function openObstacleModal(obs) {
       playPorcelainChimeSound(true);
       addNoise(50, '"Crash!! Porcelain nearly toppled by the arch! Knights, check right now!"', 'CLANG!!');
     });
+  } else if (obs.id === 'hearth_embers') {
+    taskTitle.textContent = 'By the Hearth: Popping Embers';
+    taskInstructions.textContent = 'Steady your footing twice when the marker is inside the green zone so sparks don\'t pop!';
+    let steadied = 0;
+    let pos = 15;
+    let dir = 1;
+    taskBody.innerHTML = `
+      <div class="balance-track">
+        <div class="balance-sweet-spot"></div>
+        <div class="balance-marker" id="hearth-marker"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span id="hearth-progress">Steady Steps: 0 / 2</span>
+        <button class="stealth-btn" id="hearth-steady-btn" type="button">Hold Still</button>
+      </div>
+    `;
+    const marker = document.getElementById('hearth-marker');
+    const progressEl = document.getElementById('hearth-progress');
+    const steadyBtn = document.getElementById('hearth-steady-btn');
+
+    activeMiniGameTimer = setInterval(() => {
+      pos += dir * 5.2;
+      if (pos >= 92) { pos = 92; dir = -1; }
+      if (pos <= 2) { pos = 2; dir = 1; }
+      if (marker) marker.style.left = pos + '%';
+    }, 32);
+
+    steadyBtn.addEventListener('click', () => {
+      if (pos >= 34 && pos <= 66) {
+        steadied++;
+        playPorcelainChimeSound(false);
+        addNoise(14, null, 'hush...');
+        if (progressEl) progressEl.textContent = `Steady Steps: ${steadied} / 2`;
+        if (steadied >= 2) completeObstacle(obs);
+      } else {
+        playWoodCreakSound(true);
+        addNoise(48, '"POP-CRACK!! Embers flared by the hearth! Knights, check the chambers!"', 'POP!!');
+      }
+    });
+  } else if (obs.id === 'chamber_cipher') {
+    taskTitle.textContent = 'Chamber Puzzle: Iron Latch Sigils';
+    taskInstructions.textContent = 'Press the sigils in order (1 → 2 → 3) to unlatch the inner passage quietly.';
+    let step = 1;
+    taskBody.innerHTML = `
+      <div class="stealth-step-row">
+        <button class="stealth-btn" data-n="3">3. ♛ Crown</button>
+        <button class="stealth-btn" data-n="1">1. ✦ Star</button>
+        <button class="stealth-btn" data-n="2">2. 🌙 Moon</button>
+      </div>
+    `;
+    taskBody.querySelectorAll('.stealth-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const n = parseInt(btn.dataset.n, 10);
+        if (n === step) {
+          btn.classList.add('done');
+          playSilverClinkSound(false);
+          step++;
+          addNoise(12, null, 'click...');
+          if (step > 3) completeObstacle(obs);
+        } else {
+          playSilverClinkSound(true);
+          addNoise(48, '"Iron latch rattled in the chambers! Knights, investigate right now!"', 'RATTLE!!');
+        }
+      });
+    });
+  } else if (obs.id === 'watch_railing') {
+    taskTitle.textContent = 'Below the Balcony: Creaking Timber Planks';
+    taskInstructions.textContent = 'Tiptoe carefully twice before the King\'s watch notices the floor.';
+    let quietMoves = 0;
+    taskBody.innerHTML = `
+      <div class="stealth-step-row">
+        <button class="stealth-btn" id="plank-quiet-btn" type="button">✦ Tiptoe Lightly</button>
+        <button class="stealth-btn" id="plank-rush-btn" type="button">⚡ Step Heavy</button>
+      </div>
+      <div id="plank-status" style="margin-top:10px;font-size:12px;color:#ffd166;">Quiet Steps: 0 / 2</div>
+    `;
+    const quietBtn = document.getElementById('plank-quiet-btn');
+    const rushBtn = document.getElementById('plank-rush-btn');
+    const statusEl = document.getElementById('plank-status');
+
+    quietBtn.addEventListener('click', () => {
+      quietMoves++;
+      playWoodCreakSound(false);
+      addNoise(14, null, 'soft...');
+      if (statusEl) statusEl.textContent = `Quiet Steps: ${quietMoves} / 2`;
+      if (quietMoves >= 2) completeObstacle(obs);
+    });
+
+    rushBtn.addEventListener('click', () => {
+      playWoodCreakSound(true);
+      addNoise(52, '"Loud thud on the chamber planks! Knights, check the side chambers!"', 'THUD!!');
+    });
   }
 }
 
-// --- KNIGHT CHECK WHEN NOISE SPIKES ---
+// --- KNIGHT / KING CHECK WHEN NOISE SPIKES ---
 function clearPatrolTimers() {
   patrolTimers.forEach((id) => clearTimeout(id));
   patrolTimers = [];
 }
 
 function startGuardCheck(customCallout = null) {
-  if (patrolState !== 'idle' || escapedToLeftChambers) return;
+  if (patrolState !== 'idle' || escapedToLibrary) return;
   clearPatrolTimers();
   closeObstacleModal();
   closeWingMap();
@@ -836,11 +1024,14 @@ function startGuardCheck(customCallout = null) {
   caughtTriggeredThisCheck = false;
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
-  patrolText.textContent = 'Armored footsteps approaching — hide in the shadows [E]!';
+  patrolText.textContent =
+    currentArea === 'chambers'
+      ? 'King & guards watching closely — hide in the shadows [E]!'
+      : 'Armored footsteps approaching — hide in the shadows [E]!';
   torchSweep.classList.add('active');
   showEmote('!', 1600);
 
-  const stepGap = isKingSus ? 390 : 480;
+  const stepGap = isKingSus || currentArea === 'chambers' ? 370 : 480;
   triggerFootstepPulse();
   patrolTimers.push(setTimeout(triggerFootstepPulse, stepGap));
   patrolTimers.push(setTimeout(triggerFootstepPulse, stepGap * 2));
@@ -857,7 +1048,7 @@ function startGuardCheck(customCallout = null) {
     });
 
     patrolAlert.classList.add('danger');
-    patrolText.textContent = 'Knight lantern sweeping closer — stay hidden [E]!';
+    patrolText.textContent = 'Watch sweeping closer — stay hidden [E]!';
   }, checkDelay));
 
   patrolTimers.push(setTimeout(() => {
@@ -886,13 +1077,18 @@ function startGuardCheck(customCallout = null) {
     pendingOutcome = 'normal';
     patrolAlert.classList.remove('danger');
 
-    const pool = isKingSus ? guardSusLines : guardNormalLines;
+    const pool =
+      currentArea === 'chambers'
+        ? kingOverwatchLines
+        : isKingSus
+          ? guardSusLines
+          : guardNormalLines;
     const line = customCallout || pool[patrolCount % pool.length];
     patrolCount++;
 
     royalDialogueCard.classList.remove('hidden', 'scolding');
     royalDialogueCard.classList.add('royal-gold');
-    royalSpeaker.textContent = '⚔️ ROYAL KNIGHT';
+    royalSpeaker.textContent = currentArea === 'chambers' ? '👑 KING & WATCH' : '⚔️ ROYAL KNIGHT';
     royalLine.textContent = line;
     dialogueChoices.classList.add('hidden');
     cardFooter.classList.remove('hidden');
@@ -923,7 +1119,7 @@ function triggerCaughtEncounter(scoldMessage = caughtEncounter.scold) {
 
   royalDialogueCard.classList.remove('hidden', 'royal-gold');
   royalDialogueCard.classList.add('scolding');
-  royalSpeaker.textContent = '⚔️ ROYAL KNIGHT';
+  royalSpeaker.textContent = currentArea === 'chambers' ? '👑 KING & WATCH' : '⚔️ ROYAL KNIGHT';
   royalLine.innerHTML = `${scoldMessage}<div class="scold-hint">${caughtEncounter.hint}</div>`;
   cardFooter.classList.add('hidden');
 
@@ -953,7 +1149,7 @@ function resolveEncounterChoice(choice) {
     susBadge.classList.remove('hidden');
     pendingOutcome = 'sus_panic';
   } else {
-    pendingOutcome = 'reset_hallway';
+    pendingOutcome = 'reset_area';
   }
 }
 
@@ -971,15 +1167,20 @@ function finishGuardCheck() {
   patrolAlert.classList.add('hidden', 'danger');
   setHidingState(false);
 
-  if (outcome === 'reset_hallway') {
+  if (outcome === 'reset_area') {
     noiseLevel = 55;
     syncNoiseUI();
-    setArea('hallway', Math.round(window.innerWidth * 0.78), 565);
-    resetHallwayObstacles();
+    if (currentArea === 'chambers') {
+      setArea('chambers', Math.round(window.innerWidth * 0.8), 560);
+      resetObstaclesInArea('chambers');
+    } else {
+      setArea('hallway', Math.round(window.innerWidth * 0.78), 565);
+      resetObstaclesInArea('hallway');
+    }
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: "He bowed and stayed polite, yet he nearly had me escorted straight back. I cannot afford another slip like that.",
+        text: "That was far too close. I cannot afford another slip like that.",
         emote: '!'
       }
     ]);
@@ -987,7 +1188,7 @@ function finishGuardCheck() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: "He took my word... barely. My heart is still racing, and the watch is on edge.",
+        text: "They took my word... barely. My heart is still racing, and the watch is on edge.",
         emote: '...'
       }
     ]);
@@ -1005,10 +1206,10 @@ royalDialogueCard.addEventListener('click', () => {
   }
 });
 
-// --- LEFT CHAMBERS SAFE COMPLETION ---
-function reachLeftChambers() {
-  if (escapedToLeftChambers) return;
-  escapedToLeftChambers = true;
+// --- ENTER LIBRARY THROUGH RIGHT-SIDE ARCHWAY ---
+function reachLibrary() {
+  if (escapedToLibrary) return;
+  escapedToLibrary = true;
   clearPatrolTimers();
   closeObstacleModal();
   closeWingMap();
@@ -1016,18 +1217,24 @@ function reachLeftChambers() {
   playSuccessChime();
   showEmote('✦', 1800);
 
+  // Place Princess aligned with the tall stone archway on the right side of Library.png
+  setArea('library', Math.round(window.innerWidth * 0.73), 560);
+  princess.classList.add('facing-left');
+  princess.classList.remove('facing-right');
+
   escapeSummaryText.textContent =
     caughtCount === 0
-      ? 'You slipped through the west corridor unseen and reached the side chambers.'
-      : `You reached the side chambers (Spotted: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
+      ? 'You stepped through the library archway unseen—ready for the library trials ahead.'
+      : `You entered the library archway (Spotted: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
   escapeCompleteModal.classList.remove('hidden');
 }
 
 replayScene2Btn.addEventListener('click', () => {
-  escapedToLeftChambers = false;
+  escapedToLibrary = false;
   noiseLevel = 0;
   syncNoiseUI();
-  resetHallwayObstacles();
+  resetObstaclesInArea('hallway');
+  resetObstaclesInArea('chambers');
   setArea('room', startX, startY);
   setHidingState(false);
   escapeCompleteModal.classList.add('hidden');
@@ -1048,7 +1255,7 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 
-  if (k === 'm' && !escapedToLeftChambers) {
+  if (k === 'm' && !escapedToLibrary) {
     toggleWingMap();
     return;
   }
@@ -1117,7 +1324,7 @@ function gameLoop() {
   let pMoving = false;
   const activeSpeed = getCurrentMovementSpeed();
   const locked =
-    escapedToLeftChambers ||
+    escapedToLibrary ||
     isMonologueActive ||
     Boolean(activeObstacle) ||
     !wingMapModal.classList.contains('hidden') ||
@@ -1151,8 +1358,13 @@ function gameLoop() {
     }
 
     if (pMoving) {
-      const moveNoise = currentArea === 'hallway' ? 0.42 : 0.16;
-      addNoise(moveNoise, null, currentArea === 'hallway' ? 'tap...' : null);
+      const moveNoise =
+        currentArea === 'chambers' ? 0.52 : currentArea === 'hallway' ? 0.42 : 0.16;
+      addNoise(
+        moveNoise,
+        null,
+        currentArea === 'hallway' || currentArea === 'chambers' ? 'tap...' : null
+      );
 
       const now = performance.now();
       if (now - lastStepSoundAt > 260) {
@@ -1164,6 +1376,8 @@ function gameLoop() {
 
   if (pY < 480) pY = 480;
   if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
+
+  updateKingSightlineSweep(locked);
 
   const nearObs = getNearbyObstacle();
   if (
@@ -1181,7 +1395,7 @@ function gameLoop() {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = isHiding
       ? "Hidden in the shadows — don't move!"
-      : 'Knight footsteps nearby! Hide with [E]!';
+      : 'Watch & footsteps nearby! Hide with [E]!';
   } else if (nearObs && !activeObstacle && !isMonologueActive) {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = `Something is right here... [E]`;
@@ -1239,7 +1453,17 @@ function gameLoop() {
 
     if (pX <= 55) {
       if (allCleared) {
-        reachLeftChambers();
+        setArea('chambers', window.innerWidth - 165, Math.max(pY, 555));
+        setHidingState(false);
+        playSoftStepSound();
+        addNoise(12);
+        showEmote('!', 1600);
+        queueMonologue([
+          {
+            text: "The side chambers... Father's watch line is sweeping the floor and guards are right here. Move carefully toward the library on the left.",
+            emote: '!'
+          }
+        ]);
       } else {
         pX = 65;
         addNoise(8, null, 'blocked...');
@@ -1257,6 +1481,46 @@ function gameLoop() {
 
     if (pX >= window.innerWidth - 110) {
       setArea('room', 145, Math.max(pY, 550));
+      setHidingState(false);
+      showEmote('...', 1500);
+    }
+  } else if (currentArea === 'chambers') {
+    const remainingChamberObs = obstacles.filter((o) => o.area === 'chambers' && !o.cleared);
+    const allChamberCleared = remainingChamberObs.length === 0;
+
+    if (arrowLeft) {
+      arrowLeft.style.display = 'flex';
+      arrowLeft.innerHTML = allChamberCleared
+        ? '<span class="arrow-icon">◀</span><span>Library</span>'
+        : `<span class="arrow-icon">◀</span><span>Library (${remainingChamberObs.length} left)</span>`;
+      arrowLeft.classList.toggle('highlight', pX < 240 && allChamberCleared);
+    }
+    if (arrowRight) {
+      arrowRight.style.display = 'flex';
+      arrowRight.innerHTML = '<span>West Corridor</span><span class="arrow-icon">▶</span>';
+      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 260);
+    }
+
+    if (pX <= 55) {
+      if (allChamberCleared) {
+        reachLibrary();
+      } else {
+        pX = 65;
+        addNoise(8, null, 'blocked...');
+        showEmote('!', 1400);
+        if (!isMonologueActive && patrolState === 'idle') {
+          queueMonologue([
+            {
+              text: "I can't reach the library yet—there are still chamber hazards and locks in my way.",
+              emote: '!'
+            }
+          ]);
+        }
+      }
+    }
+
+    if (pX >= window.innerWidth - 110) {
+      setArea('hallway', 145, Math.max(pY, 555));
       setHidingState(false);
       showEmote('...', 1500);
     }
@@ -1294,7 +1558,7 @@ queueMonologue([
     emote: '✦'
   },
   {
-    text: "Just slip through the west door, keep quiet, and reach the side chambers.",
+    text: "Just slip through the west door, keep quiet, cross the chambers past Father's watch, and reach the library.",
     emote: '...'
   }
 ]);
