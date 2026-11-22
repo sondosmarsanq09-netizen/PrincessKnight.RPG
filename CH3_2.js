@@ -57,18 +57,20 @@ const taskInstructions = document.getElementById('task-instructions');
 const taskBody = document.getElementById('task-body');
 const closeTaskBtn = document.getElementById('close-task-btn');
 
-// Carryover from Scene 1 if available
+// Carryover from Scene 1 (starts in room at the same spot she finished Scene 1)
 let carryover = {};
 try {
   const raw = sessionStorage.getItem('ch3_s2_carryover');
   if (raw) carryover = JSON.parse(raw) || {};
 } catch (e) {}
 
-// Princess Coordinates & Scene 1 Movement Constants
-let pX = Math.round(window.innerWidth * 0.82);
-let pY = 570;
+const startX = Number.isFinite(carryover.pX) ? carryover.pX : 400;
+const startY = Number.isFinite(carryover.pY) ? carryover.pY : 570;
+
+let pX = startX;
+let pY = startY;
 const baseSpeed = 6;
-let currentArea = 'hallway'; // 'hallway' | 'room' | 'balcony'
+let currentArea = 'room'; // Always begins Scene 2 in her room at Scene 1's finishing spot
 let isHiding = false;
 let noiseLevel = 0;
 let escapedToLeftChambers = false;
@@ -82,7 +84,7 @@ const PANIC_PASSOUT_LIMIT = 8.5;
 let panicTimeLeft = PANIC_PASSOUT_LIMIT;
 let panicCountdownInterval = null;
 
-// Balcony Threat State (no safety if spotted)
+// Balcony Threat State
 let balconyThreatActive = false;
 
 // Dialogue & Patrol State
@@ -96,7 +98,7 @@ let activeObstacle = null;
 let caughtTriggeredThisCheck = false;
 let activeMiniGameTimer = null;
 
-// Challenging Hallway Obstacles
+// Challenging Hallway Obstacles (to the left of Princess's Room)
 const obstacles = [
   {
     id: 'creaky_boards',
@@ -137,23 +139,23 @@ const guardSusLines = [
 ];
 
 const caughtEncounter = {
-  scold: '"Halt! What are you doing out in the hallway at this hour?!"',
+  scold: '"Halt! What are you doing out here making noise at this hour?!"',
   hint: 'Hint: Keep your story calm so you do not give away your escape.',
   choices: [
     {
-      text: '1. "I could not sleep and came out for fresh air."',
+      text: '1. "I could not sleep and stepped out for a moment."',
       safe: true,
-      reply: '"See that you head back inside before His Majesty hears of you wandering the halls."'
+      reply: '"See that you head back inside before His Majesty hears of you wandering."'
     },
     {
-      text: '2. "The candles in my room flickered out—I was checking the hall."',
+      text: '2. "The candles flickered—I was checking the room."',
       safe: true,
-      reply: '"A guard will relight them. Do not linger out here."'
+      reply: '"A guard will relight them. Keep your voice down and stay out of trouble."'
     },
     {
       text: '3. "I am sneaking out past the wing!"',
       safe: false,
-      reply: '"INTRUDER IN THE CORRIDOR! Seize her and search the hall!"'
+      reply: '"INTRUDER IN THE CORRIDOR! Seize her and check the hall!"'
     }
   ]
 };
@@ -209,9 +211,9 @@ function updateMapHighlight() {
     node.classList.toggle('active-zone', node.dataset.zone === currentArea);
   });
   const areaNames = {
-    hallway: 'Escape Hallway (Left of Princess\'s Room — head left to the Safe Chambers)',
-    room: 'Princess\'s Chambers (Hallway is to the left; Balcony is to the right)',
-    balcony: 'Royal Balcony (Right of Princess\'s Room — no safety if spotted)'
+    room: 'Princess\'s Chambers (Walk left into Escape Hallway; Balcony is right)',
+    hallway: 'Escape Hallway (Left of room — stay quiet past obstacles & head left to Safe Chambers)',
+    balcony: 'Royal Balcony (Right of room — no safety if spotted)'
   };
   mapCurrentStatus.textContent = `Current Location: ${areaNames[currentArea] || currentArea} • Noise: ${Math.round(noiseLevel)}%`;
 }
@@ -291,7 +293,7 @@ function clearPanicState() {
 function handlePanicPassOut() {
   clearPanicState();
   closeObstacleModal();
-  setArea('hallway', Math.round(window.innerWidth * 0.78), 565);
+  setArea('room', startX, startY);
   setHidingState(false);
 
   caughtFlash.classList.add('active');
@@ -389,7 +391,7 @@ function addNoise(amount, reasonText) {
     noiseBarFill.style.width = '0%';
     closeObstacleModal();
     startGuardCheck(
-      reasonText || '"Something made noise in the corridor! Guards, check the hallway and chambers now!"'
+      reasonText || '"Too much noise! Guards, go check on the Princess\'s wing right now!"'
     );
   }
 }
@@ -407,13 +409,13 @@ function setArea(nextArea, nextX, nextY) {
   if (typeof nextX === 'number') pX = nextX;
   if (typeof nextY === 'number') pY = nextY;
 
-  if (currentArea === 'hallway') {
-    worldLayer.style.backgroundImage = "url('EscapeHallway.jpg')";
-    locationBanner.textContent = '📍 Escape Hallway';
-    balconyThreatActive = false;
-  } else if (currentArea === 'room') {
+  if (currentArea === 'room') {
     worldLayer.style.backgroundImage = "url('NightimePrincessRoom.png')";
     locationBanner.textContent = "📍 Princess's Chambers";
+    balconyThreatActive = false;
+  } else if (currentArea === 'hallway') {
+    worldLayer.style.backgroundImage = "url('EscapeHallway.jpg')";
+    locationBanner.textContent = '📍 Escape Hallway';
     balconyThreatActive = false;
   } else if (currentArea === 'balcony') {
     worldLayer.style.backgroundImage = "url('NightimeBalcony.png')";
@@ -483,7 +485,7 @@ function completeObstacle(obs) {
   showEmote('✦', 1600);
   queueMonologue([
     {
-      text: `${obs.label.replace(/^[^\s]+\s/, '')} cleared quietly. Keep moving toward the left chambers.`,
+      text: `${obs.label.replace(/^[^\s]+\s/, '')} cleared quietly. Keep moving left toward the chambers.`,
       emote: '...'
     }
   ]);
@@ -513,10 +515,10 @@ function openObstacleModal(obs) {
         if (n === step) {
           btn.classList.add('done');
           step++;
-          addNoise(10);
+          addNoise(11);
           if (step > 3) completeObstacle(obs);
         } else {
-          addNoise(45, '"CREAK!! Someone stepped heavily on the floorboards! Guards, check the hall!"');
+          addNoise(48, '"CREAK!! Someone stepped heavily on the floorboards! Guards, check the hall!"');
         }
       });
     });
@@ -533,7 +535,7 @@ function openObstacleModal(obs) {
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <span id="cart-progress">Steady Count: 0 / 2</span>
-        <button class="stealth-btn" id="steady-cart-btn" type="button">Steady Tray [Space]</button>
+        <button class="stealth-btn" id="steady-cart-btn" type="button">Steady Tray</button>
       </div>
     `;
     const marker = document.getElementById('cart-marker');
@@ -541,24 +543,22 @@ function openObstacleModal(obs) {
     const steadyBtn = document.getElementById('steady-cart-btn');
 
     activeMiniGameTimer = setInterval(() => {
-      pos += dir * 3.4;
+      pos += dir * 3.6;
       if (pos >= 92) { pos = 92; dir = -1; }
       if (pos <= 2) { pos = 2; dir = 1; }
       if (marker) marker.style.left = pos + '%';
     }, 35);
 
-    const attemptSteady = () => {
+    steadyBtn.addEventListener('click', () => {
       if (pos >= 34 && pos <= 66) {
         steadied++;
-        addNoise(8);
+        addNoise(9);
         if (progressEl) progressEl.textContent = `Steady Count: ${steadied} / 2`;
         if (steadied >= 2) completeObstacle(obs);
       } else {
-        addNoise(38, '"Clink-clatter!! Silverware rattled by the window! Guards, investigate!"');
+        addNoise(42, '"Clink-clatter!! Silverware rattled in the corridor! Guards, check on her!"');
       }
-    };
-
-    steadyBtn.addEventListener('click', attemptSteady);
+    });
   } else if (obs.id === 'moon_vases') {
     taskTitle.textContent = '🏺 Moonlit Vases';
     taskInstructions.textContent = 'Slip past the vases carefully—click the quietest path twice.';
@@ -576,13 +576,13 @@ function openObstacleModal(obs) {
 
     quietBtn.addEventListener('click', () => {
       quietMoves++;
-      addNoise(11);
+      addNoise(12);
       if (statusEl) statusEl.textContent = `Quiet Steps: ${quietMoves} / 2`;
       if (quietMoves >= 2) completeObstacle(obs);
     });
 
     rushBtn.addEventListener('click', () => {
-      addNoise(50, '"Crash!! A vase nearly toppled near the royal gallery! Guards, check right now!"');
+      addNoise(52, '"Crash!! A vase nearly toppled by the moonlit arch! Guards, check right now!"');
     });
   }
 }
@@ -602,7 +602,7 @@ function startGuardCheck(customCallout = null) {
   caughtTriggeredThisCheck = false;
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
-  patrolText.textContent = 'Guards approaching — press [E] to hide in shadows!';
+  patrolText.textContent = 'Guards coming to check on the noise — hide with [E]!';
   torchSweep.classList.add('active');
   showEmote('!', 1600);
 
@@ -682,7 +682,7 @@ function triggerCaughtEncounter() {
 
   royalDialogueCard.classList.remove('hidden');
   royalDialogueCard.classList.add('scolding');
-  royalSpeaker.textContent = '⚔️ CAPTAIN OF THE GUARD';
+  royalSpeaker.textContent = '⚔️ ROYAL GUARD';
   royalLine.innerHTML = `${caughtEncounter.scold}<div class="scold-hint">${caughtEncounter.hint}</div>`;
   cardFooter.classList.add('hidden');
 
@@ -744,7 +744,7 @@ function finishGuardCheck() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: 'They bought it... barely. Every step feels riskier now—keep quiet and head left.',
+        text: 'They bought it... barely. Keep quiet and head left toward the chambers.',
         emote: '...'
       }
     ]);
@@ -774,8 +774,8 @@ function reachLeftChambers() {
 
   escapeSummaryText.textContent =
     caughtCount === 0
-      ? 'You slipped cleanly through the hallway without being caught and made it safely to the left chambers!'
-      : `You made it to the left chambers safely (Caught: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
+      ? 'You slipped cleanly through the hallway without being caught and reached the chambers to the left!'
+      : `You reached the chambers to the left safely (Caught: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
   escapeCompleteModal.classList.remove('hidden');
 }
 
@@ -784,12 +784,12 @@ replayScene2Btn.addEventListener('click', () => {
   noiseLevel = 0;
   noiseBarFill.style.width = '0%';
   resetHallwayObstacles();
-  setArea('hallway', Math.round(window.innerWidth * 0.82), 570);
+  setArea('room', startX, startY);
   setHidingState(false);
   escapeCompleteModal.classList.add('hidden');
   queueMonologue([
     {
-      text: 'Back at the entrance of the hallway. Keep the noise down and reach the left chambers.',
+      text: 'Back in my room. Walk left into the hallway and reach the left chambers without making too much noise.',
       emote: '...'
     }
   ]);
@@ -925,29 +925,8 @@ function gameLoop() {
     actionPrompt.classList.add('hidden');
   }
 
-  // Area Navigation: Balcony (Right) <-> Princess's Room (Center) <-> Escape Hallway (Left) -> Safe Chambers (Far Left)
-  if (currentArea === 'hallway') {
-    if (arrowLeft) {
-      arrowLeft.style.display = 'flex';
-      arrowLeft.classList.toggle('highlight', pX < 220);
-    }
-    if (arrowRight) {
-      arrowRight.style.display = 'flex';
-      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 240);
-    }
-
-    // Reached chambers to the left of the hallway -> Safe!
-    if (pX <= 45) {
-      reachLeftChambers();
-    }
-
-    // Walk back right into Princess's Chambers
-    if (pX >= window.innerWidth - 110) {
-      setArea('room', 135, Math.max(pY, 550));
-      setHidingState(false);
-      showEmote('...', 1500);
-    }
-  } else if (currentArea === 'room') {
+  // Room (Center) <-> Escape Hallway (Left) -> Safe Chambers (Far Left); Balcony (Right)
+  if (currentArea === 'room') {
     if (arrowLeft) {
       arrowLeft.style.display = 'flex';
       arrowLeft.textContent = '◀ Escape Hallway';
@@ -959,10 +938,17 @@ function gameLoop() {
       arrowRight.classList.toggle('highlight', pX > window.innerWidth - 240);
     }
 
+    // Walk left out of room into Escape Hallway
     if (pX <= 45) {
       setArea('hallway', window.innerWidth - 140, Math.max(pY, 550));
       setHidingState(false);
       showEmote('!', 1500);
+      queueMonologue([
+        {
+          text: 'I\'m in the hallway now—don\'t make too much noise or the guards will come check on me.',
+          emote: '!'
+        }
+      ]);
     }
 
     if (pX >= window.innerWidth - 130) {
@@ -970,10 +956,32 @@ function gameLoop() {
       setHidingState(false);
       showEmote('...', 1500);
     }
+  } else if (currentArea === 'hallway') {
+    if (arrowLeft) {
+      arrowLeft.style.display = 'flex';
+      arrowLeft.textContent = '◀ Safe Chambers';
+      arrowLeft.classList.toggle('highlight', pX < 220);
+    }
+    if (arrowRight) {
+      arrowRight.style.display = 'flex';
+      arrowRight.textContent = "Princess's Chambers ▶";
+      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 240);
+    }
+
+    // Reach chambers to the left of the hallway -> Safe!
+    if (pX <= 45) {
+      reachLeftChambers();
+    }
+
+    if (pX >= window.innerWidth - 110) {
+      setArea('room', 135, Math.max(pY, 550));
+      setHidingState(false);
+      showEmote('...', 1500);
+    }
   } else if (currentArea === 'balcony') {
     if (arrowLeft) {
       arrowLeft.style.display = 'flex';
-      arrowLeft.textContent = '◀ Princess\'s Chambers';
+      arrowLeft.textContent = "◀ Princess's Chambers";
       arrowLeft.classList.toggle('highlight', pX < 220);
     }
     if (arrowRight) arrowRight.style.display = 'none';
@@ -994,17 +1002,18 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// --- SCENE 2 OPENING ---
+// --- SCENE 2 OPENING (IN HER ROOM AT SCENE 1'S FINISHING SPOT) ---
+setArea('room', startX, startY);
 renderObstacleMarkers();
 updateMapHighlight();
 queueMonologue([
   {
-    text: 'The halls finally cleared... I just walked into the hallway from the right. Keep the noise down—if I make too much noise, the guards will come check on me.',
-    emote: '!'
+    text: 'Scene 2 starts now... I have to walk out to the hallway myself and slip past the obstacles without getting caught.',
+    emote: '✦'
   },
   {
-    text: 'Creaky boards, silver carts, and moonlit vases ahead... press [M] anytime to check the wing map and head all the way left to the chambers.',
-    emote: '...'
+    text: 'Don\'t make too much noise in the hall or the guards will check on me—press [M] anytime for the map and head left to the chambers.',
+    emote: '!'
   }
 ]);
 
