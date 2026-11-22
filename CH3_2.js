@@ -14,9 +14,9 @@ setTimeout(removeOverlay, 50);
 const princess = document.getElementById('princess');
 const princessEmote = document.getElementById('princess-emote');
 const worldLayer = document.getElementById('world-layer');
+const ambientMotes = document.getElementById('ambient-motes');
 const caughtFlash = document.getElementById('caught-flash');
 const locationBanner = document.getElementById('location-banner');
-const objectiveText = document.getElementById('objective');
 const noiseBarFill = document.getElementById('noise-bar-fill');
 const susBadge = document.getElementById('sus-badge');
 const panicStatus = document.getElementById('panic-status');
@@ -55,12 +55,48 @@ const taskInstructions = document.getElementById('task-instructions');
 const taskBody = document.getElementById('task-body');
 const closeTaskBtn = document.getElementById('close-task-btn');
 
-// Add numeric % readout next to the noise bar without editing HTML
+// Add numeric % readout next to the noise bar
 const noiseMeterWrap = document.getElementById('noise-meter-wrap');
 const noiseValueLabel = document.createElement('span');
 noiseValueLabel.id = 'noise-value-label';
 noiseValueLabel.textContent = '0%';
 if (noiseMeterWrap) noiseMeterWrap.appendChild(noiseValueLabel);
+
+// Spawn drifting moonlit dust motes
+function spawnAmbientMotes() {
+  if (!ambientMotes) return;
+  ambientMotes.innerHTML = '';
+  for (let i = 0; i < 22; i++) {
+    const mote = document.createElement('div');
+    mote.className = 'moon-mote';
+    const size = 2 + Math.random() * 4;
+    mote.style.width = `${size}px`;
+    mote.style.height = `${size}px`;
+    mote.style.left = `${Math.random() * 100}%`;
+    mote.style.top = `${15 + Math.random() * 75}%`;
+    mote.style.animationDuration = `${6 + Math.random() * 7}s`;
+    mote.style.animationDelay = `${-Math.random() * 8}s`;
+    ambientMotes.appendChild(mote);
+  }
+}
+spawnAmbientMotes();
+
+// Floating noise ripple text over the Princess
+let lastNoisePopAt = 0;
+function spawnNoisePop(text, loud = false) {
+  if (!worldLayer || !princess) return;
+  const now = performance.now();
+  if (!loud && now - lastNoisePopAt < 520) return;
+  lastNoisePopAt = now;
+
+  const pop = document.createElement('div');
+  pop.className = 'noise-pop' + (loud ? ' loud' : '');
+  pop.textContent = text;
+  pop.style.left = `${pX + 48}px`;
+  pop.style.top = `${pY - 125}px`;
+  worldLayer.appendChild(pop);
+  setTimeout(() => pop.remove(), 980);
+}
 
 // Carryover from Scene 1 (starts in room at the same spot she finished Scene 1)
 let carryover = {};
@@ -75,7 +111,7 @@ const startY = Number.isFinite(carryover.pY) ? carryover.pY : 570;
 let pX = startX;
 let pY = startY;
 const baseSpeed = 6;
-let currentArea = 'room'; // 'room' <-> 'hallway' (left) or 'balcony' (right)
+let currentArea = 'room';
 let isHiding = false;
 let noiseLevel = 0;
 let escapedToLeftChambers = false;
@@ -91,7 +127,7 @@ let panicCountdownInterval = null;
 
 let monologueQueue = [];
 let isMonologueActive = false;
-let patrolState = 'idle'; // 'idle' | 'approaching' | 'checking' | 'dialogue' | 'scolding' | 'scold_result'
+let patrolState = 'idle';
 let patrolTimers = [];
 let patrolCount = 0;
 let pendingOutcome = null;
@@ -99,7 +135,6 @@ let activeObstacle = null;
 let caughtTriggeredThisCheck = false;
 let activeMiniGameTimer = null;
 
-// Hidden hallway hazards — not shown with floating labels until tripped or nearby
 const obstacles = [
   {
     id: 'creaky_boards',
@@ -128,35 +163,35 @@ const obstacles = [
 ];
 
 const guardNormalLines = [
-  '"Keep your voice low along the west corridor. No one is meant to be wandering the halls at this hour."',
-  '"All quiet near the royal chambers—keep your eyes sharp until morning."',
-  '"Check every shadow near the tall windows and report anything out of place."'
+  '"All is quiet outside Her Highness\'s wing. Keep your steps light and watch the west gallery."',
+  '"His Majesty expects the royal corridor peaceful until dawn. Stay vigilant."',
+  '"Nothing stirring near the Princess\'s doors—continue the night watch."'
 ];
 
 const guardSusLines = [
-  '"His Majesty ordered extra eyes on the Princess\'s wing tonight. Watch every corridor closely!"',
-  '"Stay alert—if anyone slips out of her rooms, raise the alarm at once."',
-  '"Keep your lantern steady and watch both ends of the gallery."'
+  '"His Majesty ordered extra watch outside Her Highness\'s wing tonight. Keep eyes on every doorway."',
+  '"Do not leave the royal corridor unguarded—the King wants Her Highness kept safely within her quarters."',
+  '"Keep your lantern steady and watch the gallery ends until morning."'
 ];
 
 const caughtEncounter = {
-  scold: '"Hold right there! What are you doing out in the corridor at this hour?!"',
-  hint: 'Keep your story natural so you do not give away where you are heading.',
+  scold: '"Your Highness?! Forgive me—what are you doing out in the corridor at this hour? His Majesty ordered the wing kept quiet."',
+  hint: 'Answer with royal poise so the knight thinks nothing of it.',
   choices: [
     {
-      text: '1. "I could not sleep and stepped out for a breath of air."',
+      text: '1. "I could not sleep, Sir Knight, and stepped out for a breath of cool air."',
       safe: true,
-      reply: '"See that you head back inside before His Majesty hears you wandering the halls."'
+      reply: '"Of course, Your Highness. Please return to your chambers soon before His Majesty wakes and worries."'
     },
     {
-      text: '2. "A draft blew through—I was checking the corridor."',
+      text: '2. "A draft rattled the corridor—I only came to see what made the sound."',
       safe: true,
-      reply: '"Mind the stone floor and stay out of trouble. The night watch has it covered."'
+      reply: '"Leave that to the night watch, Princess. We shall see to it at once—pray rest inside."'
     },
     {
-      text: '3. "I am slipping out past the royal wing!"',
+      text: '3. "Never mind me—I am sneaking past the royal wing tonight."',
       safe: false,
-      reply: '"INTRUDER IN THE CORRIDOR! Seize her and search the hall right now!"'
+      reply: '"Forgive me, Your Highness, I am sworn to His Majesty\'s orders! Knights—escort the Princess back and secure the corridor!"'
     }
   ]
 };
@@ -169,6 +204,183 @@ function getCurrentMovementSpeed() {
   if (!isPanicking) return baseSpeed;
   const slowdown = Math.min(4.5, 2.6 + (caughtCount - 1) * 0.85);
   return Math.max(1.3, baseSpeed - slowdown);
+}
+
+// --- WEB AUDIO SOUND EFFECTS ---
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playSoftStepSound() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(currentArea === 'hallway' ? 135 : 105, now);
+    osc.frequency.exponentialRampToValueAtTime(48, now + 0.08);
+    gain.gain.setValueAtTime(currentArea === 'hallway' ? 0.065 : 0.04, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.09);
+  } catch (e) {}
+}
+
+function playKnightFootstepSound() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(78, now);
+    osc1.frequency.exponentialRampToValueAtTime(28, now + 0.18);
+    gain1.gain.setValueAtTime(0.24, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.19);
+
+    // Subtle armor clink
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(620, now + 0.04);
+    osc2.frequency.exponentialRampToValueAtTime(340, now + 0.14);
+    gain2.gain.setValueAtTime(0.05, now + 0.04);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.04);
+    osc2.stop(now + 0.15);
+  } catch (e) {}
+}
+
+function playWoodCreakSound(loud = false) {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(loud ? 160 : 210, now);
+    osc.frequency.linearRampToValueAtTime(loud ? 95 : 175, now + 0.22);
+    gain.gain.setValueAtTime(loud ? 0.14 : 0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } catch (e) {}
+}
+
+function playSilverClinkSound(loud = false) {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    [loud ? 1180 : 1420, loud ? 890 : 1780].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.05);
+      gain.gain.setValueAtTime(loud ? 0.11 : 0.05, now + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.05);
+      osc.stop(now + i * 0.05 + 0.23);
+    });
+  } catch (e) {}
+}
+
+function playPorcelainChimeSound(loud = false) {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(loud ? 520 : 880, now);
+    osc.frequency.exponentialRampToValueAtTime(loud ? 180 : 660, now + 0.28);
+    gain.gain.setValueAtTime(loud ? 0.14 : 0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.31);
+  } catch (e) {}
+}
+
+function playSuccessChime() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+      gain.gain.setValueAtTime(0.08, now + idx * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.32);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.09);
+      osc.stop(now + idx * 0.09 + 0.33);
+    });
+  } catch (e) {}
+}
+
+function playBreathSound() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(240, now);
+    osc.frequency.exponentialRampToValueAtTime(160, now + 0.35);
+    gain.gain.setValueAtTime(0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.37);
+  } catch (e) {}
+}
+
+function playCaughtSting() {
+  try {
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+    [110, 103.8].forEach((freq) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.58);
+    });
+  } catch (e) {}
+}
+
+function triggerFootstepPulse() {
+  worldLayer.classList.remove('footstep-rumble');
+  void worldLayer.offsetWidth;
+  worldLayer.classList.add('footstep-rumble');
+  playKnightFootstepSound();
 }
 
 // --- EMOTES & DIALOGUE ---
@@ -225,7 +437,7 @@ function updateMapHighlight() {
   if (mapCurrentStatus) {
     mapCurrentStatus.innerHTML =
       `<div>• Where I am: ${areaNames[currentArea] || currentArea} • Noise: ${Math.round(noiseLevel)}%</div>` +
-      `<div>• Heavy steps or clatter will bring guards running—and getting caught makes the noise spike harder.</div>`;
+      `<div>• Heavy steps or clatter will draw the knights on watch—and getting spotted makes them listen closer.</div>`;
   }
 }
 
@@ -320,6 +532,7 @@ function handlePanicPassOut() {
 
 function performSteadyBreath() {
   if (!isPanicking) return;
+  playBreathSound();
   breathsNeeded--;
   panicTimeLeft = Math.min(PANIC_PASSOUT_LIMIT, panicTimeLeft + 1.1);
 
@@ -337,71 +550,22 @@ function performSteadyBreath() {
   }
 }
 
-// --- AUDIO & NOISE METER ---
-let audioCtx = null;
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx;
-}
-
-function playFootstepSound() {
-  try {
-    const ctx = getAudioCtx();
-    const now = ctx.currentTime;
-
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'triangle';
-    osc1.frequency.setValueAtTime(78, now);
-    osc1.frequency.exponentialRampToValueAtTime(28, now + 0.18);
-    gain1.gain.setValueAtTime(0.24, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.19);
-  } catch (e) {}
-}
-
-function playCaughtSting() {
-  try {
-    const ctx = getAudioCtx();
-    const now = ctx.currentTime;
-    [110, 103.8].forEach((freq) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
-      gain.gain.setValueAtTime(0.16, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.58);
-    });
-  } catch (e) {}
-}
-
-function triggerFootstepPulse() {
-  worldLayer.classList.remove('footstep-rumble');
-  void worldLayer.offsetWidth;
-  worldLayer.classList.add('footstep-rumble');
-  playFootstepSound();
-}
-
+// --- NOISE METER ---
 function syncNoiseUI() {
   const clamped = Math.max(0, Math.min(100, noiseLevel));
   noiseBarFill.style.width = clamped + '%';
   noiseValueLabel.textContent = Math.round(clamped) + '%';
 }
 
-function addNoise(amount, reasonText) {
+function addNoise(amount, reasonText, rippleText = null) {
   if (escapedToLeftChambers) return;
   const mult = (isKingSus ? 1.35 : 1.0) * (1 + caughtCount * 0.15);
   noiseLevel = Math.min(100, noiseLevel + amount * mult);
   syncNoiseUI();
+
+  if (rippleText) {
+    spawnNoisePop(rippleText, amount >= 20);
+  }
   if (amount >= 10) showEmote('!', 1200);
 
   if (noiseLevel >= 100 && patrolState === 'idle') {
@@ -409,12 +573,11 @@ function addNoise(amount, reasonText) {
     syncNoiseUI();
     closeObstacleModal();
     startGuardCheck(
-      reasonText || '"Something loud echoed down the corridor! Guards, sweep the wing right now!"'
+      reasonText || '"A sound echoed down the west corridor—check if Her Highness is safe!"'
     );
   }
 }
 
-// Slow natural noise decay + movement noise so rushing makes the meter climb
 setInterval(() => {
   if (escapedToLeftChambers || patrolState !== 'idle') return;
   if (noiseLevel > 0) {
@@ -469,7 +632,7 @@ function setHidingState(nextHidden) {
   princess.classList.toggle('hidden-in-shadows', isHiding);
 }
 
-// --- HALLWAY OBSTACLE CHALLENGES (FORCED WHEN STEPPED ON) ---
+// --- HALLWAY OBSTACLE CHALLENGES ---
 function clearMiniGameTimer() {
   if (activeMiniGameTimer) {
     clearInterval(activeMiniGameTimer);
@@ -487,7 +650,8 @@ closeTaskBtn.addEventListener('click', () => {
   if (activeObstacle && !activeObstacle.cleared) {
     const skipped = activeObstacle;
     closeObstacleModal();
-    addNoise(36, '"A heavy step echoed down the hall! Guards, check the west corridor!"');
+    playWoodCreakSound(true);
+    addNoise(36, '"A loud creak echoed down the west corridor! Knights, check Her Highness\'s wing!"', 'CLATTER!');
     if (patrolState === 'idle') {
       queueMonologue([
         {
@@ -505,6 +669,7 @@ function completeObstacle(obs) {
   clearMiniGameTimer();
   obs.cleared = true;
   closeObstacleModal();
+  playSuccessChime();
   showEmote('✦', 1500);
   queueMonologue([
     {
@@ -523,13 +688,13 @@ function openObstacleModal(obs) {
 
   if (obs.id === 'creaky_boards') {
     taskTitle.textContent = 'Underfoot: Loose Floorboards';
-    taskInstructions.textContent = 'Test your footing across the boards (1 → 2 → 3) before they groan.';
+    taskInstructions.textContent = 'Place your weight gently across the stones (1 → 2 → 3) so the timber stays silent.';
     let step = 1;
     taskBody.innerHTML = `
       <div class="stealth-step-row">
-        <button class="stealth-btn" data-n="2">2. Middle Board</button>
-        <button class="stealth-btn" data-n="1">1. Near Edge</button>
-        <button class="stealth-btn" data-n="3">3. Far Stone</button>
+        <button class="stealth-btn" data-n="2">2. Middle Stone</button>
+        <button class="stealth-btn" data-n="1">1. Near Corner</button>
+        <button class="stealth-btn" data-n="3">3. Far Flagstone</button>
       </div>
     `;
     taskBody.querySelectorAll('.stealth-btn').forEach((btn) => {
@@ -537,17 +702,19 @@ function openObstacleModal(obs) {
         const n = parseInt(btn.dataset.n, 10);
         if (n === step) {
           btn.classList.add('done');
+          playWoodCreakSound(false);
           step++;
-          addNoise(14);
+          addNoise(14, null, 'soft step...');
           if (step > 3) completeObstacle(obs);
         } else {
-          addNoise(46, '"CREAK!! Heavy timber groaned in the west corridor! Guards, check there!"');
+          playWoodCreakSound(true);
+          addNoise(46, '"CREAK!! Heavy timber groaned in the west corridor! Knights, check there!"', 'CREAK!!');
         }
       });
     });
   } else if (obs.id === 'tea_cart') {
     taskTitle.textContent = 'In the Way: Silver Tea Tray';
-    taskInstructions.textContent = 'Catch the tray while the marker is inside the green zone!';
+    taskInstructions.textContent = 'Steady the silver tray while the marker is inside the green zone!';
     let steadied = 0;
     let pos = 10;
     let dir = 1;
@@ -575,21 +742,23 @@ function openObstacleModal(obs) {
     steadyBtn.addEventListener('click', () => {
       if (pos >= 34 && pos <= 66) {
         steadied++;
-        addNoise(12);
+        playSilverClinkSound(false);
+        addNoise(12, null, 'tink...');
         if (progressEl) progressEl.textContent = `Steady Count: ${steadied} / 2`;
         if (steadied >= 2) completeObstacle(obs);
       } else {
-        addNoise(44, '"Clink-clatter!! Silverware rattled near the corridor! Guards, go look!"');
+        playSilverClinkSound(true);
+        addNoise(44, '"Clink-clatter!! Silverware rattled near the royal corridor! Knights, go look!"', 'CLATTER!!');
       }
     });
   } else if (obs.id === 'moon_vases') {
     taskTitle.textContent = 'In the Shadows: Tall Porcelain Vases';
-    taskInstructions.textContent = 'Edge past the vases without knocking them—twice.';
+    taskInstructions.textContent = 'Tiptoe past the vases without brushing against them—twice.';
     let quietMoves = 0;
     taskBody.innerHTML = `
       <div class="stealth-step-row">
-        <button class="stealth-btn" id="vase-quiet-btn" type="button">🌙 Edge Slowly</button>
-        <button class="stealth-btn" id="vase-rush-btn" type="button">⚡ Squeeze Past Fast</button>
+        <button class="stealth-btn" id="vase-quiet-btn" type="button">🌙 Tiptoe Carefully</button>
+        <button class="stealth-btn" id="vase-rush-btn" type="button">⚡ Slip Past Quickly</button>
       </div>
       <div id="vase-status" style="margin-top:10px;font-size:12px;color:#ffd166;">Quiet Steps: 0 / 2</div>
     `;
@@ -599,18 +768,20 @@ function openObstacleModal(obs) {
 
     quietBtn.addEventListener('click', () => {
       quietMoves++;
-      addNoise(14);
+      playPorcelainChimeSound(false);
+      addNoise(14, null, 'hush...');
       if (statusEl) statusEl.textContent = `Quiet Steps: ${quietMoves} / 2`;
       if (quietMoves >= 2) completeObstacle(obs);
     });
 
     rushBtn.addEventListener('click', () => {
-      addNoise(50, '"Crash!! Porcelain nearly tipped over by the arch! Guards, check right now!"');
+      playPorcelainChimeSound(true);
+      addNoise(50, '"Crash!! Porcelain nearly toppled by the arch! Knights, check right now!"', 'CLANG!!');
     });
   }
 }
 
-// --- GUARD CHECK WHEN NOISE SPIKES ---
+// --- KNIGHT CHECK WHEN NOISE SPIKES ---
 function clearPatrolTimers() {
   patrolTimers.forEach((id) => clearTimeout(id));
   patrolTimers = [];
@@ -625,7 +796,7 @@ function startGuardCheck(customCallout = null) {
   caughtTriggeredThisCheck = false;
   patrolState = 'approaching';
   patrolAlert.classList.remove('hidden', 'danger');
-  patrolText.textContent = 'Boots on the stone — hide in the shadows [E]!';
+  patrolText.textContent = 'Armored footsteps approaching — hide in the shadows [E]!';
   torchSweep.classList.add('active');
   showEmote('!', 1600);
 
@@ -646,7 +817,7 @@ function startGuardCheck(customCallout = null) {
     });
 
     patrolAlert.classList.add('danger');
-    patrolText.textContent = 'Lantern sweeping closer — stay hidden [E]!';
+    patrolText.textContent = 'Knight lantern sweeping closer — stay hidden [E]!';
   }, checkDelay));
 
   patrolTimers.push(setTimeout(() => {
@@ -657,13 +828,12 @@ function startGuardCheck(customCallout = null) {
   patrolTimers.push(setTimeout(() => {
     if (patrolState !== 'checking' || caughtTriggeredThisCheck) return;
     guardShadowWrap.classList.add('deep-scan');
-    // High noise gives away rustling even in dim light
     if (!isHiding || noiseLevel >= 78) {
       caughtTriggeredThisCheck = true;
       triggerCaughtEncounter(
         !isHiding
           ? caughtEncounter.scold
-          : '"I heard something rustling in the dark—step out where I can see you!"'
+          : '"Your Highness? I heard silk rustling in the dark—pray let me see who is there!"'
       );
       return;
     }
@@ -682,7 +852,7 @@ function startGuardCheck(customCallout = null) {
 
     royalDialogueCard.classList.remove('hidden', 'scolding');
     royalDialogueCard.classList.add('royal-gold');
-    royalSpeaker.textContent = '⚔️ ROYAL GUARD';
+    royalSpeaker.textContent = '⚔️ ROYAL KNIGHT';
     royalLine.textContent = line;
     dialogueChoices.classList.add('hidden');
     cardFooter.classList.remove('hidden');
@@ -709,11 +879,11 @@ function triggerCaughtEncounter(scoldMessage = caughtEncounter.scold) {
   guardShadowWrap.classList.add('visible', 'looking-in', 'deep-scan');
   patrolAlert.classList.remove('hidden');
   patrolAlert.classList.add('danger');
-  patrolText.textContent = 'SPOTTED! Watch what you say!';
+  patrolText.textContent = 'SPOTTED! Answer with royal poise!';
 
   royalDialogueCard.classList.remove('hidden', 'royal-gold');
   royalDialogueCard.classList.add('scolding');
-  royalSpeaker.textContent = '⚔️ ROYAL GUARD';
+  royalSpeaker.textContent = '⚔️ ROYAL KNIGHT';
   royalLine.innerHTML = `${scoldMessage}<div class="scold-hint">${caughtEncounter.hint}</div>`;
   cardFooter.classList.add('hidden');
 
@@ -769,7 +939,7 @@ function finishGuardCheck() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: "They nearly caught me cold... if I don't keep the noise down, I'll never make it through this hall.",
+        text: "He was so polite about it, yet he nearly had me escorted straight back... if I don't keep quiet, I'll never make it through.",
         emote: '!'
       }
     ]);
@@ -777,7 +947,7 @@ function finishGuardCheck() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: "That passed... barely. My heart's hammering, and the guards are on edge.",
+        text: "He bowed and believed me... barely. My heart's hammering, and the watch is staying close.",
         emote: '...'
       }
     ]);
@@ -803,12 +973,13 @@ function reachLeftChambers() {
   closeObstacleModal();
   closeWingMap();
   clearPanicState();
+  playSuccessChime();
   showEmote('✦', 1800);
 
   escapeSummaryText.textContent =
     caughtCount === 0
-      ? 'You slipped through the west corridor without being caught and made it into the side chambers.'
-      : `You reached the side chambers (Caught: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
+      ? 'You slipped through the west corridor without being spotted and made it into the side chambers.'
+      : `You reached the side chambers (Spotted: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
   escapeCompleteModal.classList.remove('hidden');
 }
 
@@ -900,6 +1071,8 @@ window.addEventListener('keyup', (e) => {
 window.addEventListener('resize', () => {});
 
 // --- MAIN LOOP ---
+let lastStepSoundAt = 0;
+
 function gameLoop() {
   let pMoving = false;
   const activeSpeed = getCurrentMovementSpeed();
@@ -934,20 +1107,24 @@ function gameLoop() {
 
     if (pMoving && isHiding) {
       setHidingState(false);
-      addNoise(8);
+      addNoise(8, null, 'rustle...');
     }
 
     if (pMoving) {
-      // Moving through the corridor builds noise faster than in your own room
       const moveNoise = currentArea === 'hallway' ? 0.42 : 0.16;
-      addNoise(moveNoise);
+      addNoise(moveNoise, null, currentArea === 'hallway' ? 'tap...' : null);
+
+      const now = performance.now();
+      if (now - lastStepSoundAt > 260) {
+        lastStepSoundAt = now;
+        playSoftStepSound();
+      }
     }
   }
 
   if (pY < 480) pY = 480;
   if (pY > window.innerHeight - 110) pY = window.innerHeight - 110;
 
-  // Forced obstacle trigger when stepping onto an uncleared hazard
   const nearObs = getNearbyObstacle();
   if (
     nearObs &&
@@ -956,7 +1133,7 @@ function gameLoop() {
     !triggeredObstacleIdsThisPass.has(nearObs.id)
   ) {
     triggeredObstacleIdsThisPass.add(nearObs.id);
-    addNoise(18);
+    addNoise(18, null, '?!');
     openObstacleModal(nearObs);
   }
 
@@ -964,7 +1141,7 @@ function gameLoop() {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = isHiding
       ? "Hidden in the shadows — don't move!"
-      : 'Footsteps nearby! Hide with [E]!';
+      : 'Knight footsteps nearby! Hide with [E]!';
   } else if (nearObs && !activeObstacle && !isMonologueActive) {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = `Something is right here... [E]`;
@@ -987,6 +1164,7 @@ function gameLoop() {
     if (pX <= 45) {
       setArea('hallway', window.innerWidth - 150, Math.max(pY, 550));
       setHidingState(false);
+      playSoftStepSound();
       addNoise(10);
       showEmote('!', 1500);
       queueMonologue([
