@@ -30,6 +30,7 @@ const patrolAlert = document.getElementById('patrol-alert');
 const patrolText = document.getElementById('patrol-text');
 const torchSweep = document.getElementById('torch-sweep');
 const guardShadowWrap = document.getElementById('guard-shadow-wrap');
+const guardSilhouette = document.getElementById('guard-silhouette');
 
 const pDialogueBox = document.getElementById('princess-dialogue-box');
 const pSpeaker = document.getElementById('p-speaker');
@@ -54,6 +55,32 @@ const taskTitle = document.getElementById('task-title');
 const taskInstructions = document.getElementById('task-instructions');
 const taskBody = document.getElementById('task-body');
 const closeTaskBtn = document.getElementById('close-task-btn');
+
+// Render a clean, unmistakable knight silhouette via SVG
+if (guardSilhouette) {
+  guardSilhouette.innerHTML = `
+    <svg class="knight-svg" viewBox="0 0 180 300" aria-hidden="true">
+      <!-- Flowing cape -->
+      <path d="M54 92 L126 92 L148 286 L34 286 Z" fill="#07060d" opacity="0.92" />
+      <!-- Sword on left side -->
+      <rect x="25" y="76" width="8" height="170" rx="2" fill="#090812" />
+      <rect x="14" y="242" width="30" height="7" rx="2" fill="#090812" />
+      <rect x="26" y="249" width="6" height="24" rx="2" fill="#090812" />
+      <!-- Helmet plume -->
+      <path d="M92 26 C104 8, 128 6, 138 22 C122 24, 110 28, 98 34 Z" fill="#07060d" />
+      <!-- Knight helmet & cheek guards -->
+      <path d="M68 34 C68 20, 114 20, 114 34 L118 68 L104 86 L96 86 L96 64 L86 64 L86 86 L78 86 L64 68 Z" fill="#07060d" />
+      <!-- Warm lantern glint on visor -->
+      <rect x="74" y="45" width="32" height="4" rx="2" fill="#ffb703" opacity="0.72" />
+      <!-- Neck & armored chestplate -->
+      <rect x="80" y="82" width="22" height="12" fill="#07060d" />
+      <path d="M52 94 L130 94 L120 176 L128 286 L96 286 L91 196 L86 286 L54 286 L62 176 Z" fill="#07060d" />
+      <!-- Shoulder pauldrons -->
+      <path d="M36 96 C46 84, 64 86, 68 106 L58 128 L34 120 Z" fill="#07060d" />
+      <path d="M146 96 C136 84, 118 86, 114 106 L124 128 L148 120 Z" fill="#07060d" />
+    </svg>
+  `;
+}
 
 // Add numeric % readout next to the noise bar
 const noiseMeterWrap = document.getElementById('noise-meter-wrap');
@@ -163,35 +190,35 @@ const obstacles = [
 ];
 
 const guardNormalLines = [
-  '"All is quiet outside Her Highness\'s wing. Keep your steps light and watch the west gallery."',
-  '"His Majesty expects the royal corridor peaceful until dawn. Stay vigilant."',
-  '"Nothing stirring near the Princess\'s doors—continue the night watch."'
+  '"All is peaceful outside Her Highness\'s wing. Keep your steps light and watch the west gallery."',
+  '"His Majesty expects the royal corridor quiet until morning. Stay sharp."',
+  '"Nothing amiss near the Princess\'s chambers—continue the night watch."'
 ];
 
 const guardSusLines = [
   '"His Majesty ordered extra watch outside Her Highness\'s wing tonight. Keep eyes on every doorway."',
-  '"Do not leave the royal corridor unguarded—the King wants Her Highness kept safely within her quarters."',
-  '"Keep your lantern steady and watch the gallery ends until morning."'
+  '"Stay close to the royal wing—the King wants Her Highness kept safely inside tonight."',
+  '"Hold your lantern steady and watch both ends of the corridor."'
 ];
 
 const caughtEncounter = {
-  scold: '"Your Highness?! Forgive me—what are you doing out in the corridor at this hour? His Majesty ordered the wing kept quiet."',
-  hint: 'Answer with royal poise so the knight thinks nothing of it.',
+  scold: '"Your Highness?! Forgive me—what brings you out in the corridor at this hour? His Majesty asked for extra watch tonight."',
+  hint: 'Keep your tone calm and royal so he has no reason to press further.',
   choices: [
     {
-      text: '1. "I could not sleep, Sir Knight, and stepped out for a breath of cool air."',
+      text: '1. "I could not sleep, Sir Knight—I only stepped out for a breath of night air."',
       safe: true,
-      reply: '"Of course, Your Highness. Please return to your chambers soon before His Majesty wakes and worries."'
+      reply: '"Of course, Your Highness. Pray head back inside before His Majesty wakes and worries."'
     },
     {
-      text: '2. "A draft rattled the corridor—I only came to see what made the sound."',
+      text: '2. "A draft stirred the corridor—I came to see what rattled out here."',
       safe: true,
-      reply: '"Leave that to the night watch, Princess. We shall see to it at once—pray rest inside."'
+      reply: '"Leave the corridor to us, Princess. We will check it at once—please rest inside."'
     },
     {
-      text: '3. "Never mind me—I am sneaking past the royal wing tonight."',
+      text: '3. "Do not mind me, Sir Knight—I am slipping past the royal wing tonight."',
       safe: false,
-      reply: '"Forgive me, Your Highness, I am sworn to His Majesty\'s orders! Knights—escort the Princess back and secure the corridor!"'
+      reply: '"Forgive me, Your Highness, I am bound by His Majesty\'s orders! Knights—secure the west corridor at once!"'
     }
   ]
 };
@@ -249,7 +276,6 @@ function playKnightFootstepSound() {
     osc1.start(now);
     osc1.stop(now + 0.19);
 
-    // Subtle armor clink
     const osc2 = ctx.createOscillator();
     const gain2 = ctx.createGain();
     osc2.type = 'sine';
@@ -524,7 +550,7 @@ function handlePanicPassOut() {
 
   queueMonologue([
     {
-      text: "Ugh... my chest felt so tight for a second... slow down, just breathe and don't make a sound.",
+      text: "Ugh... my chest felt tight for a second. Breathe slow, keep quiet, and try again.",
       emote: '...'
     }
   ]);
@@ -541,7 +567,7 @@ function performSteadyBreath() {
     showEmote('✦', 1600);
     queueMonologue([
       {
-        text: "Okay... in and out. My hands aren't shaking as badly now.",
+        text: "In and out... alright. My hands are steady enough now.",
         emote: '...'
       }
     ]);
@@ -573,7 +599,7 @@ function addNoise(amount, reasonText, rippleText = null) {
     syncNoiseUI();
     closeObstacleModal();
     startGuardCheck(
-      reasonText || '"A sound echoed down the west corridor—check if Her Highness is safe!"'
+      reasonText || '"A sound carried down the west corridor—check if Her Highness is safe!"'
     );
   }
 }
@@ -651,11 +677,11 @@ closeTaskBtn.addEventListener('click', () => {
     const skipped = activeObstacle;
     closeObstacleModal();
     playWoodCreakSound(true);
-    addNoise(36, '"A loud creak echoed down the west corridor! Knights, check Her Highness\'s wing!"', 'CLATTER!');
+    addNoise(36, '"A sharp creak echoed in the west corridor! Knights, check Her Highness\'s wing!"', 'CLATTER!');
     if (patrolState === 'idle') {
       queueMonologue([
         {
-          text: `I didn't even get past the ${skipped.name} cleanly... that made way too much noise.`,
+          text: `Messy... I rushed past the ${skipped.name} and made way too much noise.`,
           emote: '!'
         }
       ]);
@@ -673,7 +699,7 @@ function completeObstacle(obs) {
   showEmote('✦', 1500);
   queueMonologue([
     {
-      text: `Careful... got past the ${obs.name} without bringing the whole hall down on me.`,
+      text: `Past the ${obs.name}... not a sound.`,
       emote: '...'
     }
   ]);
@@ -688,7 +714,7 @@ function openObstacleModal(obs) {
 
   if (obs.id === 'creaky_boards') {
     taskTitle.textContent = 'Underfoot: Loose Floorboards';
-    taskInstructions.textContent = 'Place your weight gently across the stones (1 → 2 → 3) so the timber stays silent.';
+    taskInstructions.textContent = 'Set your weight down in order (1 → 2 → 3) so the planks do not groan.';
     let step = 1;
     taskBody.innerHTML = `
       <div class="stealth-step-row">
@@ -753,7 +779,7 @@ function openObstacleModal(obs) {
     });
   } else if (obs.id === 'moon_vases') {
     taskTitle.textContent = 'In the Shadows: Tall Porcelain Vases';
-    taskInstructions.textContent = 'Tiptoe past the vases without brushing against them—twice.';
+    taskInstructions.textContent = 'Tiptoe past the vases without brushing them—twice.';
     let quietMoves = 0;
     taskBody.innerHTML = `
       <div class="stealth-step-row">
@@ -833,7 +859,7 @@ function startGuardCheck(customCallout = null) {
       triggerCaughtEncounter(
         !isHiding
           ? caughtEncounter.scold
-          : '"Your Highness? I heard silk rustling in the dark—pray let me see who is there!"'
+          : '"Your Highness? I heard silk rustling in the dark—pray let me see who is there."'
       );
       return;
     }
@@ -939,7 +965,7 @@ function finishGuardCheck() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: "He was so polite about it, yet he nearly had me escorted straight back... if I don't keep quiet, I'll never make it through.",
+        text: "He bowed and stayed polite, yet he nearly had me escorted straight back. I cannot afford another slip like that.",
         emote: '!'
       }
     ]);
@@ -947,7 +973,7 @@ function finishGuardCheck() {
     triggerPostCatchPanic();
     queueMonologue([
       {
-        text: "He bowed and believed me... barely. My heart's hammering, and the watch is staying close.",
+        text: "He took my word... barely. My heart is still racing, and the watch is on edge.",
         emote: '...'
       }
     ]);
@@ -978,7 +1004,7 @@ function reachLeftChambers() {
 
   escapeSummaryText.textContent =
     caughtCount === 0
-      ? 'You slipped through the west corridor without being spotted and made it into the side chambers.'
+      ? 'You slipped through the west corridor unseen and reached the side chambers.'
       : `You reached the side chambers (Spotted: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
   escapeCompleteModal.classList.remove('hidden');
 }
@@ -993,7 +1019,7 @@ replayScene2Btn.addEventListener('click', () => {
   escapeCompleteModal.classList.add('hidden');
   queueMonologue([
     {
-      text: 'Back in my room. Every board and candle out there is a trap if I rush.',
+      text: 'Back in my room. Every stone out there gives you away if you rush.',
       emote: '...'
     }
   ]);
@@ -1169,7 +1195,7 @@ function gameLoop() {
       showEmote('!', 1500);
       queueMonologue([
         {
-          text: "The corridor is quiet... for now. I know every creak in these stones if I'm careless.",
+          text: "Quiet out here... for now. One wrong step and the whole wing will hear it.",
           emote: '!'
         }
       ]);
@@ -1231,11 +1257,11 @@ syncNoiseUI();
 updateMapHighlight();
 queueMonologue([
   {
-    text: "Alright... my bag's ready, the air outside is cool, and the whole castle feels half-asleep.",
+    text: "Bag packed, night air cool... most of the castle is already asleep.",
     emote: '✦'
   },
   {
-    text: "Once I open that door into the corridor, every creak and clatter counts. I just need to keep my head and get to the side chambers.",
+    text: "Just slip through the west door, keep quiet, and reach the side chambers.",
     emote: '...'
   }
 ]);
