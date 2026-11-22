@@ -1593,32 +1593,3 @@ queueMonologue(
       }
     }
   };
-
-  // Gentle movement step audio while holding WASD / Arrow keys
-  const moveKeys = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright']);
-  const heldMoveKeys = new Set();
-  let lastStepTime = 0;
-
-  window.addEventListener('keydown', (e) => {
-    const k = e.key.toLowerCase();
-    if (moveKeys.has(k)) heldMoveKeys.add(k);
-    if (k === 'b') playBreath();
-  });
-
-  window.addEventListener('keyup', (e) => {
-    heldMoveKeys.delete(e.key.toLowerCase());
-  });
-
-  setInterval(() => {
-    if (heldMoveKeys.size === 0) return;
-    const now = performance.now();
-    if (now - lastStepTime >= 260) {
-      lastStepTime = now;
-      playSoftStep();
-    }
-  }, 60);
-})();
-  beginGraceCountdownOnce
-);
-
-gameLoop();
