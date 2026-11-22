@@ -108,6 +108,12 @@ body {
   color: #ffd966;
 }
 
+#noise-value-label {
+  min-width: 36px;
+  text-align: right;
+  font-weight: bold;
+}
+
 #noise-bar-track {
   flex: 1;
   height: 8px;
@@ -121,7 +127,7 @@ body {
   width: 0%;
   height: 100%;
   background: linear-gradient(90deg, #52b788, #ffd166, #ef476f);
-  transition: width 0.2s ease;
+  transition: width 0.14s ease;
 }
 
 #sus-badge,
@@ -155,35 +161,6 @@ body {
   margin-top: 6px;
   font-size: 11px;
   color: #9ea4c4;
-}
-
-/* --- OBSTACLE HOTSPOTS --- */
-.task-hotspot {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  background: rgba(18, 22, 42, 0.9);
-  border: 2px solid #ffd166;
-  color: #fff3b0;
-  padding: 6px 12px;
-  border-radius: 18px;
-  font-size: 12px;
-  font-weight: bold;
-  z-index: 18;
-  box-shadow: 0 0 16px rgba(255, 209, 102, 0.55);
-  animation: hotspot-bob 1.4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.task-hotspot.cleared {
-  border-color: #74c69d;
-  color: #d8f3dc;
-  opacity: 0.85;
-  box-shadow: none;
-}
-
-@keyframes hotspot-bob {
-  0%, 100% { transform: translate(-50%, -50%); }
-  50%      { transform: translate(-50%, -58%); }
 }
 
 /* --- PATROL ALERT BANNER --- */
