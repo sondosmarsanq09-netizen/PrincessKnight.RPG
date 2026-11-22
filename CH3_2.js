@@ -757,11 +757,11 @@ function checkLibraryMainCharacterMonologue() {
       emote: '✦'
     },
     {
-      text: "No challenges left here, just me, my footsteps, and the door out on the left. Main character moment, don't trip on the way out.",
+      text: "The passage is clear at last—only my footsteps, the early morning light, and the door to the left. Pray my skirts do not catch on the stones.",
       emote: '...'
     },
     {
-      text: "Alright—time to head out the left side and see what's waiting on the other side.",
+      text: "Daybreak is already upon the grounds, and at long last I am going to meet him properly—no stolen glances in the corridors, simply the two of us.",
       emote: '✦'
     }
   ]);
