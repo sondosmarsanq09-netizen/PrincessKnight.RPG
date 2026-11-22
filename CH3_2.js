@@ -1364,16 +1364,22 @@ function exitLibraryLeftToNextChapter() {
   playSuccessChime();
   showEmote('✦', 1600);
 
+  try {
+    sessionStorage.setItem(
+      'ch4_carryover',
+      JSON.stringify({
+        caughtCount: typeof caughtCount === 'number' ? caughtCount : 0,
+        isKingSus: Boolean(isKingSus)
+      })
+    );
+  } catch (e) {}
+
   if (chapterFadeOut) {
     chapterFadeOut.classList.add('fading');
   }
 
   setTimeout(() => {
-    escapeSummaryText.textContent =
-      caughtCount === 0
-        ? 'You slipped through the library unseen and stepped out into the next chapter.'
-        : `You made it out of the library (Spotted: ${caughtCount} time${caughtCount === 1 ? '' : 's'}).`;
-    escapeCompleteModal.classList.remove('hidden');
+    window.location.href = 'CH4.html';
   }, 1150);
 }
 
