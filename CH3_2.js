@@ -95,6 +95,7 @@ if (guardSilhouette) {
     </svg>
   `;
 }
+
 // Add numeric % readout next to the noise bar
 const noiseMeterWrap = document.getElementById('noise-meter-wrap');
 const noiseValueLabel = document.createElement('span');
@@ -1220,19 +1221,38 @@ function gameLoop() {
       showEmote('...', 1500);
     }
   } else if (currentArea === 'hallway') {
+    const remainingObstacles = obstacles.filter((o) => o.area === 'hallway' && !o.cleared);
+    const allCleared = remainingObstacles.length === 0;
+
     if (arrowLeft) {
       arrowLeft.style.display = 'flex';
-      arrowLeft.innerHTML = '<span class="arrow-icon">◀</span><span>Side Chambers</span>';
-      arrowLeft.classList.toggle('highlight', pX < 240);
+      arrowLeft.innerHTML = allCleared
+        ? '<span class="arrow-icon">◀</span><span>Side Chambers</span>'
+        : `<span class="arrow-icon">◀</span><span>Side Chambers (${remainingObstacles.length} left)</span>`;
+      arrowLeft.classList.toggle('highlight', pX < 240 && allCleared);
     }
     if (arrowRight) {
       arrowRight.style.display = 'flex';
-      arrowRight.innerHTML = "<span>My Chambers</span><span class=\"arrow-icon\">▶</span>";
+      arrowRight.innerHTML = '<span>My Chambers</span><span class="arrow-icon">▶</span>';
       arrowRight.classList.toggle('highlight', pX > window.innerWidth - 260);
     }
 
-    if (pX <= 45) {
-      reachLeftChambers();
+    if (pX <= 55) {
+      if (allCleared) {
+        reachLeftChambers();
+      } else {
+        pX = 65;
+        addNoise(8, null, 'blocked...');
+        showEmote('!', 1400);
+        if (!isMonologueActive && patrolState === 'idle') {
+          queueMonologue([
+            {
+              text: "I can't slip into the side chambers yet—there are still things in the corridor I haven't gotten past cleanly.",
+              emote: '!'
+            }
+          ]);
+        }
+      }
     }
 
     if (pX >= window.innerWidth - 110) {
