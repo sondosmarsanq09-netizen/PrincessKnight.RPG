@@ -9,9 +9,8 @@ function removeOverlay() {
 }
 
 window.addEventListener('DOMContentLoaded', removeOverlay);
-setTimeout(removeOverlay, 60);
+setTimeout(removeOverlay, 50);
 
-// DOM References
 const princess = document.getElementById('princess');
 const princessEmote = document.getElementById('princess-emote');
 const worldLayer = document.getElementById('world-layer');
@@ -70,12 +69,11 @@ const startY = Number.isFinite(carryover.pY) ? carryover.pY : 570;
 let pX = startX;
 let pY = startY;
 const baseSpeed = 6;
-let currentArea = 'room'; // Always begins Scene 2 in her room at Scene 1's finishing spot
+let currentArea = 'room'; // 'room' <-> 'hallway' (left) or 'balcony' (right)
 let isHiding = false;
 let noiseLevel = 0;
 let escapedToLeftChambers = false;
 
-// Caught / Suspicion / Panic States
 let caughtCount = Number.isFinite(carryover.caughtCount) ? carryover.caughtCount : 0;
 let isKingSus = Boolean(carryover.isKingSus);
 let isPanicking = false;
@@ -84,21 +82,16 @@ const PANIC_PASSOUT_LIMIT = 8.5;
 let panicTimeLeft = PANIC_PASSOUT_LIMIT;
 let panicCountdownInterval = null;
 
-// Balcony Threat State
-let balconyThreatActive = false;
-
-// Dialogue & Patrol State
 let monologueQueue = [];
 let isMonologueActive = false;
 let patrolState = 'idle'; // 'idle' | 'approaching' | 'checking' | 'dialogue' | 'scolding' | 'scold_result'
 let patrolTimers = [];
 let patrolCount = 0;
-let pendingOutcome = null; // 'sus_panic' | 'reset_hallway' | 'normal'
+let pendingOutcome = null;
 let activeObstacle = null;
 let caughtTriggeredThisCheck = false;
 let activeMiniGameTimer = null;
 
-// Challenging Hallway Obstacles (to the left of Princess's Room)
 const obstacles = [
   {
     id: 'creaky_boards',
@@ -164,6 +157,12 @@ if (isKingSus) {
   susBadge.classList.remove('hidden');
 }
 
+function getCurrentMovementSpeed() {
+  if (!isPanicking) return baseSpeed;
+  const slowdown = Math.min(4.5, 2.6 + (caughtCount - 1) * 0.85);
+  return Math.max(1.3, baseSpeed - slowdown);
+}
+
 // --- EMOTES & DIALOGUE ---
 let emoteTimeout = null;
 function showEmote(symbol = '!', duration = 1600) {
@@ -211,11 +210,15 @@ function updateMapHighlight() {
     node.classList.toggle('active-zone', node.dataset.zone === currentArea);
   });
   const areaNames = {
-    room: 'Princess\'s Chambers (Walk left into Escape Hallway; Balcony is right)',
-    hallway: 'Escape Hallway (Left of room — stay quiet past obstacles & head left to Safe Chambers)',
+    room: "Princess's Chambers (Walk left into Escape Hallway; Balcony is right)",
+    hallway: 'Escape Hallway (Left of room — stay quiet past obstacles & head left to Left Chambers)',
     balcony: 'Royal Balcony (Right of room — no safety if spotted)'
   };
-  mapCurrentStatus.textContent = `Current Location: ${areaNames[currentArea] || currentArea} • Noise: ${Math.round(noiseLevel)}%`;
+  if (mapCurrentStatus) {
+    mapCurrentStatus.innerHTML =
+      `<div>• Current Zone: ${areaNames[currentArea] || currentArea} • Noise: ${Math.round(noiseLevel)}%</div>` +
+      `<div>• Keep noise low—if it hits 100%, guards will come check on you.</div>`;
+  }
 }
 
 function openWingMap() {
@@ -301,7 +304,7 @@ function handlePanicPassOut() {
 
   queueMonologue([
     {
-      text: 'Ugh... I couldn\'t catch my breath for a second... stay steady and keep quiet.',
+      text: "Ugh... I couldn't catch my breath for a second... stay steady and keep quiet.",
       emote: '...'
     }
   ]);
@@ -317,7 +320,7 @@ function performSteadyBreath() {
     showEmote('✦', 1600);
     queueMonologue([
       {
-        text: 'Okay... slow breaths. My head is clear again.',
+        text: "Okay... slow breaths. My head's finally clearing up.",
         emote: '...'
       }
     ]);
@@ -338,17 +341,18 @@ function playFootstepSound() {
   try {
     const ctx = getAudioCtx();
     const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(76, now);
-    osc.frequency.exponentialRampToValueAtTime(28, now + 0.18);
-    gain.gain.setValueAtTime(0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.19);
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(78, now);
+    osc1.frequency.exponentialRampToValueAtTime(28, now + 0.18);
+    gain1.gain.setValueAtTime(0.24, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.19);
   } catch (e) {}
 }
 
@@ -412,15 +416,12 @@ function setArea(nextArea, nextX, nextY) {
   if (currentArea === 'room') {
     worldLayer.style.backgroundImage = "url('NightimePrincessRoom.png')";
     locationBanner.textContent = "📍 Princess's Chambers";
-    balconyThreatActive = false;
   } else if (currentArea === 'hallway') {
     worldLayer.style.backgroundImage = "url('EscapeHallway.jpg')";
     locationBanner.textContent = '📍 Escape Hallway';
-    balconyThreatActive = false;
   } else if (currentArea === 'balcony') {
     worldLayer.style.backgroundImage = "url('NightimeBalcony.png')";
     locationBanner.textContent = '📍 Royal Balcony';
-    balconyThreatActive = ['approaching', 'checking'].includes(patrolState);
   }
 
   renderObstacleMarkers();
@@ -437,7 +438,7 @@ function renderObstacleMarkers() {
   obstacles.forEach((obs) => {
     if (obs.area !== currentArea) return;
     const el = document.createElement('div');
-    el.className = 'obstacle-hotspot' + (obs.cleared ? ' cleared' : '');
+    el.className = 'task-hotspot' + (obs.cleared ? ' cleared' : '');
     const safeX = getObstacleScreenX(obs);
     const safeY = Math.max(160, Math.min(window.innerHeight - 150, obs.y - 75));
     el.style.left = safeX + 'px';
@@ -452,7 +453,7 @@ function getNearbyObstacle() {
   return obstacles.find((obs) => {
     if (obs.area !== currentArea || obs.cleared) return false;
     const ox = getObstacleScreenX(obs);
-    return Math.abs(pX - ox) < 165 && Math.abs(pY - obs.y) < 145;
+    return Math.abs(pX - ox) < 170 && Math.abs(pY - obs.y) < 150;
   });
 }
 
@@ -461,7 +462,7 @@ function setHidingState(nextHidden) {
   princess.classList.toggle('hidden-in-shadows', isHiding);
 }
 
-// --- HALLWAY OBSTACLE MINI-GAMES ---
+// --- HALLWAY OBSTACLE CHALLENGES ---
 function clearMiniGameTimer() {
   if (activeMiniGameTimer) {
     clearInterval(activeMiniGameTimer);
@@ -485,7 +486,7 @@ function completeObstacle(obs) {
   showEmote('✦', 1600);
   queueMonologue([
     {
-      text: `${obs.label.replace(/^[^\s]+\s/, '')} cleared quietly. Keep moving left toward the chambers.`,
+      text: `${obs.label.replace(/^[^\s]+\s/, '')} cleared quietly. Keep heading left toward the chambers.`,
       emote: '...'
     }
   ]);
@@ -500,7 +501,7 @@ function openObstacleModal(obs) {
 
   if (obs.id === 'creaky_boards') {
     taskTitle.textContent = '🪵 Creaky Floorboards';
-    taskInstructions.textContent = 'Step across the floorboards in sequence (1 → 2 → 3) without making a creak.';
+    taskInstructions.textContent = 'Step across the floorboards in sequence (1 → 2 → 3) without a loud creak.';
     let step = 1;
     taskBody.innerHTML = `
       <div class="stealth-step-row">
@@ -515,7 +516,7 @@ function openObstacleModal(obs) {
         if (n === step) {
           btn.classList.add('done');
           step++;
-          addNoise(11);
+          addNoise(12);
           if (step > 3) completeObstacle(obs);
         } else {
           addNoise(48, '"CREAK!! Someone stepped heavily on the floorboards! Guards, check the hall!"');
@@ -552,7 +553,7 @@ function openObstacleModal(obs) {
     steadyBtn.addEventListener('click', () => {
       if (pos >= 34 && pos <= 66) {
         steadied++;
-        addNoise(9);
+        addNoise(10);
         if (progressEl) progressEl.textContent = `Steady Count: ${steadied} / 2`;
         if (steadied >= 2) completeObstacle(obs);
       } else {
@@ -587,7 +588,7 @@ function openObstacleModal(obs) {
   }
 }
 
-// --- GUARD PATROL & CHECK SYSTEM ---
+// --- GUARD CHECK WHEN NOISE GETS TOO HIGH ---
 function clearPatrolTimers() {
   patrolTimers.forEach((id) => clearTimeout(id));
   patrolTimers = [];
@@ -653,6 +654,7 @@ function startGuardCheck(customCallout = null) {
     patrolCount++;
 
     royalDialogueCard.classList.remove('hidden', 'scolding');
+    royalDialogueCard.classList.add('royal-gold');
     royalSpeaker.textContent = '⚔️ ROYAL GUARD';
     royalLine.textContent = line;
     dialogueChoices.classList.add('hidden');
@@ -680,7 +682,7 @@ function triggerCaughtEncounter() {
   patrolAlert.classList.add('danger');
   patrolText.textContent = 'SPOTTED! Choose your response carefully!';
 
-  royalDialogueCard.classList.remove('hidden');
+  royalDialogueCard.classList.remove('hidden', 'royal-gold');
   royalDialogueCard.classList.add('scolding');
   royalSpeaker.textContent = '⚔️ ROYAL GUARD';
   royalLine.innerHTML = `${caughtEncounter.scold}<div class="scold-hint">${caughtEncounter.hint}</div>`;
@@ -723,7 +725,7 @@ function finishGuardCheck() {
 
   clearPatrolTimers();
   royalDialogueCard.classList.add('hidden');
-  royalDialogueCard.classList.remove('scolding');
+  royalDialogueCard.classList.remove('scolding', 'royal-gold');
   dialogueChoices.classList.add('hidden');
   guardShadowWrap.classList.remove('visible', 'looking-in', 'deep-scan');
   torchSweep.classList.remove('active');
@@ -762,7 +764,7 @@ royalDialogueCard.addEventListener('click', () => {
   }
 });
 
-// --- ESCAPE COMPLETION (LEFT CHAMBERS) ---
+// --- LEFT CHAMBERS SAFE COMPLETION ---
 function reachLeftChambers() {
   if (escapedToLeftChambers) return;
   escapedToLeftChambers = true;
@@ -795,13 +797,7 @@ replayScene2Btn.addEventListener('click', () => {
   ]);
 });
 
-// --- MOVEMENT & INPUT (SCENE 1 SETTINGS) ---
-function getCurrentMovementSpeed() {
-  if (!isPanicking) return baseSpeed;
-  const slowdown = Math.min(4.5, 2.6 + (caughtCount - 1) * 0.85);
-  return Math.max(1.3, baseSpeed - slowdown);
-}
-
+// --- INPUT HANDLING ---
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
@@ -872,6 +868,7 @@ window.addEventListener('keyup', (e) => {
 
 window.addEventListener('resize', renderObstacleMarkers);
 
+// --- MAIN LOOP ---
 function gameLoop() {
   let pMoving = false;
   const activeSpeed = getCurrentMovementSpeed();
@@ -916,7 +913,7 @@ function gameLoop() {
   if (['approaching', 'checking'].includes(patrolState)) {
     actionPrompt.classList.remove('hidden');
     actionPrompt.textContent = isHiding
-      ? 'Hidden in shadows — do not move!'
+      ? "Hidden in shadows — don't move!"
       : 'Guards coming! Hide with [E]!';
   } else if (nearObs && !activeObstacle && !isMonologueActive) {
     actionPrompt.classList.remove('hidden');
@@ -925,64 +922,63 @@ function gameLoop() {
     actionPrompt.classList.add('hidden');
   }
 
-  // Room (Center) <-> Escape Hallway (Left) -> Safe Chambers (Far Left); Balcony (Right)
   if (currentArea === 'room') {
     if (arrowLeft) {
       arrowLeft.style.display = 'flex';
-      arrowLeft.textContent = '◀ Escape Hallway';
-      arrowLeft.classList.toggle('highlight', pX < 220);
+      arrowLeft.innerHTML = '<span class="arrow-icon">◀</span><span>Escape Hallway</span>';
+      arrowLeft.classList.toggle('highlight', pX < 240);
     }
     if (arrowRight) {
       arrowRight.style.display = 'flex';
-      arrowRight.textContent = 'Balcony ▶';
-      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 240);
+      arrowRight.innerHTML = '<span>Balcony</span><span class="arrow-icon">▶</span>';
+      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 260);
     }
 
-    // Walk left out of room into Escape Hallway
+    // Walk left out of her room into EscapeHallway.jpg
     if (pX <= 45) {
-      setArea('hallway', window.innerWidth - 140, Math.max(pY, 550));
+      setArea('hallway', window.innerWidth - 150, Math.max(pY, 550));
       setHidingState(false);
       showEmote('!', 1500);
       queueMonologue([
         {
-          text: 'I\'m in the hallway now—don\'t make too much noise or the guards will come check on me.',
+          text: "I just walked into the hallway from the right. Don't make too much noise or the guards will come check on me.",
           emote: '!'
         }
       ]);
     }
 
     if (pX >= window.innerWidth - 130) {
-      setArea('balcony', Math.round(window.innerWidth * 0.2), Math.max(pY, 540));
+      setArea('balcony', Math.round(window.innerWidth * 0.22), Math.max(pY, 540));
       setHidingState(false);
       showEmote('...', 1500);
     }
   } else if (currentArea === 'hallway') {
     if (arrowLeft) {
       arrowLeft.style.display = 'flex';
-      arrowLeft.textContent = '◀ Safe Chambers';
-      arrowLeft.classList.toggle('highlight', pX < 220);
+      arrowLeft.innerHTML = '<span class="arrow-icon">◀</span><span>Left Chambers</span>';
+      arrowLeft.classList.toggle('highlight', pX < 240);
     }
     if (arrowRight) {
       arrowRight.style.display = 'flex';
-      arrowRight.textContent = "Princess's Chambers ▶";
-      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 240);
+      arrowRight.innerHTML = "<span>Princess's Room</span><span class=\"arrow-icon\">▶</span>";
+      arrowRight.classList.toggle('highlight', pX > window.innerWidth - 260);
     }
 
-    // Reach chambers to the left of the hallway -> Safe!
+    // Reached chambers to the left of the hallway -> Safe!
     if (pX <= 45) {
       reachLeftChambers();
     }
 
     if (pX >= window.innerWidth - 110) {
-      setArea('room', 135, Math.max(pY, 550));
+      setArea('room', 145, Math.max(pY, 550));
       setHidingState(false);
       showEmote('...', 1500);
     }
   } else if (currentArea === 'balcony') {
     if (arrowLeft) {
       arrowLeft.style.display = 'flex';
-      arrowLeft.textContent = "◀ Princess's Chambers";
-      arrowLeft.classList.toggle('highlight', pX < 220);
+      arrowLeft.innerHTML = '<span class="arrow-icon">◀</span><span>Princess\'s Room</span>';
+      arrowLeft.classList.toggle('highlight', pX < 240);
     }
     if (arrowRight) arrowRight.style.display = 'none';
 
@@ -1008,11 +1004,11 @@ renderObstacleMarkers();
 updateMapHighlight();
 queueMonologue([
   {
-    text: 'Scene 2 starts now... I have to walk out to the hallway myself and slip past the obstacles without getting caught.',
+    text: 'Scene 2 starts now... I have to walk out to the hallway myself and slip past the obstacles unseen.',
     emote: '✦'
   },
   {
-    text: 'Don\'t make too much noise in the hall or the guards will check on me—press [M] anytime for the map and head left to the chambers.',
+    text: "Don't make too much noise or the guards will come check on me—press [M] anytime for the map and head left to the chambers.",
     emote: '!'
   }
 ]);
