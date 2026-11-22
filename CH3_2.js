@@ -56,32 +56,45 @@ const taskInstructions = document.getElementById('task-instructions');
 const taskBody = document.getElementById('task-body');
 const closeTaskBtn = document.getElementById('close-task-btn');
 
-// Render a clean, unmistakable knight silhouette via SVG
+// Render a taller, closed-face armored knight silhouette with arms & sword
 if (guardSilhouette) {
   guardSilhouette.innerHTML = `
-    <svg class="knight-svg" viewBox="0 0 180 300" aria-hidden="true">
-      <!-- Flowing cape -->
-      <path d="M54 92 L126 92 L148 286 L34 286 Z" fill="#07060d" opacity="0.92" />
-      <!-- Sword on left side -->
-      <rect x="25" y="76" width="8" height="170" rx="2" fill="#090812" />
-      <rect x="14" y="242" width="30" height="7" rx="2" fill="#090812" />
-      <rect x="26" y="249" width="6" height="24" rx="2" fill="#090812" />
+    <svg class="knight-svg" viewBox="0 0 220 360" aria-hidden="true">
+      <!-- Sweeping knight cape -->
+      <path d="M62 104 L156 104 L186 346 L34 346 Z" fill="#07060d" opacity="0.94" />
+
+      <!-- Greatsword on right flank -->
+      <rect x="172" y="92" width="10" height="196" rx="2" fill="#090812" />
+      <rect x="158" y="284" width="38" height="8" rx="2" fill="#090812" />
+      <rect x="173" y="292" width="8" height="28" rx="2" fill="#090812" />
+
       <!-- Helmet plume -->
-      <path d="M92 26 C104 8, 128 6, 138 22 C122 24, 110 28, 98 34 Z" fill="#07060d" />
-      <!-- Knight helmet & cheek guards -->
-      <path d="M68 34 C68 20, 114 20, 114 34 L118 68 L104 86 L96 86 L96 64 L86 64 L86 86 L78 86 L64 68 Z" fill="#07060d" />
-      <!-- Warm lantern glint on visor -->
-      <rect x="74" y="45" width="32" height="4" rx="2" fill="#ffb703" opacity="0.72" />
-      <!-- Neck & armored chestplate -->
-      <rect x="80" y="82" width="22" height="12" fill="#07060d" />
-      <path d="M52 94 L130 94 L120 176 L128 286 L96 286 L91 196 L86 286 L54 286 L62 176 Z" fill="#07060d" />
+      <path d="M108 26 C126 6, 158 4, 170 24 C150 26, 132 32, 116 40 Z" fill="#07060d" />
+
+      <!-- Closed knight helm (solid faceplate, no mouth gap) -->
+      <path d="M78 36 C78 18, 140 18, 140 36 L146 78 L132 102 L86 102 L72 78 Z" fill="#07060d" />
+
+      <!-- Narrow glowing visor slit -->
+      <rect x="88" y="52" width="42" height="5" rx="2" fill="#ffb703" opacity="0.82" />
+
+      <!-- Neck & heavy armored torso/greaves -->
+      <rect x="96" y="96" width="26" height="14" fill="#07060d" />
+      <path d="M64 110 L154 110 L142 208 L152 346 L114 346 L109 234 L104 346 L66 346 L76 208 Z" fill="#07060d" />
+
       <!-- Shoulder pauldrons -->
-      <path d="M36 96 C46 84, 64 86, 68 106 L58 128 L34 120 Z" fill="#07060d" />
-      <path d="M146 96 C136 84, 118 86, 114 106 L124 128 L148 120 Z" fill="#07060d" />
+      <path d="M40 112 C56 96, 80 100, 84 126 L70 152 L38 140 Z" fill="#07060d" />
+      <path d="M178 112 C162 96, 138 100, 134 126 L148 152 L180 140 Z" fill="#07060d" />
+
+      <!-- Left arm & gauntlet (angled slightly forward) -->
+      <path d="M44 138 L66 144 L48 228 L26 222 Z" fill="#07060d" />
+      <path d="M26 222 L48 228 L38 256 L20 250 Z" fill="#07060d" />
+
+      <!-- Right arm & gauntlet (down by sword hilt) -->
+      <path d="M152 144 L174 138 L186 226 L164 230 Z" fill="#07060d" />
+      <path d="M164 230 L186 226 L184 256 L164 256 Z" fill="#07060d" />
     </svg>
   `;
 }
-
 // Add numeric % readout next to the noise bar
 const noiseMeterWrap = document.getElementById('noise-meter-wrap');
 const noiseValueLabel = document.createElement('span');
