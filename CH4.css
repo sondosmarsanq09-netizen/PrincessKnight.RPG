@@ -187,6 +187,35 @@ body {
   pointer-events: none;
 }
 
+.audio-btn {
+  position: absolute;
+  top: 56px;
+  right: 20px;
+  color: #fdf6e2;
+  background: rgba(28, 22, 18, 0.82);
+  backdrop-filter: blur(4px);
+  padding: 6px 12px;
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 6px;
+  border: 1px solid rgba(253, 246, 226, 0.3);
+  cursor: pointer;
+  z-index: 250;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+  transition: background 0.18s ease, transform 0.15s ease;
+}
+
+.audio-btn:hover {
+  background: rgba(45, 34, 27, 0.94);
+  transform: translateY(-1px);
+}
+
+.audio-btn.muted {
+  opacity: 0.72;
+  border-color: rgba(255, 175, 175, 0.45);
+}
+
 #objective {
   position: absolute;
   top: 15px;
