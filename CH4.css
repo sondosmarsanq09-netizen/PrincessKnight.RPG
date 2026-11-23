@@ -58,19 +58,36 @@ body {
   100% { background-position: 100% 0%; }
 }
 
-/* Bouquet held right in the Knight's hand */
+/* Clustered bouquet held right in the Knight's hand */
 .knight-bouquet {
   position: absolute;
-  left: 69px;
-  top: 50px;
-  font-size: 7.5px;
-  line-height: 1;
-  letter-spacing: -1px;
+  left: 68px;
+  top: 47px;
+  width: 14px;
+  height: 14px;
   pointer-events: none;
-  filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.7));
-  white-space: nowrap;
+  filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.75));
   z-index: 8;
 }
+
+.bouquet-cluster-wrap {
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+
+.bouquet-bloom {
+  position: absolute;
+  font-size: 6px;
+  line-height: 1;
+}
+
+.bouquet-bloom.b1 { left: 2px; top: 0px; }
+.bouquet-bloom.b2 { left: 6px; top: 1px; }
+.bouquet-bloom.b3 { left: 0px; top: 4px; }
+.bouquet-bloom.b4 { left: 4px; top: 4px; }
+.bouquet-bloom.b5 { left: 8px; top: 4px; }
+.bouquet-ribbon   { left: 3px; top: 8px; font-size: 5.5px; }
 
 /* --- PRINCESS SPRITE (RIGHT SIDE OF TREE FACING RIGHT) --- */
 #princess {
@@ -348,7 +365,7 @@ body {
   }
 }
 
-/* --- INTERACTION PROMPT --- */
+/* --- INTERACTION PROMPT & POPUP --- */
 .interaction-prompt {
   position: absolute;
   bottom: 135px;
@@ -370,6 +387,31 @@ body {
 @keyframes prompt-bounce {
   0%   { transform: translateX(-50%) translateY(0); }
   100% { transform: translateX(-50%) translateY(-5px); }
+}
+
+.action-popup {
+  position: absolute;
+  background: rgba(255, 252, 245, 0.86);
+  backdrop-filter: blur(3px);
+  color: #1a1a1a;
+  border: 1px solid rgba(59, 47, 47, 0.55);
+  padding: 6px 12px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: bold;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  z-index: 200;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: float-above 2.2s ease-out forwards;
+}
+
+@keyframes float-above {
+  0%   { opacity: 0; transform: translate(-50%, 0) scale(0.85); }
+  18%  { opacity: 1; transform: translate(-50%, -22px) scale(1.04); }
+  78%  { opacity: 1; transform: translate(-50%, -32px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50px) scale(0.92); }
 }
 
 /* --- CHAT DIALOGUE BOX --- */
