@@ -1,1 +1,465 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
+body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #161b14;
+  background-image: url('FlowerQuest.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  font-family: monospace;
+  user-select: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* --- KNIGHT SPRITE & MOVEMENT ANIMATION --- */
+#knight {
+  width: 120px;
+  height: 80px;
+  position: absolute;
+  image-rendering: pixelated;
+  transform: scale(4.8);
+  transform-origin: center bottom;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  background-color: transparent !important;
+  background-image: url('Idle.png');
+  background-size: 1000% 100%;
+  background-repeat: no-repeat;
+  animation: knight-anim 0.7s steps(9) infinite;
+  z-index: 6;
+}
+
+#knight.facing-left {
+  transform: scale(-4.8, 4.8);
+}
+
+#knight.facing-right {
+  transform: scale(4.8, 4.8);
+}
+
+#knight.running {
+  background-image: url('Run.png');
+  animation: knight-anim 0.9s steps(9) infinite;
+}
+
+@keyframes knight-anim {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}
+
+/* --- PRINCESS SPRITE (WAITING BY TREE FACING RIGHT) --- */
+#princess {
+  width: 96px;
+  height: 96px;
+  position: absolute;
+  image-rendering: pixelated;
+  transform: scale(3.5);
+  transform-origin: center bottom;
+  z-index: 5;
+}
+
+#princess.facing-right {
+  transform: scaleX(-3.5) scaleY(3.5);
+}
+
+#princess.facing-left {
+  transform: scale(3.5, 3.5);
+}
+
+#princess .layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 96px;
+  height: 96px;
+  background-size: 1000% 700%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  animation: idle 0.8s steps(5) infinite;
+}
+
+#princess.running .layer {
+  animation: walk 0.8s steps(8) infinite;
+}
+
+@keyframes idle {
+  from { background-position: 0% 0%; }
+  to   { background-position: 55.55% 0%; }
+}
+
+@keyframes walk {
+  from { background-position: 0% 16.66%; }
+  to   { background-position: 88.88% 16.66%; }
+}
+
+/* --- HUD & BOUQUET TRACKER --- */
+#location-banner {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  color: #fdf6e2;
+  background: rgba(15, 17, 26, 0.76);
+  backdrop-filter: blur(4px);
+  padding: 8px 16px;
+  font-family: monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 6px;
+  border: 1px solid rgba(253, 246, 226, 0.25);
+  z-index: 10;
+  pointer-events: none;
+}
+
+#objective {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.72);
+  padding: 12px 18px;
+  font-family: monospace;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  z-index: 10;
+  max-width: 540px;
+}
+
+.bouquet-hud {
+  position: absolute;
+  top: 74px;
+  left: 15px;
+  background: rgba(255, 252, 245, 0.88);
+  backdrop-filter: blur(4px);
+  color: #241914;
+  border: 1.5px solid rgba(92, 64, 51, 0.65);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 245px;
+  max-width: 340px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.bouquet-hud.completed {
+  border-color: #b84a62;
+  box-shadow: 0 0 18px rgba(244, 143, 177, 0.65);
+}
+
+.bouquet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.bouquet-visual {
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: 1px;
+  min-height: 22px;
+}
+
+.bouquet-flowers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 11px;
+  color: #4a3228;
+}
+
+.collected-chip {
+  background: rgba(184, 74, 98, 0.14);
+  border: 1px solid rgba(184, 74, 98, 0.45);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+}
+
+/* --- GROUND FLOWERS --- */
+#flowers-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.ground-flower {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 4;
+  animation: flower-sway 2.2s ease-in-out infinite alternate;
+}
+
+.ground-flower .flower-icon {
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.45));
+}
+
+.ground-flower .flower-tag {
+  font-size: 10px;
+  font-weight: bold;
+  color: #fffdf7;
+  background: rgba(24, 20, 18, 0.72);
+  border: 1px solid rgba(255, 248, 225, 0.35);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+@keyframes flower-sway {
+  0%   { transform: translate(-50%, -100%) rotate(-3deg); }
+  100% { transform: translate(-50%, -104%) rotate(3deg); }
+}
+
+/* --- EMOTE BUBBLES ABOVE HEADS --- */
+.emote-bubble {
+  position: absolute;
+  font-size: 26px;
+  line-height: 1;
+  z-index: 460;
+  pointer-events: none;
+  transform: translate(-50%, 0) scale(1);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+  animation: emote-pulse-fade 1.8s ease-out forwards;
+}
+
+@keyframes emote-pulse-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.55);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1.25);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -12px) scale(1.1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -18px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(0.9);
+  }
+}
+
+@keyframes emote-pulse-fade-lingering {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.55);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1.25);
+  }
+  32% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(0.95);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -12px) scale(1.1);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -28px) scale(0.9);
+  }
+}
+
+/* --- INTERACTION PROMPT --- */
+.interaction-prompt {
+  position: absolute;
+  bottom: 135px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 252, 245, 0.88);
+  color: #1a1a1a;
+  border: 1px solid rgba(59, 47, 47, 0.55);
+  padding: 8px 16px;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  z-index: 100;
+  animation: prompt-bounce 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes prompt-bounce {
+  0%   { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-5px); }
+}
+
+/* --- CHAT DIALOGUE BOX --- */
+.dialogue-box {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(720px, 92vw);
+  background: rgba(255, 253, 248, 0.58);
+  backdrop-filter: blur(3px);
+  border: 1.5px solid rgba(92, 64, 51, 0.55);
+  border-radius: 10px;
+  padding: 14px 20px 16px 20px;
+  font-family: monospace;
+  z-index: 400;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.dialogue-speaker {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  color: #7c3f12;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.dialogue-speaker.princess-speak {
+  color: #a51d24;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.dialogue-text {
+  color: #141414;
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  margin-right: 84px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.dialogue-choices {
+  position: fixed;
+  bottom: 185px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(620px, 90vw);
+  z-index: 450;
+}
+
+.choice-btn {
+  background: rgba(255, 252, 245, 0.84);
+  backdrop-filter: blur(4px);
+  color: #1a1a1a;
+  border: 1px solid rgba(92, 64, 51, 0.65);
+  padding: 12px 16px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.choice-btn:hover {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: #5c4033;
+  transform: scale(1.01);
+}
+
+.nav-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  display: flex;
+  gap: 6px;
+  z-index: 410;
+}
+
+.nav-arrow {
+  background: rgba(255, 255, 255, 0.88);
+  color: #2b1d14;
+  border: 1.5px solid rgba(59, 47, 47, 0.75);
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: bold;
+  width: 30px;
+  height: 28px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: background 0.18s ease, transform 0.15s ease;
+}
+
+.nav-arrow:hover:not(:disabled) {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.nav-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dialogue-hint {
+  font-size: 11px;
+  color: rgba(35, 25, 20, 0.78);
+  margin-top: 8px;
+  margin-right: 84px;
+}
+
+/* --- PURE BLACK FADE OVERLAY --- */
+.fade-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 1.5s ease-in-out;
+}
+
+.fade-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
