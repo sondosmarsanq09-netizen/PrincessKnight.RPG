@@ -13,7 +13,7 @@
 
   <!-- UI & Objectives -->
   <div id="location-banner">📍 Meadow Clearing</div>
-  <div id="objective">Objective: Find a gift for your date — gather a full bouquet of flowers she loves.</div>
+  <div id="objective">Objective: Gather a bouquet of blossoms she adores before meeting her.</div>
 
   <!-- Live Bouquet & Collected Flowers Tracker -->
   <div id="bouquet-hud" class="bouquet-hud">
@@ -23,6 +23,10 @@
     </div>
     <div id="bouquet-flowers-list" class="bouquet-flowers-list"></div>
   </div>
+
+  <!-- Edge Navigation Arrows -->
+  <div id="edge-arrow-left" class="edge-arrow hidden">◀</div>
+  <div id="edge-arrow-right" class="edge-arrow hidden">▶</div>
 
   <!-- Spawned Ground Flowers Container -->
   <div id="flowers-layer"></div>
@@ -35,7 +39,9 @@
   <div id="princess-emotion" class="emote-bubble hidden"></div>
 
   <!-- Knight Sprite (Controlled in Chapter 4) -->
-  <div id="knight" class="facing-right"></div>
+  <div id="knight" class="facing-right">
+    <div id="knight-bouquet" class="knight-bouquet hidden"></div>
+  </div>
 
   <!-- Princess Sprite (Waiting by the Tree Facing Right) -->
   <div id="princess" class="facing-right hidden">
