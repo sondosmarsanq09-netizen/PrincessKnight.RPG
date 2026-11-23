@@ -76,6 +76,7 @@ let kX = Math.round(window.innerWidth * 0.5) - 60;
 let kY = getGroundBaselineY();
 const speed = 6;
 let inDialogue = false;
+let storyEnded = false;
 
 // Princess Spot state: walk in, Princess calls Knight over, then press [E] near her to talk
 let princessCalledKnight = false;
@@ -486,6 +487,10 @@ function renderNode() {
     return;
   }
 
+  if (typeof node.onShow === 'function') {
+    node.onShow();
+  }
+
   dialogueBox.classList.remove('hidden');
 
   const speakerLower = (node.speaker || '').toLowerCase();
@@ -609,53 +614,88 @@ function blockPrincessSpotEntry() {
   ]);
 }
 
+function showEndingScreen() {
+  storyEnded = true;
+  if (edgeArrowLeft) edgeArrowLeft.classList.add('hidden');
+  if (edgeArrowRight) edgeArrowRight.classList.add('hidden');
+  if (interactionPrompt) interactionPrompt.classList.add('hidden');
+
+  const overlay = document.getElementById('transition-overlay');
+  if (overlay) {
+    overlay.innerHTML = `
+      <div style="
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        text-align: center;
+        padding: 24px;
+        color: #fdf6e2;
+        font-family: 'Press Start 2P', monospace;
+      ">
+        <div style="font-size: clamp(22px, 3.6vw, 40px); letter-spacing: 3px; color: #f7cad0; text-shadow: 0 4px 18px rgba(247, 202, 208, 0.35);">
+          ~ The End ~
+        </div>
+        <div style="max-width: 620px; font-family: monospace; font-size: 16px; line-height: 1.7; color: #f5ebd6; opacity: 0.92;">
+          Beneath the golden boughs of the Great Tree, with hibiscus, roses, tulips, and azaleas in hand, their secret morning finally belonged to them alone.
+        </div>
+        <div style="font-size: 24px; margin-top: 6px;">💐 💕 🌅</div>
+      </div>
+    `;
+    overlay.classList.add('active');
+  }
+}
+
 const princessDateEncounterNodes = [
   {
     speaker: 'Princess',
-    text: '“You truly made it at daybreak... and with a whole bouquet waiting in your hand. Hibiscus, roses, tulips, and azaleas—how did you know every bloom my heart favors?”',
+    text: '“You truly came with the first light of dawn... and bearing so lovely a bouquet. Hibiscus, roses, tulips, and azaleas—how did you remember every bloom my heart favors?”',
     princessEmote: '🥰',
     knightEmote: '😳'
   },
   {
     speaker: 'Knight',
-    text: '“Every step through the morning dew was worth it if it brings a smile to your face, Your Highness.”',
+    text: '“How could I ever forget what brings light to your eyes, Your Highness? Every step through the dew was worth it.”',
     knightEmote: '💐',
     princessEmote: '💕',
     choices: [
       {
-        label: '1. (Tender & earnest) "No courtly duty has ever felt half as noble as standing beside you at sunrise."',
+        label: '1. (Tender & earnest) "No courtly vow has ever felt half as true as standing beside you at sunrise."',
         knightEmote: '💘',
         princessEmote: '😍',
         followUp: [
           {
             speaker: 'Princess',
-            text: '“Careful, Sir Knight... speak so softly in the morning light and I shall forget all my royal composure.”',
+            text: '“Careful, Sir Knight... speak so softly in the morning light and I shall forget every lesson in royal composure.”',
             princessEmote: '😘',
             knightEmote: '💓'
           }
         ]
       },
       {
-        label: '2. (A little flustered) "I only hoped the arrangement would not look crooked after crossing the grove..."',
+        label: '2. (A little flustered) "I only hoped the ribbon would hold until I reached your tree..."',
         knightEmote: '😅',
         princessEmote: '😊',
         followUp: [
           {
             speaker: 'Princess',
-            text: '“Crooked? It is the finest gift I have ever been handed. Come—walk beside me awhile.”',
+            text: '“It is the dearest gift I have ever held. Every petal still carries the morning chill.”',
             princessEmote: '💖',
             knightEmote: '😳'
           }
         ]
       },
       {
-        label: '3. (Quietly devoted) "No walls, no curfews—just the two of us as day begins."',
+        label: '3. (Quietly devoted) "No castle walls, no midnight curfews—only you, me, and the open sky."',
         knightEmote: '❤️',
         princessEmote: '🥰',
         followUp: [
           {
             speaker: 'Princess',
-            text: '“At long last, no secrets in the dark. Just sunrise, this tree, and you.”',
+            text: '“At long last, no borrowed minutes in the dark. Just sunrise, this tree, and you.”',
             princessEmote: '💋',
             princessEmoteDuration: 300,
             knightEmote: '😳',
@@ -664,24 +704,92 @@ const princessDateEncounterNodes = [
         ]
       }
     ]
+  },
+  {
+    speaker: 'Princess',
+    text: '“All night behind those stone walls, I kept listening for footsteps—wondering if morning would ever truly arrive.”',
+    princessEmote: '🥺',
+    knightEmote: '💗'
+  },
+  {
+    speaker: 'Knight',
+    text: '“Here, Your Highness—take the bouquet. Let me stand a little closer so the morning breeze does not chill you.”',
+    knightEmote: '💐',
+    princessEmote: '💕',
+    onShow: () => {
+      // Knight steps closer right beside her as he hands over the bouquet
+      kX = pX + 102;
+      if (knightBouquet) knightBouquet.classList.add('hidden');
+    }
+  },
+  {
+    speaker: 'Princess',
+    text: '*She cradles the blossoms against her chest, steps in close beside his armor, and rests her head softly against his shoulder as the golden leaves sway above them.*',
+    princessEmote: '🥰',
+    princessEmoteDuration: 400,
+    knightEmote: '💓',
+    knightEmoteDuration: 400,
+    choices: [
+      {
+        label: '1. (Hold her hand gently) "I am right here, my Princess. Nowhere else in the realm would I rather be."',
+        knightEmote: '❤️',
+        princessEmote: '💕',
+        followUp: [
+          {
+            speaker: 'Princess',
+            text: '“Then stay right here with me a little longer... before the world wakes and remembers who we are.”',
+            princessEmote: '💋',
+            princessEmoteDuration: 400,
+            knightEmote: '😳',
+            knightEmoteDuration: 400
+          }
+        ]
+      },
+      {
+        label: '2. (Whisper softly) "Even in full plate armor, my heart has never beaten faster than it does right now."',
+        knightEmote: '💓',
+        princessEmote: '😍',
+        followUp: [
+          {
+            speaker: 'Princess',
+            text: '“Then let it beat for us alone this morning, Sir Knight. Today belongs to no crown—only to you and me.”',
+            princessEmote: '💖',
+            princessEmoteDuration: 400,
+            knightEmote: '❤️',
+            knightEmoteDuration: 400
+          }
+        ]
+      }
+    ]
+  },
+  {
+    speaker: 'Knight',
+    text: '“Forever at your side, Your Highness. Happy sunrise.”',
+    knightEmote: '💕',
+    knightEmoteDuration: 600,
+    princessEmote: '💕',
+    princessEmoteDuration: 600
   }
 ];
 
 function startPrincessDateTalk() {
-  if (inDialogue) return;
+  if (inDialogue || storyEnded) return;
   canTalkToPrincess = false;
   if (interactionPrompt) interactionPrompt.classList.add('hidden');
   dateTalkFinished = true;
   if (objectiveText) {
-    objectiveText.textContent = 'Objective: Enjoy your morning date with the Princess.';
+    objectiveText.textContent = 'Objective: Share your sunrise moment beneath the Great Tree.';
   }
-  startDialogue(princessDateEncounterNodes);
+  startDialogue(princessDateEncounterNodes, () => {
+    setTimeout(showEndingScreen, 650);
+  });
 }
 
 // --- CONTROLS ---
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+  if (storyEnded) return;
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) {
     e.preventDefault();
@@ -745,7 +853,7 @@ setTimeout(() => {
 function gameLoop() {
   let kMoving = false;
 
-  if (!inDialogue) {
+  if (!inDialogue && !storyEnded) {
     if (keys['w'] || keys['arrowup']) {
       kY -= speed;
       kMoving = true;
@@ -827,12 +935,13 @@ function gameLoop() {
       currentArea === 'princess_spot' &&
       princessActive &&
       !inDialogue &&
+      !storyEnded &&
       Math.hypot(kX - pX, kY - pY) < 210
     ) {
       canTalkToPrincess = true;
       interactionPrompt.textContent = 'Press [E] to Speak with the Princess';
       interactionPrompt.classList.remove('hidden');
-    } else if (nearFlower && !inDialogue) {
+    } else if (nearFlower && !inDialogue && !storyEnded) {
       interactionPrompt.textContent = `Press [E] to Pick ${nearFlower.type.icon} ${nearFlower.type.name}`;
       interactionPrompt.classList.remove('hidden');
     } else {
