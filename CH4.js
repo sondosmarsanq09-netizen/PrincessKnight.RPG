@@ -22,6 +22,7 @@ const princess = document.getElementById('princess');
 const knightEmote = document.getElementById('knight-emotion');
 const princessEmote = document.getElementById('princess-emotion');
 const locationBanner = document.getElementById('location-banner');
+const audioToggle = document.getElementById('audio-toggle');
 const objectiveText = document.getElementById('objective');
 const flowersLayer = document.getElementById('flowers-layer');
 const interactionPrompt = document.getElementById('interaction-prompt');
@@ -39,6 +40,195 @@ const dialogueSpeaker = document.getElementById('dialogue-speaker');
 const dialogueText = document.getElementById('dialogue-text');
 const dialogueChoices = document.getElementById('dialogue-choices');
 const dialogueHint = document.getElementById('dialogue-hint');
+
+// =========================================================
+// SOUNDTRACKS & SOUND EFFECTS ENGINE (WEB AUDIO API)
+// =========================================================
+const SoundEngine = (() => {
+  let ctx = null;
+  let muted = false;
+  let bgmTimer = null;
+  let stepIndex = 0;
+  let currentTrack = 'dawn'; // 'dawn' | 'romance'
+
+  const DAWN_MELODY = [
+    523.25, 659.25, 783.99, 659.25, // C5, E5, G5, E5
+    587.33, 698.46, 880.00, 698.46, // D5, F5, A5, F5
+    493.88, 587.33, 783.99, 587.33, // B4, D5, G5, D5
+    523.25, 659.25, 783.99, 1046.50 // C5, E5, G5, C6
+  ];
+
+  const ROMANCE_MELODY = [
+    659.25, 783.99, 987.77, 880.00, // E5, G5, B5, A5
+    783.99, 659.25, 587.33, 659.25, // G5, E5, D5, E5
+    523.25, 659.25, 783.99, 659.25, // C5, E5, G5, E5
+    493.88, 587.33, 783.99, 987.77  // B4, D5, G5, B5
+  ];
+
+  function ensureContext() {
+    if (!ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        ctx = new AudioCtx();
+      }
+    }
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    return ctx;
+  }
+
+  function playTone(freq, duration = 0.25, type = 'sine', gainPeak = 0.06, delay = 0, slideTo = null) {
+    if (muted) return;
+    const c = ensureContext();
+    if (!c) return;
+
+    const now = c.currentTime + delay;
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (slideTo) {
+      osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+    }
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(gainPeak, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    osc.connect(gain);
+    gain.connect(c.destination);
+
+    osc.start(now);
+    osc.stop(now + duration + 0.02);
+  }
+
+  function tickBgm() {
+    if (muted || !ctx || ctx.state !== 'running') return;
+    const seq = currentTrack === 'romance' ? ROMANCE_MELODY : DAWN_MELODY;
+    const note = seq[stepIndex % seq.length];
+    const wave = currentTrack === 'romance' ? 'sine' : 'triangle';
+    const vol = currentTrack === 'romance' ? 0.032 : 0.024;
+    playTone(note, 0.55, wave, vol, 0);
+    stepIndex++;
+  }
+
+  function startBgmLoop() {
+    if (bgmTimer) return;
+    bgmTimer = setInterval(tickBgm, 560);
+  }
+
+  function setTrack(trackName) {
+    if (currentTrack !== trackName) {
+      currentTrack = trackName;
+      stepIndex = 0;
+    }
+    ensureContext();
+    startBgmLoop();
+  }
+
+  function unlock() {
+    ensureContext();
+    startBgmLoop();
+  }
+
+  function toggleMute() {
+    muted = !muted;
+    if (!muted) {
+      ensureContext();
+      startBgmLoop();
+      playUiTick();
+    }
+    return muted;
+  }
+
+  function isMuted() {
+    return muted;
+  }
+
+  // --- Sound Effects ---
+  let lastStepAt = 0;
+  function playFootstep() {
+    if (muted) return;
+    const nowMs = performance.now();
+    if (nowMs - lastStepAt < 250) return;
+    lastStepAt = nowMs;
+
+    const pitch = 115 + Math.random() * 25;
+    playTone(pitch, 0.065, 'triangle', 0.035, 0, pitch * 0.65);
+  }
+
+  function playUiTick() {
+    playTone(620, 0.06, 'sine', 0.04, 0, 760);
+  }
+
+  function playChoiceChime() {
+    playTone(587.33, 0.12, 'triangle', 0.055, 0);
+    playTone(880.00, 0.18, 'sine', 0.05, 0.07);
+  }
+
+  function playFlowerPick() {
+    playTone(523.25, 0.14, 'triangle', 0.07, 0);
+    playTone(659.25, 0.14, 'triangle', 0.07, 0.07);
+    playTone(783.99, 0.22, 'sine', 0.075, 0.14);
+  }
+
+  function playBouquetComplete() {
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((n, i) => {
+      playTone(n, 0.28, 'triangle', 0.075, i * 0.09);
+    });
+  }
+
+  function playBlockedThud() {
+    playTone(190, 0.14, 'sawtooth', 0.04, 0, 125);
+  }
+
+  function playPrincessCall() {
+    playTone(783.99, 0.14, 'sine', 0.06, 0);
+    playTone(987.77, 0.22, 'sine', 0.065, 0.11);
+  }
+
+  function playEndingCadence() {
+    const chord = [523.25, 659.25, 783.99, 987.77, 1318.51];
+    chord.forEach((n, i) => {
+      playTone(n, 0.75, 'sine', 0.055, i * 0.14);
+    });
+  }
+
+  return {
+    unlock,
+    setTrack,
+    toggleMute,
+    isMuted,
+    playFootstep,
+    playUiTick,
+    playChoiceChime,
+    playFlowerPick,
+    playBouquetComplete,
+    playBlockedThud,
+    playPrincessCall,
+    playEndingCadence
+  };
+})();
+
+function syncAudioButton() {
+  if (!audioToggle) return;
+  const muted = SoundEngine.isMuted();
+  audioToggle.textContent = muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
+  audioToggle.classList.toggle('muted', muted);
+}
+
+if (audioToggle) {
+  audioToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    SoundEngine.toggleMute();
+    syncAudioButton();
+  });
+}
+
+window.addEventListener('pointerdown', () => SoundEngine.unlock(), { passive: true });
 
 // Lower-right < and > buttons inside dialogue-box
 const navControls = document.createElement('div');
@@ -380,6 +570,7 @@ function collectFlower(flower) {
   triggerEmote('knight', flower.type.icon);
 
   if (isBouquetComplete()) {
+    SoundEngine.playBouquetComplete();
     clearRemainingFlowers();
     startDialogue([
       {
@@ -394,6 +585,7 @@ function collectFlower(flower) {
       }
     ]);
   } else {
+    SoundEngine.playFlowerPick();
     spawnFlowerInArea(currentArea);
     startDialogue([
       {
@@ -429,21 +621,25 @@ function setArea(nextArea, nextX, nextY) {
     if (locationBanner) locationBanner.textContent = '📍 Meadow Clearing';
     princessActive = false;
     if (princess) princess.classList.add('hidden');
+    SoundEngine.setTrack('dawn');
   } else if (currentArea === 'woodland_path') {
     if (gameBody) gameBody.style.backgroundImage = "url('LookingFlower1.png')";
     if (locationBanner) locationBanner.textContent = '📍 Woodland Path';
     princessActive = false;
     if (princess) princess.classList.add('hidden');
+    SoundEngine.setTrack('dawn');
   } else if (currentArea === 'sunlit_grove') {
     if (gameBody) gameBody.style.backgroundImage = "url('LookingFlower2.png')";
     if (locationBanner) locationBanner.textContent = '📍 Sunlit Grove';
     princessActive = false;
     if (princess) princess.classList.add('hidden');
+    SoundEngine.setTrack('dawn');
   } else if (currentArea === 'princess_spot') {
     if (gameBody) gameBody.style.backgroundImage = "url('PrincessTree.png')";
     if (locationBanner) locationBanner.textContent = '📍 Princess Spot';
     princessActive = true;
     syncPrincessTreePosition();
+    SoundEngine.setTrack('romance');
 
     // Let the player walk up while the Princess calls the Knight over
     if (!princessCalledKnight) {
@@ -453,6 +649,7 @@ function setArea(nextArea, nextX, nextY) {
       }
       setTimeout(() => {
         if (currentArea === 'princess_spot' && princessActive) {
+          SoundEngine.playPrincessCall();
           triggerEmote('princess', '💕');
           triggerEmote('knight', '❗');
           showCalloutPopup('Sir Knight! Over here!', pX + 48, pY - 150);
@@ -553,6 +750,7 @@ function selectChoice(choice) {
   if (!waitingForChoice) return;
   waitingForChoice = false;
   dialogueChoices.classList.add('hidden');
+  SoundEngine.playChoiceChime();
 
   if (choice.knightEmote !== undefined) {
     triggerEmote('knight', choice.knightEmote, choice.knightEmoteDuration || 0);
@@ -570,6 +768,7 @@ function selectChoice(choice) {
 
 function advanceDialogue() {
   if (!inDialogue || waitingForChoice) return;
+  SoundEngine.playUiTick();
   nodeIndex++;
   if (nodeIndex >= currentNodes.length) {
     closeDialogue();
@@ -580,6 +779,7 @@ function advanceDialogue() {
 
 function rewindDialogue() {
   if (!inDialogue || waitingForChoice || nodeIndex <= 0) return;
+  SoundEngine.playUiTick();
   nodeIndex--;
   renderNode();
 }
@@ -603,6 +803,7 @@ function blockPrincessSpotEntry() {
   kX = 85;
   knight.classList.remove('facing-left');
   knight.classList.add('facing-right');
+  SoundEngine.playBlockedThud();
   triggerEmote('knight', '💐');
 
   startDialogue([
@@ -616,6 +817,8 @@ function blockPrincessSpotEntry() {
 
 function showEndingScreen() {
   storyEnded = true;
+  SoundEngine.setTrack('romance');
+  SoundEngine.playEndingCadence();
   if (edgeArrowLeft) edgeArrowLeft.classList.add('hidden');
   if (edgeArrowRight) edgeArrowRight.classList.add('hidden');
   if (interactionPrompt) interactionPrompt.classList.add('hidden');
@@ -717,7 +920,6 @@ const princessDateEncounterNodes = [
     knightEmote: '💐',
     princessEmote: '💕',
     onShow: () => {
-      // Knight steps closer right beside her as he hands over the bouquet
       kX = pX + 102;
       if (knightBouquet) knightBouquet.classList.add('hidden');
     }
@@ -780,6 +982,7 @@ function startPrincessDateTalk() {
   if (objectiveText) {
     objectiveText.textContent = 'Objective: Share your sunrise moment beneath the Great Tree.';
   }
+  SoundEngine.playChoiceChime();
   startDialogue(princessDateEncounterNodes, () => {
     setTimeout(showEndingScreen, 650);
   });
@@ -789,6 +992,7 @@ function startPrincessDateTalk() {
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+  SoundEngine.unlock();
   if (storyEnded) return;
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) {
@@ -833,6 +1037,7 @@ window.addEventListener('resize', () => {
 
 // --- INITIAL SETUP ---
 setArea('flower_quest', kX, kY);
+syncAudioButton();
 updateBouquetUI();
 spawnFlowerInArea('flower_quest', 0.72, 0.55);
 spawnFlowerInArea('woodland_path', 0.42, 0.65);
@@ -880,6 +1085,10 @@ function gameLoop() {
     if (kY < minY) kY = minY;
     if (kY > maxY) kY = maxY;
 
+    if (kMoving) {
+      SoundEngine.playFootstep();
+    }
+
     // Map transitions:
     // Meadow Clearing (left -> Princess Spot, right -> Woodland Path from left)
     // Woodland Path (left -> Meadow Clearing, right -> Sunlit Grove from left)
@@ -890,27 +1099,32 @@ function gameLoop() {
         if (!isBouquetComplete()) {
           blockPrincessSpotEntry();
         } else {
+          SoundEngine.playUiTick();
           setArea('princess_spot', Math.round(window.innerWidth * 0.72), getGroundBaselineY());
           knight.classList.add('facing-left');
           knight.classList.remove('facing-right');
         }
       } else if (kX >= window.innerWidth - 130) {
+        SoundEngine.playUiTick();
         setArea('woodland_path', 90, getGroundBaselineY());
         knight.classList.remove('facing-left');
         knight.classList.add('facing-right');
       }
     } else if (currentArea === 'woodland_path') {
       if (kX <= 45) {
+        SoundEngine.playUiTick();
         setArea('flower_quest', window.innerWidth - 170, getGroundBaselineY());
         knight.classList.add('facing-left');
         knight.classList.remove('facing-right');
       } else if (kX >= window.innerWidth - 130) {
+        SoundEngine.playUiTick();
         setArea('sunlit_grove', 90, getGroundBaselineY());
         knight.classList.remove('facing-left');
         knight.classList.add('facing-right');
       }
     } else if (currentArea === 'sunlit_grove') {
       if (kX <= 45) {
+        SoundEngine.playUiTick();
         setArea('woodland_path', window.innerWidth - 170, getGroundBaselineY());
         knight.classList.add('facing-left');
         knight.classList.remove('facing-right');
@@ -919,6 +1133,7 @@ function gameLoop() {
     } else if (currentArea === 'princess_spot') {
       if (kX < pX + 95) kX = pX + 95;
       if (kX >= window.innerWidth - 130) {
+        SoundEngine.playUiTick();
         setArea('flower_quest', 90, getGroundBaselineY());
         knight.classList.remove('facing-left');
         knight.classList.add('facing-right');
