@@ -25,6 +25,7 @@ const locationBanner = document.getElementById('location-banner');
 const objectiveText = document.getElementById('objective');
 const flowersLayer = document.getElementById('flowers-layer');
 const interactionPrompt = document.getElementById('interaction-prompt');
+const actionPopup = document.getElementById('action-popup');
 const edgeArrowLeft = document.getElementById('edge-arrow-left');
 const edgeArrowRight = document.getElementById('edge-arrow-right');
 
@@ -68,17 +69,6 @@ function getMaxWalkY() {
   return Math.min(window.innerHeight - 24, getGroundBaselineY() + 22);
 }
 
-// Map layout:
-// 'flower_quest' (Meadow Clearing: FlowerQuest.png)
-//   - Left  -> 'princess_spot' (PrincessTree.png, locked until bouquet is complete)
-//   - Right -> 'woodland_path' (LookingFlower1.png, enters from left)
-// 'woodland_path' (Woodland Path: LookingFlower1.png)
-//   - Left  -> 'flower_quest' (returns to Meadow Clearing)
-//   - Right -> 'sunlit_grove' (LookingFlower2.png, enters from left)
-// 'sunlit_grove' (Sunlit Grove: LookingFlower2.png)
-//   - Left  -> 'woodland_path' (returns to Woodland Path)
-// 'princess_spot' (Princess Tree: PrincessTree.png)
-//   - Right -> 'flower_quest' (returns to Meadow Clearing)
 let currentArea = 'flower_quest';
 
 // Controlled Knight state (spawns in Meadow Clearing on the grass in the middle)
@@ -86,7 +76,12 @@ let kX = Math.round(window.innerWidth * 0.5) - 60;
 let kY = getGroundBaselineY();
 const speed = 6;
 let inDialogue = false;
-let dateMetStarted = false;
+
+// Princess Spot state: walk in, Princess calls Knight over, then press [E] near her to talk
+let princessCalledKnight = false;
+let dateTalkFinished = false;
+let canTalkToPrincess = false;
+let popupTimeout = null;
 
 // Princess state in PrincessTree.png (right side of the tree trunk, facing right)
 let pX = Math.round(window.innerWidth * 0.34);
@@ -111,23 +106,29 @@ function isBouquetComplete() {
   return collectedFlowers.length >= BOUQUET_GOAL;
 }
 
-// --- BOUQUET IN KNIGHT'S HAND ---
+// --- CLUSTERED BOUQUET IN KNIGHT'S HAND ---
 function syncKnightHandBouquet() {
   if (!knightBouquet) return;
   if (collectedFlowers.length === 0) {
     knightBouquet.classList.add('hidden');
-    knightBouquet.textContent = '';
+    knightBouquet.innerHTML = '';
     return;
   }
 
   knightBouquet.classList.remove('hidden');
-  knightBouquet.textContent = collectedFlowers
-    .slice(-4)
-    .map((f) => f.icon)
+  const slots = ['b1', 'b2', 'b3', 'b4', 'b5'];
+  const bloomsHtml = collectedFlowers
+    .slice(0, 5)
+    .map((f, idx) => `<span class="bouquet-bloom ${slots[idx]}">${f.icon}</span>`)
     .join('');
+  const ribbonHtml = isBouquetComplete()
+    ? '<span class="bouquet-bloom bouquet-ribbon">🎀</span>'
+    : '';
+
+  knightBouquet.innerHTML = `<div class="bouquet-cluster-wrap">${bloomsHtml}${ribbonHtml}</div>`;
 }
 
-// --- OVERHEAD EMOTES ---
+// --- OVERHEAD EMOTES & CALLOUT POPUP ---
 let knightEmoteTimer = null;
 let princessEmoteTimer = null;
 
@@ -170,6 +171,23 @@ function triggerEmote(target, symbol, extraDurationMs = 0) {
     clearTimeout(princessEmoteTimer);
     princessEmoteTimer = setTimeout(() => el.classList.add('hidden'), totalMs);
   }
+}
+
+function showCalloutPopup(message, targetX, targetY) {
+  if (!actionPopup) return;
+  actionPopup.textContent = message;
+  actionPopup.style.left = targetX + 'px';
+  actionPopup.style.top = targetY + 'px';
+
+  actionPopup.classList.remove('hidden');
+  actionPopup.style.animation = 'none';
+  void actionPopup.offsetWidth;
+  actionPopup.style.animation = 'float-above 2.2s ease-out forwards';
+
+  clearTimeout(popupTimeout);
+  popupTimeout = setTimeout(() => {
+    actionPopup.classList.add('hidden');
+  }, 2200);
 }
 
 // --- EDGE ARROWS ---
@@ -236,10 +254,10 @@ function updateBouquetUI() {
 
   syncKnightHandBouquet();
 
-  if (objectiveText && !dateMetStarted) {
+  if (objectiveText && !dateTalkFinished) {
     if (done) {
       objectiveText.textContent =
-        'Objective: Bouquet gathered—head left to the Princess waiting by the tree.';
+        'Objective: Bouquet gathered—walk left to the Princess Spot and walk up to her.';
     } else {
       objectiveText.textContent = `Objective: Gather a bouquet of blossoms she adores (${count}/${BOUQUET_GOAL}).`;
     }
@@ -370,7 +388,7 @@ function collectFlower(flower) {
       },
       {
         speaker: 'Knight',
-        text: '“She is waiting by the great tree to the left. I shall carry this bouquet straight to her.”',
+        text: '“She awaits beside the great tree to the left. I shall carry this bouquet over to her.”',
         knightEmote: '✨'
       }
     ]);
@@ -388,7 +406,6 @@ function collectFlower(flower) {
 
 // --- AREA SWITCHING ---
 function syncPrincessTreePosition() {
-  // Position Princess right on the right side of the tree trunk in PrincessTree.png
   pX = Math.round(window.innerWidth * 0.34);
   pY = getGroundBaselineY();
   if (princess && princessActive) {
@@ -426,13 +443,28 @@ function setArea(nextArea, nextX, nextY) {
     if (locationBanner) locationBanner.textContent = '📍 Princess Spot';
     princessActive = true;
     syncPrincessTreePosition();
+
+    // Let the player walk up while the Princess calls the Knight over
+    if (!princessCalledKnight) {
+      princessCalledKnight = true;
+      if (objectiveText) {
+        objectiveText.textContent = 'Objective: Walk over to the Princess and speak with her [E].';
+      }
+      setTimeout(() => {
+        if (currentArea === 'princess_spot' && princessActive) {
+          triggerEmote('princess', '💕');
+          triggerEmote('knight', '❗');
+          showCalloutPopup('Sir Knight! Over here!', pX + 48, pY - 150);
+        }
+      }, 220);
+    }
   }
 
   syncFlowersVisibility();
   updateEdgeArrows();
 }
 
-// --- CHAT DIALOGUE ENGINE ---
+// --- CHAT DIALOGUE ENGINE (CHAPTER 2 SCENE 3 STYLE) ---
 let currentNodes = [];
 let nodeIndex = 0;
 let waitingForChoice = false;
@@ -577,27 +609,73 @@ function blockPrincessSpotEntry() {
   ]);
 }
 
-function triggerPrincessDateMeeting() {
-  if (dateMetStarted) return;
-  dateMetStarted = true;
-  if (objectiveText) {
-    objectiveText.textContent = 'Objective: Present the morning bouquet to the Princess.';
+const princessDateEncounterNodes = [
+  {
+    speaker: 'Princess',
+    text: '“You truly made it at daybreak... and with a whole bouquet waiting in your hand. Hibiscus, roses, tulips, and azaleas—how did you know every bloom my heart favors?”',
+    princessEmote: '🥰',
+    knightEmote: '😳'
+  },
+  {
+    speaker: 'Knight',
+    text: '“Every step through the morning dew was worth it if it brings a smile to your face, Your Highness.”',
+    knightEmote: '💐',
+    princessEmote: '💕',
+    choices: [
+      {
+        label: '1. (Tender & earnest) "No courtly duty has ever felt half as noble as standing beside you at sunrise."',
+        knightEmote: '💘',
+        princessEmote: '😍',
+        followUp: [
+          {
+            speaker: 'Princess',
+            text: '“Careful, Sir Knight... speak so softly in the morning light and I shall forget all my royal composure.”',
+            princessEmote: '😘',
+            knightEmote: '💓'
+          }
+        ]
+      },
+      {
+        label: '2. (A little flustered) "I only hoped the arrangement would not look crooked after crossing the grove..."',
+        knightEmote: '😅',
+        princessEmote: '😊',
+        followUp: [
+          {
+            speaker: 'Princess',
+            text: '“Crooked? It is the finest gift I have ever been handed. Come—walk beside me awhile.”',
+            princessEmote: '💖',
+            knightEmote: '😳'
+          }
+        ]
+      },
+      {
+        label: '3. (Quietly devoted) "No walls, no curfews—just the two of us as day begins."',
+        knightEmote: '❤️',
+        princessEmote: '🥰',
+        followUp: [
+          {
+            speaker: 'Princess',
+            text: '“At long last, no secrets in the dark. Just sunrise, this tree, and you.”',
+            princessEmote: '💋',
+            princessEmoteDuration: 300,
+            knightEmote: '😳',
+            knightEmoteDuration: 300
+          }
+        ]
+      }
+    ]
   }
+];
 
-  startDialogue([
-    {
-      speaker: 'Princess',
-      text: '“You arrived with the morning sun... and carrying such a lovely bouquet. Hibiscus, roses, tulips, and azaleas—how thoughtful of you.”',
-      princessEmote: '🥰',
-      knightEmote: '😳'
-    },
-    {
-      speaker: 'Knight',
-      text: '“Every blossom was gathered for you, Your Highness. At long last, this morning is ours.”',
-      knightEmote: '💐',
-      princessEmote: '💕'
-    }
-  ]);
+function startPrincessDateTalk() {
+  if (inDialogue) return;
+  canTalkToPrincess = false;
+  if (interactionPrompt) interactionPrompt.classList.add('hidden');
+  dateTalkFinished = true;
+  if (objectiveText) {
+    objectiveText.textContent = 'Objective: Enjoy your morning date with the Princess.';
+  }
+  startDialogue(princessDateEncounterNodes);
 }
 
 // --- CONTROLS ---
@@ -623,6 +701,11 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (k === 'e') {
+    if (currentArea === 'princess_spot' && canTalkToPrincess) {
+      startPrincessDateTalk();
+      return;
+    }
+
     const nearFlower = getNearbyFlower();
     if (nearFlower) {
       collectFlower(nearFlower);
@@ -699,10 +782,9 @@ function gameLoop() {
         if (!isBouquetComplete()) {
           blockPrincessSpotEntry();
         } else {
-          setArea('princess_spot', Math.round(window.innerWidth * 0.58), getGroundBaselineY());
+          setArea('princess_spot', Math.round(window.innerWidth * 0.72), getGroundBaselineY());
           knight.classList.add('facing-left');
           knight.classList.remove('facing-right');
-          triggerPrincessDateMeeting();
         }
       } else if (kX >= window.innerWidth - 130) {
         setArea('woodland_path', 90, getGroundBaselineY());
@@ -727,7 +809,7 @@ function gameLoop() {
       }
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
     } else if (currentArea === 'princess_spot') {
-      if (kX < pX + 125) kX = pX + 125;
+      if (kX < pX + 95) kX = pX + 95;
       if (kX >= window.innerWidth - 130) {
         setArea('flower_quest', 90, getGroundBaselineY());
         knight.classList.remove('facing-left');
@@ -736,10 +818,21 @@ function gameLoop() {
     }
   }
 
-  // Nearby flower interaction prompt
+  // Interaction prompts: Talk to Princess or Pick Flower
+  canTalkToPrincess = false;
   const nearFlower = getNearbyFlower();
+
   if (interactionPrompt) {
-    if (nearFlower && !inDialogue) {
+    if (
+      currentArea === 'princess_spot' &&
+      princessActive &&
+      !inDialogue &&
+      Math.hypot(kX - pX, kY - pY) < 210
+    ) {
+      canTalkToPrincess = true;
+      interactionPrompt.textContent = 'Press [E] to Speak with the Princess';
+      interactionPrompt.classList.remove('hidden');
+    } else if (nearFlower && !inDialogue) {
       interactionPrompt.textContent = `Press [E] to Pick ${nearFlower.type.icon} ${nearFlower.type.name}`;
       interactionPrompt.classList.remove('hidden');
     } else {
