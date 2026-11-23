@@ -12,6 +12,9 @@
     <p id="objective">Objective: Go to the Blacksmith shop to pick up the King's ring.</p>
   </div>
 
+  <!-- Shared Audio Mute Button -->
+  <button id="audio-toggle" class="audio-btn" type="button" title="Toggle Sound">🔊 Sound: ON</button>
+
   <!-- Knight Element -->
   <div class="knight" id="knight"></div>
 
@@ -24,6 +27,8 @@
     <div class="layer" style="background-image: url('Female%20Hair3.png');"></div>
   </div>
 
+  <!-- Load shared audio BEFORE the scene's own script -->
+  <script src="game-audio.js"></script>
   <script src="script.js"></script>
   
   <div id="transition-overlay" class="fade-overlay active"></div>
