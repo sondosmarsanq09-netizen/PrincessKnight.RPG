@@ -15,6 +15,26 @@ body {
   display: none !important;
 }
 
+.audio-btn {
+  position: absolute;
+  top: 62px;
+  right: 20px;
+  background: rgba(15, 17, 26, 0.85);
+  color: #fdf6e2;
+  border: 1px solid rgba(253, 246, 226, 0.35);
+  border-radius: 6px;
+  padding: 7px 13px;
+  font-family: monospace;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 25;
+}
+
+.audio-btn:hover {
+  background: rgba(35, 40, 58, 0.95);
+  border-color: #fdf6e2;
+}
+
 /* --- PRINCESS & KNIGHT PROPORTIONS --- */
 .princess {
   width: 96px;
@@ -258,7 +278,7 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  pointer-events: none; /* Fixed: allows clicks to pass through to the game canvas */
+  pointer-events: none;
   z-index: 1;
   transition: background 1.2s ease, box-shadow 1.2s ease;
   background: radial-gradient(circle at 85% 60%, rgba(255, 140, 40, 0.14), transparent 55%);
@@ -287,12 +307,12 @@ body {
   z-index: 10;
   pointer-events: none;
 }
-/* --- BLACKSMITH LOWERED TO STREET FLOOR --- */
+
 .blacksmith {
   position: absolute;
   width: 139px;
   height: 108px;
-  top: 580px;      /* Lowered further down to match the street */
+  top: 580px;
   right: 170px;
   image-rendering: pixelated;
   transform: scale(2.8);
@@ -307,10 +327,7 @@ body {
   from { background-position: 0px 0px; }
   to   { background-position: -973px 0px; }
 }
-@keyframes blacksmith-anim {
-  from { background-position: 0px 0px; }
-  to   { background-position: -973px 0px; }
-}
+
 .fade-overlay {
   position: fixed;
   top: 0;
