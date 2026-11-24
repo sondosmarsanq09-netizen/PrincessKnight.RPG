@@ -19,7 +19,7 @@ const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
 let pX = 400;
-let pY = 570; // Planted firmly on the floor
+let pY = 570;
 const speed = 6;
 let currentArea = 'room';
 let inDialogue = false;
@@ -31,7 +31,6 @@ let taskStage = 0;
 let canInteract = false;
 let popupTimeout = null;
 
-// Helper to show sparkling feedback floating right above the princess's head
 function showActionFeedback(message) {
   if (!actionPopup) return;
 
@@ -41,7 +40,7 @@ function showActionFeedback(message) {
 
   actionPopup.classList.remove('hidden');
   actionPopup.style.animation = 'none';
-  actionPopup.offsetHeight; // trigger reflow
+  actionPopup.offsetHeight;
   actionPopup.style.animation = 'float-above-princess 2.2s ease-out forwards';
 
   clearTimeout(popupTimeout);
@@ -50,11 +49,11 @@ function showActionFeedback(message) {
   }, 2200);
 }
 
-// Pure black fade-out into chapter2scene3.html (no text)
 function fadeToScene3(nextSceneUrl = 'chapter2scene3.html') {
   if (isFadingOut) return;
   isFadingOut = true;
 
+  if (window.GameAudio) GameAudio.playPageTurn();
   taskMarker.classList.add('hidden');
   interactionPrompt.classList.add('hidden');
 
@@ -69,7 +68,7 @@ function fadeToScene3(nextSceneUrl = 'chapter2scene3.html') {
 
     setTimeout(() => {
       window.location.href = nextSceneUrl;
-    }, 1500); // Matches the 1.5s CSS fade transition
+    }, 1500);
   } else {
     window.location.href = nextSceneUrl;
   }
@@ -78,35 +77,38 @@ function fadeToScene3(nextSceneUrl = 'chapter2scene3.html') {
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+  if (window.GameAudio) GameAudio.unlock();
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd'].includes(k)) {
     e.preventDefault();
   }
   keys[k] = true;
 
-  // Press 'E' to interact when near the task marker
   if (k === 'e' && canInteract && !inDialogue && !questEnded && !isFadingOut) {
     if (taskStage === 0) {
       taskStage = 1;
+      if (window.GameAudio) GameAudio.playUiTick();
       showActionFeedback("Bed Made Neatly!");
       objectiveText.textContent = "Objective: Brush your hair at the vanity dresser (left).";
     } else if (taskStage === 1) {
       taskStage = 2;
+      if (window.GameAudio) GameAudio.playUiTick();
       showActionFeedback("Hair Brushed Smoothly!");
       objectiveText.textContent = "Objective: Put on your favorite perfume at the table (middle).";
     } else if (taskStage === 2) {
       taskStage = 3;
+      if (window.GameAudio) GameAudio.playChoiceChime();
       showActionFeedback("Perfume Applied!");
       objectiveText.textContent = "🔊 Objective: Strange noises are coming from outside... Head right to the Balcony to investigate!";
     } else if (taskStage === 3) {
       taskStage = 4;
       questEnded = true;
+      if (window.GameAudio) GameAudio.playSuccess();
       taskMarker.classList.add('hidden');
       interactionPrompt.classList.add('hidden');
       showActionFeedback("💕 Oh! It's him... down in the Royal Garden!");
       objectiveText.textContent = "✅ Princess spotted her favorite knight! Scene complete.";
 
-      // Quest ends immediately; ~2.5s to walk around before pure black fade to Scene 3
       setTimeout(() => {
         fadeToScene3('chapter2scene3.html');
       }, 2500);
@@ -147,6 +149,10 @@ function gameLoop() {
       princess.classList.add('facing-right');
     }
 
+    if (window.GameAudio) {
+      GameAudio.updateStrideFootsteps(pMoving);
+    }
+
     if (currentArea === 'room') {
       if (taskStage >= 3) {
         arrowRight.style.display = 'flex';
@@ -161,14 +167,16 @@ function gameLoop() {
 
       if (taskStage >= 3 && pX >= window.innerWidth - 130) {
         currentArea = 'balcony';
+        if (window.GameAudio) GameAudio.playPageTurn();
         gameBody.style.backgroundImage = "url('Balcony.png')";
         locationBanner.textContent = "📍 Royal Balcony";
-        pX = 20; // Enters from the left side of the balcony
+        pX = 20;
       }
     } else if (currentArea === 'balcony') {
       arrowRight.style.display = 'none';
       if (pX <= 10) {
         currentArea = 'room';
+        if (window.GameAudio) GameAudio.playPageTurn();
         gameBody.style.backgroundImage = "url('PrincessRoom.png')";
         locationBanner.textContent = "📍 Princess's Chambers";
         pX = window.innerWidth - 150;
@@ -185,7 +193,7 @@ function gameLoop() {
       if (taskStage === 0) {
         if (currentArea === 'room') {
           taskMarker.classList.remove('hidden');
-          taskMarker.style.left = '1050px'; // Bed on the right side of the screen
+          taskMarker.style.left = '1050px';
           taskMarker.style.top = '520px';
 
           if (Math.abs(pX - 1050) < 60) {
@@ -197,7 +205,7 @@ function gameLoop() {
       } else if (taskStage === 1) {
         if (currentArea === 'room') {
           taskMarker.classList.remove('hidden');
-          taskMarker.style.left = '150px'; // Vanity / Mirror on the left side
+          taskMarker.style.left = '150px';
           taskMarker.style.top = '520px';
 
           if (Math.abs(pX - 150) < 60) {
@@ -209,7 +217,7 @@ function gameLoop() {
       } else if (taskStage === 2) {
         if (currentArea === 'room') {
           taskMarker.classList.remove('hidden');
-          taskMarker.style.left = '580px'; // Table / Perfume in the middle
+          taskMarker.style.left = '580px';
           taskMarker.style.top = '520px';
 
           if (Math.abs(pX - 580) < 60) {
