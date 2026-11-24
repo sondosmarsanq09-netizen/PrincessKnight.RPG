@@ -2,12 +2,16 @@ function removeOverlay() {
   const overlay = document.getElementById('transition-overlay');
   if (overlay) {
     overlay.innerHTML = '';
+    overlay.style.pointerEvents = 'none';
+    overlay.style.opacity = '0';
     overlay.classList.remove('active');
   }
 }
 
 window.addEventListener('DOMContentLoaded', removeOverlay);
+window.addEventListener('load', removeOverlay);
 setTimeout(removeOverlay, 50);
+setTimeout(removeOverlay, 400);
 
 const gameBody = document.getElementById('game-body');
 const knight = document.getElementById('knight');
@@ -359,8 +363,10 @@ function fadeOutEndOfChapter(nextUrl = 'CH3.html') {
   const overlay = document.getElementById('transition-overlay');
   if (overlay) {
     overlay.innerHTML = '';
+    overlay.style.pointerEvents = 'auto';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
         overlay.classList.add('active');
       });
     });
@@ -397,26 +403,30 @@ function renderNode() {
     return;
   }
 
-  dialogueBox.classList.remove('hidden');
+  if (dialogueBox) dialogueBox.classList.remove('hidden');
 
   const speakerLower = (node.speaker || '').toLowerCase();
   const isPrincess = speakerLower.includes('princess');
-  dialogueSpeaker.className = 'dialogue-speaker';
-  if (isPrincess) {
-    dialogueSpeaker.classList.add('princess-speak');
-    dialogueSpeaker.textContent = 'Princess';
-  } else {
-    dialogueSpeaker.textContent = 'Knight';
+  if (dialogueSpeaker) {
+    dialogueSpeaker.className = 'dialogue-speaker';
+    if (isPrincess) {
+      dialogueSpeaker.classList.add('princess-speak');
+      dialogueSpeaker.textContent = 'Princess';
+    } else {
+      dialogueSpeaker.textContent = 'Knight';
+    }
   }
 
-  if (node.thought && isPrincess) {
-    thoughtBox.textContent = node.thought;
-    thoughtBox.classList.remove('hidden');
-  } else {
-    thoughtBox.classList.add('hidden');
+  if (thoughtBox) {
+    if (node.thought && isPrincess) {
+      thoughtBox.textContent = node.thought;
+      thoughtBox.classList.remove('hidden');
+    } else {
+      thoughtBox.classList.add('hidden');
+    }
   }
 
-  dialogueText.textContent = node.text;
+  if (dialogueText) dialogueText.textContent = node.text;
 
   if (node.knightEmote !== undefined) {
     triggerEmote('knight', node.knightEmote, node.knightEmoteDuration || 0);
@@ -425,7 +435,7 @@ function renderNode() {
     triggerEmote('princess', node.princessEmote, node.princessEmoteDuration || 0);
   }
 
-  if (princessActive && princess && !princessWalkingAway) {
+  if (princessActive && princess && knight && !princessWalkingAway) {
     if (pX < kX) {
       knight.classList.add('facing-left');
       knight.classList.remove('facing-right');
@@ -439,13 +449,13 @@ function renderNode() {
     }
   }
 
-  dialogueChoices.innerHTML = '';
+  if (dialogueChoices) dialogueChoices.innerHTML = '';
 
-  if (node.choices && node.choices.length > 0) {
+  if (node.choices && node.choices.length > 0 && dialogueChoices) {
     waitingForChoice = true;
     dialogueChoices.classList.remove('hidden');
     navControls.style.display = 'none';
-    dialogueHint.textContent = "Choose a response (click or press [1] / [2] / [3])";
+    if (dialogueHint) dialogueHint.textContent = "Choose a response (click or press [1] / [2] / [3])";
 
     node.choices.forEach((choice) => {
       const btn = document.createElement('button');
@@ -457,17 +467,17 @@ function renderNode() {
     });
   } else {
     waitingForChoice = false;
-    dialogueChoices.classList.add('hidden');
+    if (dialogueChoices) dialogueChoices.classList.add('hidden');
     navControls.style.display = 'flex';
     prevArrow.disabled = nodeIndex === 0;
-    dialogueHint.textContent = "Press [E] / [Space] or > to continue";
+    if (dialogueHint) dialogueHint.textContent = "Press [E] / [Space] or > to continue";
   }
 }
 
 function selectChoice(choice) {
   if (!waitingForChoice) return;
   waitingForChoice = false;
-  dialogueChoices.classList.add('hidden');
+  if (dialogueChoices) dialogueChoices.classList.add('hidden');
   playPorcelainChimeSound(false);
 
   if (choice.knightEmote !== undefined) {
@@ -504,10 +514,12 @@ prevArrow.addEventListener('click', rewindDialogue);
 nextArrow.addEventListener('click', advanceDialogue);
 
 function closeDialogue() {
-  dialogueBox.classList.add('hidden');
-  thoughtBox.classList.add('hidden');
-  dialogueChoices.innerHTML = '';
-  dialogueChoices.classList.add('hidden');
+  if (dialogueBox) dialogueBox.classList.add('hidden');
+  if (thoughtBox) thoughtBox.classList.add('hidden');
+  if (dialogueChoices) {
+    dialogueChoices.innerHTML = '';
+    dialogueChoices.classList.add('hidden');
+  }
   inDialogue = false;
   waitingForChoice = false;
 
@@ -645,8 +657,10 @@ function enterRoyalGardenFromLeft() {
 
   kX = 70;
   kY = 560;
-  knight.classList.add('facing-right');
-  knight.classList.remove('facing-left');
+  if (knight) {
+    knight.classList.add('facing-right');
+    knight.classList.remove('facing-left');
+  }
 
   princessActive = true;
   princessWalkingToRightSpot = true;
@@ -655,11 +669,15 @@ function enterRoyalGardenFromLeft() {
   princessTurnedBack = false;
   pX = window.innerWidth + 60;
   pY = 560;
-  princess.classList.remove('hidden');
-  princess.classList.add('facing-left');
-  princess.classList.remove('facing-right');
+  if (princess) {
+    princess.classList.remove('hidden');
+    princess.classList.add('facing-left');
+    princess.classList.remove('facing-right');
+  }
 
-  objectiveText.textContent = "Objective: Someone stepped into the right side of the garden...";
+  if (objectiveText) {
+    objectiveText.textContent = "Objective: Someone stepped into the right side of the garden...";
+  }
 }
 
 function triggerEncounterDialogue() {
@@ -674,9 +692,13 @@ function triggerEncounterDialogue() {
     sceneStage = 3;
     princessWalkingAway = true;
     princessTurnedBack = false;
-    princess.classList.remove('facing-left');
-    princess.classList.add('facing-right');
-    objectiveText.textContent = "Objective: Watch the Princess take her leave...";
+    if (princess) {
+      princess.classList.remove('facing-left');
+      princess.classList.add('facing-right');
+    }
+    if (objectiveText) {
+      objectiveText.textContent = "Objective: Watch the Princess take her leave...";
+    }
   });
 }
 
@@ -699,7 +721,7 @@ window.addEventListener('keydown', (e) => {
   keys[k] = true;
 
   if (inDialogue) {
-    if (waitingForChoice) {
+    if (waitingForChoice && dialogueChoices) {
       const btns = dialogueChoices.querySelectorAll('.choice-btn');
       if (k === '1' && btns[0]) btns[0].click();
       if (k === '2' && btns[1]) btns[1].click();
@@ -745,14 +767,18 @@ function gameLoop(nowMs = performance.now()) {
     if (keys['a'] || keys['arrowleft']) {
       kX -= speed;
       kMoving = true;
-      knight.classList.add('facing-left');
-      knight.classList.remove('facing-right');
+      if (knight) {
+        knight.classList.add('facing-left');
+        knight.classList.remove('facing-right');
+      }
     }
     if (keys['d'] || keys['arrowright']) {
       kX += speed;
       kMoving = true;
-      knight.classList.remove('facing-left');
-      knight.classList.add('facing-right');
+      if (knight) {
+        knight.classList.remove('facing-left');
+        knight.classList.add('facing-right');
+      }
     }
 
     updateStrideFootsteps(kMoving || pMoving, nowMs);
@@ -781,8 +807,10 @@ function gameLoop(nowMs = performance.now()) {
       if (pX > rightGardenStopX) {
         pX -= 4.5;
         pMoving = true;
-        princess.classList.add('facing-left');
-        princess.classList.remove('facing-right');
+        if (princess) {
+          princess.classList.add('facing-left');
+          princess.classList.remove('facing-right');
+        }
       } else {
         pX = rightGardenStopX;
         princessWalkingToRightSpot = false;
@@ -793,7 +821,7 @@ function gameLoop(nowMs = performance.now()) {
         triggerEmote('princess', '💕');
         triggerEmote('knight', '❗');
         showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 155);
-        objectiveText.textContent = "Objective: Talk to the Princess.";
+        if (objectiveText) objectiveText.textContent = "Objective: Talk to the Princess.";
       }
     }
 
@@ -801,7 +829,7 @@ function gameLoop(nowMs = performance.now()) {
     if (taskMarker) taskMarker.classList.add('hidden');
     if (interactionPrompt) interactionPrompt.classList.add('hidden');
 
-    if (currentArea === 'garden' && sceneStage === 1 && princessReadyToTalk) {
+    if (currentArea === 'garden' && sceneStage === 1 && princessReadyToTalk && princess) {
       if (kX <= pX) {
         princess.classList.add('facing-left');
         princess.classList.remove('facing-right');
@@ -825,7 +853,7 @@ function gameLoop(nowMs = performance.now()) {
       }
     }
 
-    if (currentArea === 'garden' && princessActive && princessWalkingAway) {
+    if (currentArea === 'garden' && princessActive && princessWalkingAway && princess) {
       if (!princessTurnedBack) {
         princess.classList.remove('facing-left');
         princess.classList.add('facing-right');
@@ -856,7 +884,9 @@ function gameLoop(nowMs = performance.now()) {
           princessWalkingAway = false;
           princess.classList.add('hidden');
           sceneComplete = true;
-          objectiveText.textContent = "✅ Chapter 2 Complete — A midnight plan is set...";
+          if (objectiveText) {
+            objectiveText.textContent = "✅ Chapter 2 Complete — A midnight plan is set...";
+          }
 
           playCaughtSting();
           startDialogue(knightAfterDeparturePanicNodes, () => {
