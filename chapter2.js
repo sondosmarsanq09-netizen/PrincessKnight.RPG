@@ -18,25 +18,24 @@ const actionPopup = document.getElementById('action-popup');
 let kX = 400;
 let kY = 450;
 const speed = 6;
-let currentArea = 'hall'; 
+let currentArea = 'hall';
 let inDialogue = false;
 
 // Task System State
 let taskStage = 0;
 let canInteract = false;
 
-// Helper to show sparkling feedback floating right above the knight's head
 function showActionFeedback(message) {
   actionPopup.textContent = "✨ " + message + " ✨";
-  
+
   actionPopup.style.left = (kX + 60) + 'px';
   actionPopup.style.top = (kY - 10) + 'px';
 
   actionPopup.classList.remove('hidden');
   actionPopup.style.animation = 'none';
-  actionPopup.offsetHeight; // trigger reflow
+  actionPopup.offsetHeight;
   actionPopup.style.animation = 'float-above-knight 1.6s ease-out forwards';
-  
+
   setTimeout(() => {
     actionPopup.classList.add('hidden');
   }, 1600);
@@ -45,31 +44,38 @@ function showActionFeedback(message) {
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+  if (window.GameAudio) GameAudio.unlock();
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd'].includes(k)) {
     e.preventDefault();
   }
   keys[k] = true;
 
-  // Press 'E' to interact when near the task marker
   if (k === 'e' && canInteract && !inDialogue) {
     if (taskStage === 0) {
       taskStage = 1;
+      if (window.GameAudio) {
+        GameAudio.playBlacksmithAnvil();
+        GameAudio.playItemPickup();
+      }
       showActionFeedback("Anvil Inspected! +1 Forged Steel");
       objectiveText.textContent = "Objective: Head right to the Royal Garden to harvest a Moonbloom flower.";
     } else if (taskStage === 1) {
       taskStage = 2;
+      if (window.GameAudio) GameAudio.playFlowerPick();
       showActionFeedback("Moonbloom Harvested Successfully!");
       objectiveText.textContent = "Objective: Return to Dragon's Hall and salute the grand statue.";
-   } else if (taskStage === 2) {
+    } else if (taskStage === 2) {
       taskStage = 3;
+      if (window.GameAudio) GameAudio.playSuccess();
       showActionFeedback("Grand Statue Saluted! Duties Complete!");
       objectiveText.textContent = "✅ All Chapter 2 palace duties completed successfully!";
 
       setTimeout(() => {
+        if (window.GameAudio) GameAudio.playPageTurn();
         const overlay = document.getElementById('transition-overlay');
         overlay.classList.add('active');
-        
+
         setTimeout(() => {
           window.location.href = 'chapter2_scene2.html';
         }, 1200);
@@ -94,7 +100,7 @@ function gameLoop() {
       kY += speed;
       kMoving = true;
     }
-    
+
     if (kY < 350) kY = 350;
     if (kY > window.innerHeight - 100) kY = window.innerHeight - 100;
 
@@ -111,10 +117,14 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
+    if (window.GameAudio) {
+      GameAudio.updateStrideFootsteps(kMoving);
+    }
+
     if (currentArea === 'hall') {
       arrowLeft.style.display = 'flex';
       arrowRight.style.display = 'flex';
-      
+
       if (kX < 180) {
         arrowLeft.classList.add('highlight');
       } else {
@@ -133,29 +143,30 @@ function gameLoop() {
     if (currentArea === 'hall') {
       if (kX <= 10) {
         currentArea = 'workspace';
+        if (window.GameAudio) GameAudio.playPageTurn();
         gameBody.style.backgroundImage = "url('WorkSpace.png')";
         locationBanner.textContent = "📍 Forge Chambers";
-        kX = window.innerWidth - 150; 
-      }
-      else if (kX >= window.innerWidth - 130) {
+        kX = window.innerWidth - 150;
+      } else if (kX >= window.innerWidth - 130) {
         currentArea = 'garden';
+        if (window.GameAudio) GameAudio.playPageTurn();
         gameBody.style.backgroundImage = "url('RoyalGarden.png')";
         locationBanner.textContent = "📍 Royal Garden";
-        kX = 20; 
+        kX = 20;
       }
-    } 
-    else if (currentArea === 'workspace') {
+    } else if (currentArea === 'workspace') {
       if (kX >= window.innerWidth - 130) {
         currentArea = 'hall';
+        if (window.GameAudio) GameAudio.playPageTurn();
         gameBody.style.backgroundImage = "url('PolishDragon.png')";
         locationBanner.textContent = "📍 Dragon's Hall";
         kX = 20;
       }
       if (kX < 10) kX = 10;
-    } 
-    else if (currentArea === 'garden') {
+    } else if (currentArea === 'garden') {
       if (kX <= 10) {
         currentArea = 'hall';
+        if (window.GameAudio) GameAudio.playPageTurn();
         gameBody.style.backgroundImage = "url('PolishDragon.png')";
         locationBanner.textContent = "📍 Dragon's Hall";
         kX = window.innerWidth - 150;
@@ -171,7 +182,7 @@ function gameLoop() {
     if (taskStage === 0) {
       if (currentArea === 'workspace') {
         taskMarker.classList.remove('hidden');
-        taskMarker.style.left = '500px'; 
+        taskMarker.style.left = '500px';
         taskMarker.style.top = '500px';
 
         if (Math.abs(kX - 500) < 50) {
@@ -180,8 +191,7 @@ function gameLoop() {
           interactionPrompt.classList.remove('hidden');
         }
       }
-    } 
-    else if (taskStage === 1) {
+    } else if (taskStage === 1) {
       if (currentArea === 'garden') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '350px';
@@ -193,8 +203,7 @@ function gameLoop() {
           interactionPrompt.classList.remove('hidden');
         }
       }
-    } 
-    else if (taskStage === 2) {
+    } else if (taskStage === 2) {
       if (currentArea === 'hall') {
         taskMarker.classList.remove('hidden');
         taskMarker.style.left = '600px';
