@@ -64,7 +64,7 @@ document.body.appendChild(princessEmote);
 // Coordinates & State
 let kX = 200;
 let kY = 400;
-let pX = 500; 
+let pX = 500;
 let pY = 400;
 
 const speed = 6;
@@ -76,6 +76,7 @@ let dialogueIndex = 0;
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+  if (window.GameAudio) GameAudio.unlock();
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', ' '].includes(k)) {
     e.preventDefault();
@@ -99,10 +100,10 @@ function gameLoop() {
       kY += speed;
       kMoving = true;
     }
-    
+
     // 🛑 BOUNDARY CLAMPS (Prevents walking off screen)
-    if (kY < 300) kY = 300; // Stops him from walking too high up (adjust if needed)
-    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120; // Stops him from walking off the bottom
+    if (kY < 300) kY = 300;
+    if (kY > window.innerHeight - 120) kY = window.innerHeight - 120;
 
     if (keys['a']) {
       kX -= speed;
@@ -117,19 +118,24 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
+    if (window.GameAudio) {
+      GameAudio.updateStrideFootsteps(kMoving);
+    }
+
     // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
+        if (window.GameAudio) GameAudio.playItemPickup();
         if (objectiveText) {
           objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
-// Trigger transition to Scene 2 when walking to the far left
+      // Trigger transition to Scene 2 when walking to the far left
       if (hasRing && kX <= 10) {
         currentScene = 2;
-        
-        // Hide the blacksmith when leaving Scene 1
+        if (window.GameAudio) GameAudio.playPageTurn();
+
         if (blacksmith) {
           blacksmith.classList.add('hidden');
         }
@@ -139,19 +145,17 @@ function gameLoop() {
         }
         sceneVignette.classList.add('fountain-atmosphere');
         locationBanner.textContent = "📍 Outer Gates — Moonlit Fountain";
-        
-      // Position Princess further left, completely off the fountain
-        pX = 220; 
+
+        pX = 220;
         pY = 400;
         if (princess) {
           princess.classList.remove('hidden');
-          princess.classList.remove('facing-left'); 
+          princess.classList.remove('facing-left');
           princess.classList.add('facing-right');
           princess.style.left = pX + 'px';
           princess.style.top = pY + 'px';
         }
-        // Place Knight safely on the right side walking left
-        kX = window.innerWidth - 150; 
+        kX = window.innerWidth - 150;
         kY = 400;
         knight.classList.add('facing-left');
         knight.classList.remove('facing-right');
@@ -160,13 +164,10 @@ function gameLoop() {
           objectiveText.textContent = "Objective: Approach the Princess by the fountain.";
         }
       }
-    } 
-  else if (currentScene === 2) {
-      // Check if knight walks up to her from the left side
+    } else if (currentScene === 2) {
       let distance = Math.abs(kX - pX);
       if (kX <= pX && distance <= 90) {
-        // Snap knight cleanly to her left side, facing right toward her face
-        kX = pX - 70; 
+        kX = pX - 70;
         kY = pY;
         knight.classList.remove('facing-left');
         knight.classList.add('facing-right');
@@ -175,7 +176,6 @@ function gameLoop() {
     }
   }
 
-  // Update DOM positions & Emote bubble coordinates
   if (knight) {
     knight.style.left = kX + 'px';
     knight.style.top = kY + 'px';
@@ -214,10 +214,11 @@ function triggerEmote(element, symbol) {
 function startEncounter() {
   inDialogue = true;
   knight.classList.remove('running');
+  if (window.GameAudio) GameAudio.playAlert();
   if (objectiveText) {
     objectiveText.textContent = "Event: Unexpected Encounter by the Fountain";
   }
-  
+
   dialogueIndex = 0;
   showDialogueStep();
 }
@@ -233,20 +234,18 @@ function showDialogueStep() {
     thoughtBox.textContent = "...Royalty shouldn't be outside the palace. It's dangerous—they could easily be waylaid or robbed.";
     thoughtBox.classList.remove('hidden');
     triggerEmote(knightEmote, "❓");
-  } 
-  else if (dialogueIndex === 1) {
+  } else if (dialogueIndex === 1) {
     speakerNameEl.className = 'princess-speak';
     speakerNameEl.textContent = "Princess";
     dialogueTextEl.textContent = "“Keep your voice down, you fool! I didn't slip past the guards just to have the town watch alerted by my own personal knight.”";
     triggerEmote(princessEmote, "💢");
-  } 
-  else if (dialogueIndex === 2) {
+  } else if (dialogueIndex === 2) {
     speakerNameEl.className = 'princess-speak';
     speakerNameEl.textContent = "Princess";
     dialogueTextEl.textContent = "“I need to get to the old gate road, and I cannot do it alone. Will you assist me, or must I find someone less... cowardly?”";
     triggerEmote(princessEmote, "✨");
     triggerEmote(knightEmote, "💧");
-    
+
     presentChoices();
     return;
   }
@@ -254,6 +253,7 @@ function showDialogueStep() {
 
 nextArrow.onclick = () => {
   if (dialogueIndex < 2) {
+    if (window.GameAudio) GameAudio.playUiTick();
     dialogueIndex++;
     showDialogueStep();
   }
@@ -261,6 +261,7 @@ nextArrow.onclick = () => {
 
 prevArrow.onclick = () => {
   if (dialogueIndex > 0) {
+    if (window.GameAudio) GameAudio.playUiTick();
     dialogueIndex--;
     choiceContainer.classList.add('hidden');
     showDialogueStep();
@@ -284,6 +285,7 @@ function presentChoices() {
     btn.className = 'choice-btn';
     btn.textContent = opt.text;
     btn.onclick = () => {
+      if (window.GameAudio) GameAudio.playChoiceChime();
       choiceContainer.classList.add('hidden');
       nextArrow.style.display = 'flex';
       prevArrow.style.display = 'flex';
@@ -316,7 +318,7 @@ function resolveChoice(type) {
     thoughtBox.classList.add('hidden');
     speakerNameEl.className = 'princess-speak';
     speakerNameEl.textContent = "Princess";
-    
+
     if (type === 1) {
       dialogueTextEl.textContent = "“Professional concern? Is that what you call shaking in your greaves? Get moving toward the Old Gate Road.”";
     } else if (type === 2) {
@@ -332,12 +334,10 @@ function resolveChoice(type) {
       if (objectiveText) {
         objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
       }
-      
+
       // 🎬 CHAPTER 1 ENDS HERE -> FADE TO BLACK AND GO TO CHAPTER 2
       transitionToNextChapter('chapter2.html');
-
     }, 4500);
-
   }, 4000);
 }
 
@@ -346,9 +346,10 @@ gameLoop();
 
 // === TRANSITION TO NEXT CHAPTER ===
 function transitionToNextChapter(nextChapterFilename) {
+  if (window.GameAudio) GameAudio.playPageTurn();
   const overlay = document.getElementById('transition-overlay');
   overlay.classList.add('active');
-  
+
   setTimeout(() => {
     window.location.href = nextChapterFilename;
   }, 1000);
