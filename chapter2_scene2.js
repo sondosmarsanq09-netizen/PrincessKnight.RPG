@@ -18,6 +18,25 @@ const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
+const vfxFlash = document.createElement('div');
+Object.assign(vfxFlash.style, {
+  position: 'fixed',
+  inset: '0',
+  pointerEvents: 'none',
+  opacity: '0',
+  transition: 'opacity 240ms ease-out',
+  zIndex: '45'
+});
+document.body.appendChild(vfxFlash);
+
+function triggerFlash(color = 'rgba(255, 200, 230, 0.22)') {
+  vfxFlash.style.background = color;
+  vfxFlash.style.opacity = '1';
+  setTimeout(() => {
+    vfxFlash.style.opacity = '0';
+  }, 90);
+}
+
 let pX = 400;
 let pY = 570;
 const speed = 6;
@@ -26,7 +45,6 @@ let inDialogue = false;
 let isFadingOut = false;
 let questEnded = false;
 
-// Task System State
 let taskStage = 0;
 let canInteract = false;
 let popupTimeout = null;
@@ -88,22 +106,26 @@ window.addEventListener('keydown', (e) => {
     if (taskStage === 0) {
       taskStage = 1;
       if (window.GameAudio) GameAudio.playUiTick();
+      triggerFlash('rgba(255, 225, 180, 0.18)');
       showActionFeedback("Bed Made Neatly!");
       objectiveText.textContent = "Objective: Brush your hair at the vanity dresser (left).";
     } else if (taskStage === 1) {
       taskStage = 2;
       if (window.GameAudio) GameAudio.playUiTick();
+      triggerFlash('rgba(255, 200, 225, 0.18)');
       showActionFeedback("Hair Brushed Smoothly!");
       objectiveText.textContent = "Objective: Put on your favorite perfume at the table (middle).";
     } else if (taskStage === 2) {
       taskStage = 3;
       if (window.GameAudio) GameAudio.playChoiceChime();
+      triggerFlash('rgba(255, 210, 240, 0.24)');
       showActionFeedback("Perfume Applied!");
       objectiveText.textContent = "🔊 Objective: Strange noises are coming from outside... Head right to the Balcony to investigate!";
     } else if (taskStage === 3) {
       taskStage = 4;
       questEnded = true;
       if (window.GameAudio) GameAudio.playSuccess();
+      triggerFlash('rgba(255, 175, 215, 0.26)');
       taskMarker.classList.add('hidden');
       interactionPrompt.classList.add('hidden');
       showActionFeedback("💕 Oh! It's him... down in the Royal Garden!");
@@ -168,6 +190,7 @@ function gameLoop() {
       if (taskStage >= 3 && pX >= window.innerWidth - 130) {
         currentArea = 'balcony';
         if (window.GameAudio) GameAudio.playPageTurn();
+        triggerFlash('rgba(190, 220, 255, 0.2)');
         gameBody.style.backgroundImage = "url('Balcony.png')";
         locationBanner.textContent = "📍 Royal Balcony";
         pX = 20;
@@ -184,7 +207,6 @@ function gameLoop() {
       if (pX > window.innerWidth - 130) pX = window.innerWidth - 130;
     }
 
-    // --- TASK LOGIC & MARKERS ---
     canInteract = false;
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
@@ -245,12 +267,7 @@ function gameLoop() {
   if (princess) {
     princess.style.left = pX + 'px';
     princess.style.top = pY + 'px';
-
-    if (pMoving) {
-      princess.classList.add('running');
-    } else {
-      princess.classList.remove('running');
-    }
+    princess.classList.toggle('running', pMoving);
   }
 
   requestAnimationFrame(gameLoop);
