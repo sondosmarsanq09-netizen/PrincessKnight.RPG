@@ -1,14 +1,66 @@
-// === FADE IN ON LOAD ===
 window.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('transition-overlay');
   setTimeout(() => {
     overlay.classList.remove('active');
   }, 100);
 });
+
 const knight = document.getElementById('knight');
 const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const objectiveText = document.getElementById('objective');
+
+// --- VISUAL EFFECTS LAYER ---
+const vfxFlash = document.createElement('div');
+Object.assign(vfxFlash.style, {
+  position: 'fixed',
+  inset: '0',
+  pointerEvents: 'none',
+  opacity: '0',
+  transition: 'opacity 240ms ease-out',
+  zIndex: '45'
+});
+document.body.appendChild(vfxFlash);
+
+const vfxPopup = document.createElement('div');
+vfxPopup.className = 'hidden';
+Object.assign(vfxPopup.style, {
+  position: 'fixed',
+  pointerEvents: 'none',
+  fontWeight: '700',
+  fontSize: '15px',
+  color: '#fff6d1',
+  textShadow: '0 2px 8px rgba(0, 0, 0, 0.85)',
+  transition: 'transform 650ms ease-out, opacity 650ms ease-out',
+  zIndex: '50'
+});
+document.body.appendChild(vfxPopup);
+
+function triggerFlash(color = 'rgba(255, 224, 130, 0.24)') {
+  vfxFlash.style.background = color;
+  vfxFlash.style.opacity = '1';
+  setTimeout(() => {
+    vfxFlash.style.opacity = '0';
+  }, 90);
+}
+
+function triggerPopup(text, x, y) {
+  vfxPopup.textContent = text;
+  vfxPopup.style.left = x + 'px';
+  vfxPopup.style.top = y + 'px';
+  vfxPopup.style.opacity = '1';
+  vfxPopup.style.transform = 'translateY(0px)';
+  vfxPopup.classList.remove('hidden');
+
+  requestAnimationFrame(() => {
+    vfxPopup.style.transform = 'translateY(-28px)';
+    vfxPopup.style.opacity = '0';
+  });
+
+  setTimeout(() => {
+    vfxPopup.classList.add('hidden');
+  }, 680);
+}
 
 // --- BUILD UI & EMOTE ELEMENTS ---
 let sceneVignette = document.createElement('div');
@@ -46,13 +98,11 @@ choiceContainer.id = 'choice-container';
 choiceContainer.classList.add('hidden');
 document.body.appendChild(choiceContainer);
 
-// Blacksmith Element
 let blacksmith = document.createElement('div');
 blacksmith.id = 'blacksmith';
 blacksmith.className = 'blacksmith';
 document.body.appendChild(blacksmith);
 
-// Emote Bubbles
 let knightEmote = document.createElement('div');
 knightEmote.className = 'emote-bubble hidden';
 document.body.appendChild(knightEmote);
@@ -61,7 +111,6 @@ let princessEmote = document.createElement('div');
 princessEmote.className = 'emote-bubble hidden';
 document.body.appendChild(princessEmote);
 
-// Coordinates & State
 let kX = 200;
 let kY = 400;
 let pX = 500;
@@ -101,7 +150,6 @@ function gameLoop() {
       kMoving = true;
     }
 
-    // 🛑 BOUNDARY CLAMPS (Prevents walking off screen)
     if (kY < 300) kY = 300;
     if (kY > window.innerHeight - 120) kY = window.innerHeight - 120;
 
@@ -122,19 +170,22 @@ function gameLoop() {
       GameAudio.updateStrideFootsteps(kMoving);
     }
 
-    // --- SC1 QUEST & SCENE PROGRESSION ---
     if (currentScene === 1) {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
         if (window.GameAudio) GameAudio.playItemPickup();
+        triggerFlash('rgba(255, 224, 130, 0.25)');
+        triggerPopup("✨ King's Ring Obtained! ✨", kX + 25, kY - 45);
         if (objectiveText) {
           objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
-      // Trigger transition to Scene 2 when walking to the far left
+
       if (hasRing && kX <= 10) {
         currentScene = 2;
         if (window.GameAudio) GameAudio.playPageTurn();
+        triggerFlash('rgba(130, 175, 255, 0.22)');
+        triggerPopup("🌙 Moonlit Fountain 🌙", window.innerWidth - 220, 320);
 
         if (blacksmith) {
           blacksmith.classList.add('hidden');
@@ -165,7 +216,7 @@ function gameLoop() {
         }
       }
     } else if (currentScene === 2) {
-      let distance = Math.abs(kX - pX);
+      const distance = Math.abs(kX - pX);
       if (kX <= pX && distance <= 90) {
         kX = pX - 70;
         kY = pY;
@@ -179,12 +230,7 @@ function gameLoop() {
   if (knight) {
     knight.style.left = kX + 'px';
     knight.style.top = kY + 'px';
-
-    if (kMoving) {
-      knight.classList.add('running');
-    } else {
-      knight.classList.remove('running');
-    }
+    knight.classList.toggle('running', kMoving);
   }
 
   if (princess) {
@@ -201,7 +247,6 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// --- ENCOUNTER & DIALOGUE SEQUENCING ---
 function triggerEmote(element, symbol) {
   element.textContent = symbol;
   element.classList.remove('hidden');
@@ -215,6 +260,8 @@ function startEncounter() {
   inDialogue = true;
   knight.classList.remove('running');
   if (window.GameAudio) GameAudio.playAlert();
+  triggerFlash('rgba(255, 180, 210, 0.22)');
+  triggerPopup("❗ Unexpected Encounter ❗", pX + 10, pY - 50);
   if (objectiveText) {
     objectiveText.textContent = "Event: Unexpected Encounter by the Fountain";
   }
@@ -247,7 +294,6 @@ function showDialogueStep() {
     triggerEmote(knightEmote, "💧");
 
     presentChoices();
-    return;
   }
 }
 
@@ -281,11 +327,12 @@ function presentChoices() {
   ];
 
   options.forEach(opt => {
-    let btn = document.createElement('button');
+    const btn = document.createElement('button');
     btn.className = 'choice-btn';
     btn.textContent = opt.text;
     btn.onclick = () => {
       if (window.GameAudio) GameAudio.playChoiceChime();
+      triggerFlash('rgba(255, 235, 175, 0.18)');
       choiceContainer.classList.add('hidden');
       nextArrow.style.display = 'flex';
       prevArrow.style.display = 'flex';
@@ -334,17 +381,13 @@ function resolveChoice(type) {
       if (objectiveText) {
         objectiveText.textContent = "Objective: Walk with the Princess toward the Old Gate Road on the left.";
       }
-
-      // 🎬 CHAPTER 1 ENDS HERE -> FADE TO BLACK AND GO TO CHAPTER 2
       transitionToNextChapter('chapter2.html');
     }, 4500);
   }, 4000);
 }
 
-// Start game loop
 gameLoop();
 
-// === TRANSITION TO NEXT CHAPTER ===
 function transitionToNextChapter(nextChapterFilename) {
   if (window.GameAudio) GameAudio.playPageTurn();
   const overlay = document.getElementById('transition-overlay');
