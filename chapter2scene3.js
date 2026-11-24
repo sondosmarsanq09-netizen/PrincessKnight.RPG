@@ -19,25 +19,6 @@ const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
-const vfxFlash = document.createElement('div');
-Object.assign(vfxFlash.style, {
-  position: 'fixed',
-  inset: '0',
-  pointerEvents: 'none',
-  opacity: '0',
-  transition: 'opacity 240ms ease-out',
-  zIndex: '45'
-});
-document.body.appendChild(vfxFlash);
-
-function triggerFlash(color = 'rgba(255, 195, 225, 0.22)') {
-  vfxFlash.style.background = color;
-  vfxFlash.style.opacity = '1';
-  setTimeout(() => {
-    vfxFlash.style.opacity = '0';
-  }, 90);
-}
-
 let kX = 400;
 let kY = 560;
 const speed = 6;
@@ -278,7 +259,6 @@ function selectChoice(choice) {
   waitingForChoice = false;
   dialogueChoices.classList.add('hidden');
   if (window.GameAudio) GameAudio.playChoiceChime();
-  triggerFlash('rgba(255, 220, 235, 0.2)');
 
   if (choice.knightEmote !== undefined) {
     triggerEmote('knight', choice.knightEmote, choice.knightEmoteDuration || 0);
@@ -451,7 +431,6 @@ function enterRoyalGardenFromLeft() {
   currentArea = 'garden';
   sceneStage = 1;
   if (window.GameAudio) GameAudio.playPageTurn();
-  triggerFlash('rgba(165, 245, 205, 0.2)');
 
   if (arrowRight) arrowRight.style.display = 'none';
   if (gameBody) gameBody.style.backgroundImage = "url('RoyalGarden.png')";
@@ -481,7 +460,6 @@ function triggerEncounterDialogue() {
   princessReadyToTalk = false;
   canInteract = false;
   if (window.GameAudio) GameAudio.playChoiceChime();
-  triggerFlash('rgba(255, 190, 225, 0.22)');
   if (taskMarker) taskMarker.classList.add('hidden');
   if (interactionPrompt) interactionPrompt.classList.add('hidden');
 
@@ -569,7 +547,7 @@ function gameLoop() {
     }
 
     if (window.GameAudio) {
-      GameAudio.updateStrideFootsteps(kMoving);
+      GameAudio.updateStrideFootsteps(kMoving || pMoving);
     }
 
     if (currentArea === 'hall') {
@@ -605,7 +583,6 @@ function gameLoop() {
         pMoving = false;
 
         if (window.GameAudio) GameAudio.playPrincessCall();
-        triggerFlash('rgba(255, 185, 220, 0.2)');
         triggerEmote('princess', '💕');
         triggerEmote('knight', '❗');
         showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 155);
@@ -655,7 +632,6 @@ function gameLoop() {
           princess.classList.remove('facing-right');
           princess.classList.add('facing-left');
           if (window.GameAudio) GameAudio.playPrincessCall();
-          triggerFlash('rgba(255, 165, 205, 0.24)');
           startDialogue(princessTurnBackKissNodes, () => {
             princess.classList.remove('facing-left');
             princess.classList.add('facing-right');
@@ -676,7 +652,6 @@ function gameLoop() {
           objectiveText.textContent = "✅ Chapter 2 Complete — A midnight plan is set...";
 
           if (window.GameAudio) GameAudio.playAlert();
-          triggerFlash('rgba(255, 210, 130, 0.2)');
           startDialogue(knightAfterDeparturePanicNodes, () => {
             fadeOutEndOfChapter('CH3.html');
           });
