@@ -9,8 +9,12 @@ const GameAudio = (() => {
   function ensureContext() {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return null;
-    if (!ctx) ctx = new AudioCtx();
-    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    if (!ctx) {
+      ctx = new AudioCtx();
+    }
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
     return ctx;
   }
 
@@ -36,14 +40,17 @@ const GameAudio = (() => {
   }
 
   function unlock() {
-    ensureContext();
+    const c = ensureContext();
+    if (c && c.state === 'suspended') {
+      c.resume().catch(() => {});
+    }
   }
 
   function setMuted(nextMuted) {
     muted = Boolean(nextMuted);
     syncAudioToggleUI();
     if (!muted) {
-      ensureContext();
+      unlock();
       playUiTick();
     }
   }
@@ -53,118 +60,109 @@ const GameAudio = (() => {
     return muted;
   }
 
-  function playTone(freq, duration = 0.16, type = 'triangle', gainPeak = 0.08, delay = 0, slideTo = null) {
+  function playTone(freq, duration = 0.14, type = 'triangle', peak = 0.16, delay = 0, slideTo = null) {
     if (muted) return;
     const c = ensureContext();
     if (!c) return;
 
-    const trigger = () => {
-      const now = c.currentTime + delay;
+    const run = () => {
+      const start = c.currentTime + delay;
       const osc = c.createOscillator();
       const gain = c.createGain();
 
       osc.type = type;
-      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.setValueAtTime(freq, start);
       if (slideTo) {
-        osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), start + duration);
       }
 
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.linearRampToValueAtTime(gainPeak, now + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(peak, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
       osc.connect(gain);
       gain.connect(c.destination);
 
-      osc.start(now);
-      osc.stop(now + duration + 0.02);
+      osc.start(start);
+      osc.stop(start + duration + 0.02);
     };
 
     if (c.state === 'suspended') {
-      c.resume().then(trigger).catch(() => {});
+      c.resume().then(run).catch(() => {});
     } else {
-      trigger();
+      run();
     }
   }
 
-  const RUN_CYCLE_MS = 900;
-  const STEP_PHASES = [0.22, 0.72];
-  let runCycleStartMs = null;
-  let lastStepCycle = -1;
-  let stepFlip = false;
+  // Crisp stepping sound while moving
+  const STEP_INTERVAL_MS = 230;
+  let lastStepAt = 0;
+  let alternateFoot = false;
+
+  function playStepSound() {
+    alternateFoot = !alternateFoot;
+    const base = alternateFoot ? 155 : 185;
+    playTone(base, 0.08, 'triangle', 0.16, 0, base * 0.48);
+    playTone(base * 2.1, 0.035, 'sine', 0.05, 0.005, base * 1.1);
+  }
 
   function updateStrideFootsteps(isMoving) {
     if (!isMoving) {
-      runCycleStartMs = null;
-      lastStepCycle = -1;
       return;
     }
-
-    const nowMs = performance.now();
-    if (runCycleStartMs === null) {
-      runCycleStartMs = nowMs;
-      lastStepCycle = -1;
-    }
-
     if (muted) return;
+    unlock();
 
-    const elapsed = nowMs - runCycleStartMs;
-    const cycleNum = Math.floor(elapsed / RUN_CYCLE_MS);
-    const phase = (elapsed % RUN_CYCLE_MS) / RUN_CYCLE_MS;
-
-    STEP_PHASES.forEach((targetPhase, idx) => {
-      const stepStamp = cycleNum * 10 + idx;
-      if (phase >= targetPhase && stepStamp > lastStepCycle) {
-        lastStepCycle = stepStamp;
-        stepFlip = !stepFlip;
-        const baseFreq = stepFlip ? 115 : 135;
-        playTone(baseFreq, 0.085, 'triangle', 0.065, 0, baseFreq * 0.55);
-      }
-    });
+    const now = performance.now();
+    if (now - lastStepAt >= STEP_INTERVAL_MS) {
+      lastStepAt = now;
+      playStepSound();
+    }
   }
 
+  // Interaction & UI noises
   function playUiTick() {
-    playTone(640, 0.065, 'sine', 0.06, 0, 780);
+    playTone(660, 0.07, 'sine', 0.14, 0, 860);
   }
 
   function playPageTurn() {
-    playTone(440, 0.09, 'triangle', 0.06, 0, 587.33);
+    playTone(392, 0.09, 'triangle', 0.13, 0, 587.33);
   }
 
   function playChoiceChime() {
-    playTone(587.33, 0.13, 'triangle', 0.08, 0);
-    playTone(880.0, 0.19, 'sine', 0.075, 0.07);
+    playTone(587.33, 0.12, 'triangle', 0.15, 0);
+    playTone(880, 0.2, 'sine', 0.16, 0.07);
   }
 
   function playItemPickup() {
-    playTone(659.25, 0.13, 'triangle', 0.085, 0);
-    playTone(987.77, 0.2, 'sine', 0.085, 0.07);
+    playTone(659.25, 0.12, 'triangle', 0.17, 0);
+    playTone(987.77, 0.22, 'sine', 0.17, 0.07);
   }
 
   function playBlacksmithAnvil() {
-    playTone(980, 0.14, 'triangle', 0.09, 0, 620);
-    playTone(1480, 0.22, 'sine', 0.065, 0.02, 880);
+    playTone(1046.5, 0.14, 'triangle', 0.18, 0, 620);
+    playTone(1567.98, 0.22, 'sine', 0.12, 0.02, 920);
   }
 
   function playFlowerPick() {
-    playTone(523.25, 0.14, 'triangle', 0.085, 0);
-    playTone(659.25, 0.14, 'triangle', 0.085, 0.07);
-    playTone(783.99, 0.22, 'sine', 0.09, 0.14);
+    playTone(523.25, 0.12, 'triangle', 0.15, 0);
+    playTone(659.25, 0.12, 'triangle', 0.15, 0.06);
+    playTone(783.99, 0.2, 'sine', 0.16, 0.12);
   }
 
   function playSuccess() {
-    [587.33, 739.99, 880.0].forEach((n, i) => {
-      playTone(n, 0.2, 'triangle', 0.08, i * 0.08);
+    [587.33, 739.99, 880, 1174.66].forEach((freq, i) => {
+      playTone(freq, 0.18, 'triangle', 0.15, i * 0.075);
     });
   }
 
   function playAlert() {
-    playTone(330, 0.12, 'sine', 0.075, 0, 261.63);
+    playTone(340, 0.13, 'sawtooth', 0.12, 0, 220);
   }
 
   function playPrincessCall() {
-    playTone(783.99, 0.14, 'sine', 0.08, 0);
-    playTone(987.77, 0.22, 'sine', 0.085, 0.11);
+    playTone(783.99, 0.13, 'sine', 0.15, 0);
+    playTone(1046.5, 0.22, 'sine', 0.16, 0.1);
   }
 
   window.addEventListener('DOMContentLoaded', bindAudioToggleButton);
@@ -176,6 +174,7 @@ const GameAudio = (() => {
     setMuted,
     toggleMute,
     syncAudioToggleUI,
+    playStepSound,
     updateStrideFootsteps,
     playUiTick,
     playPageTurn,
