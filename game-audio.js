@@ -1,5 +1,6 @@
-// game-audio.js — Per-Scene BGM + Reliable Web Audio SFX + Stride Footsteps
+// game-audio.js — Shared BGM (0.58 volume) + SFX + Stride Footsteps + Auto #audio-toggle
 const GameAudio = (() => {
+  const DEFAULT_TRACK_SRC = '2019-07-29_-_Elven_Forest_-_FesliyanStudios.com_-_David_Renda.mp3';
   const DEFAULT_BGM_VOLUME = 0.58;
   const STORAGE_MUTE_KEY = 'game_audio_muted';
   const STORAGE_TRACK_KEY = 'game_audio_track';
@@ -12,7 +13,7 @@ const GameAudio = (() => {
   let ctx = null;
   let muted = false;
   let userInteracted = false;
-  let currentTrackSrc = '';
+  let currentTrackSrc = DEFAULT_TRACK_SRC;
   let bgmAudio = null;
 
   try {
@@ -65,11 +66,10 @@ const GameAudio = (() => {
     } catch (e) {}
   }
 
-  function createOrUpdateBgm(trackSrc, volume = DEFAULT_BGM_VOLUME) {
-    if (!trackSrc) return;
-
-    const trackChanged = currentTrackSrc !== trackSrc;
-    currentTrackSrc = trackSrc;
+  function initBgm(trackSrc = DEFAULT_TRACK_SRC, volume = DEFAULT_BGM_VOLUME) {
+    const targetSrc = trackSrc || DEFAULT_TRACK_SRC;
+    const trackChanged = currentTrackSrc !== targetSrc || !bgmAudio;
+    currentTrackSrc = targetSrc;
 
     if (!bgmAudio) {
       bgmAudio = new Audio();
@@ -95,13 +95,13 @@ const GameAudio = (() => {
 
     if (trackChanged) {
       bgmAudio.pause();
-      bgmAudio.src = trackSrc;
+      bgmAudio.src = targetSrc;
       bgmAudio.load();
 
       try {
         const savedTrack = sessionStorage.getItem(STORAGE_TRACK_KEY);
         const savedTime = parseFloat(sessionStorage.getItem(STORAGE_TIME_KEY) || '0');
-        if (savedTrack === trackSrc && !Number.isNaN(savedTime) && savedTime > 0) {
+        if (savedTrack === targetSrc && !Number.isNaN(savedTime) && savedTime > 0) {
           bgmAudio.addEventListener(
             'loadedmetadata',
             () => {
@@ -120,10 +120,12 @@ const GameAudio = (() => {
     } else if (userInteracted && bgmAudio.paused) {
       bgmAudio.play().catch(() => {});
     }
+
+    return bgmAudio;
   }
 
   function setTrack(trackSrc, volume = DEFAULT_BGM_VOLUME) {
-    createOrUpdateBgm(trackSrc, volume);
+    initBgm(trackSrc, volume);
   }
 
   function stopBgm(savePosition = true) {
@@ -135,8 +137,9 @@ const GameAudio = (() => {
   function unlock() {
     userInteracted = true;
     ensureContext();
-    if (!muted && bgmAudio && currentTrackSrc && bgmAudio.paused) {
-      bgmAudio.play().catch(() => {});
+    const el = initBgm(currentTrackSrc, DEFAULT_BGM_VOLUME);
+    if (!muted && el.paused) {
+      el.play().catch(() => {});
     }
   }
 
@@ -153,9 +156,8 @@ const GameAudio = (() => {
     } else {
       userInteracted = true;
       ensureContext();
-      if (bgmAudio && currentTrackSrc) {
-        bgmAudio.play().catch(() => {});
-      }
+      const el = initBgm(currentTrackSrc, DEFAULT_BGM_VOLUME);
+      el.play().catch(() => {});
       playUiTick();
     }
   }
@@ -169,7 +171,7 @@ const GameAudio = (() => {
     return muted;
   }
 
-  function playTone(freq, duration = 0.2, type = 'sine', gainPeak = 0.08, delay = 0, slideTo = null) {
+  function playTone(freq, duration = 0.2, type = 'sine', gainPeak = 0.09, delay = 0, slideTo = null) {
     if (muted) return;
     const c = ensureContext();
     if (!c) return;
@@ -203,7 +205,6 @@ const GameAudio = (() => {
     }
   }
 
-  // Stride-synced footsteps matching a 900ms walk/run cycle
   const RUN_CYCLE_MS = 900;
   const STEP_PHASES = [0.22, 0.72];
   let runCycleStartMs = null;
@@ -234,74 +235,76 @@ const GameAudio = (() => {
       if (phase >= targetPhase && stepStamp > lastStepCycle) {
         lastStepCycle = stepStamp;
         stepFlip = !stepFlip;
-        const baseFreq = stepFlip ? 115 : 132;
-        playTone(baseFreq, 0.085, 'triangle', 0.055, 0, baseFreq * 0.55);
+        const baseFreq = stepFlip ? 125 : 145;
+        playTone(baseFreq, 0.09, 'triangle', 0.075, 0, baseFreq * 0.55);
       }
     });
   }
 
-  // --- Sound Effects ---
   function playUiTick() {
-    playTone(640, 0.065, 'sine', 0.06, 0, 780);
+    playTone(640, 0.065, 'sine', 0.07, 0, 780);
   }
 
   function playPageTurn() {
-    playTone(440, 0.09, 'triangle', 0.055, 0, 587.33);
+    playTone(440, 0.09, 'triangle', 0.065, 0, 587.33);
   }
 
   function playChoiceChime() {
-    playTone(587.33, 0.13, 'triangle', 0.075, 0);
-    playTone(880.00, 0.19, 'sine', 0.07, 0.07);
+    playTone(587.33, 0.13, 'triangle', 0.085, 0);
+    playTone(880.00, 0.19, 'sine', 0.08, 0.07);
   }
 
   function playItemPickup() {
-    playTone(659.25, 0.13, 'triangle', 0.08, 0);
-    playTone(987.77, 0.2, 'sine', 0.08, 0.07);
+    playTone(659.25, 0.13, 'triangle', 0.09, 0);
+    playTone(987.77, 0.2, 'sine', 0.09, 0.07);
   }
 
   function playBlacksmithAnvil() {
-    playTone(980, 0.14, 'triangle', 0.085, 0, 620);
-    playTone(1480, 0.22, 'sine', 0.06, 0.02, 880);
+    playTone(980, 0.14, 'triangle', 0.095, 0, 620);
+    playTone(1480, 0.22, 'sine', 0.07, 0.02, 880);
   }
 
   function playFlowerPick() {
-    playTone(523.25, 0.14, 'triangle', 0.08, 0);
-    playTone(659.25, 0.14, 'triangle', 0.08, 0.07);
-    playTone(783.99, 0.22, 'sine', 0.085, 0.14);
+    playTone(523.25, 0.14, 'triangle', 0.09, 0);
+    playTone(659.25, 0.14, 'triangle', 0.09, 0.07);
+    playTone(783.99, 0.22, 'sine', 0.095, 0.14);
   }
 
   function playBouquetComplete() {
     [523.25, 659.25, 783.99, 1046.50].forEach((n, i) => {
-      playTone(n, 0.28, 'triangle', 0.085, i * 0.09);
+      playTone(n, 0.28, 'triangle', 0.095, i * 0.09);
     });
   }
 
   function playSuccess() {
     [587.33, 739.99, 880.00].forEach((n, i) => {
-      playTone(n, 0.2, 'triangle', 0.075, i * 0.08);
+      playTone(n, 0.2, 'triangle', 0.085, i * 0.08);
     });
   }
 
   function playAlert() {
-    playTone(330, 0.12, 'sine', 0.07, 0, 261.63);
+    playTone(330, 0.12, 'sine', 0.08, 0, 261.63);
   }
 
   function playBlockedThud() {
-    playTone(190, 0.15, 'sawtooth', 0.055, 0, 125);
+    playTone(190, 0.15, 'sawtooth', 0.065, 0, 125);
   }
 
   function playPrincessCall() {
-    playTone(783.99, 0.14, 'sine', 0.075, 0);
-    playTone(987.77, 0.22, 'sine', 0.08, 0.11);
+    playTone(783.99, 0.14, 'sine', 0.085, 0);
+    playTone(987.77, 0.22, 'sine', 0.09, 0.11);
   }
 
   function playEndingCadence() {
     [523.25, 659.25, 783.99, 987.77, 1318.51].forEach((n, i) => {
-      playTone(n, 0.75, 'sine', 0.07, i * 0.14);
+      playTone(n, 0.75, 'sine', 0.08, i * 0.14);
     });
   }
 
-  window.addEventListener('DOMContentLoaded', bindAudioToggleButton);
+  window.addEventListener('DOMContentLoaded', () => {
+    bindAudioToggleButton();
+    initBgm(DEFAULT_TRACK_SRC, DEFAULT_BGM_VOLUME);
+  });
   window.addEventListener('pointerdown', unlock, { passive: true });
   window.addEventListener('keydown', unlock, { passive: true });
   window.addEventListener('pagehide', () => stopBgm(true));
