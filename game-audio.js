@@ -1,8 +1,8 @@
-// game-audio.js — Single guarded BGM instance + clean loop + stop/pause on unload
+// game-audio.js — Per-Scene BGM + Reliable Web Audio SFX + Stride Footsteps
 const GameAudio = (() => {
-  const TRACK_SRC = '2019-07-29_-_Elven_Forest_-_FesliyanStudios.com_-_David_Renda.mp3';
-  const BGM_VOLUME = 0.58;
+  const DEFAULT_BGM_VOLUME = 0.58;
   const STORAGE_MUTE_KEY = 'game_audio_muted';
+  const STORAGE_TRACK_KEY = 'game_audio_track';
   const STORAGE_TIME_KEY = 'game_audio_time';
 
   if (window.__OUR_RPG_GAME_AUDIO__) {
@@ -11,91 +11,133 @@ const GameAudio = (() => {
 
   let ctx = null;
   let muted = false;
-  let bgmStarted = false;
+  let userInteracted = false;
+  let currentTrackSrc = '';
+  let bgmAudio = null;
 
   try {
     muted = sessionStorage.getItem(STORAGE_MUTE_KEY) === '1';
   } catch (e) {}
 
-  let bgmAudio = window.__OUR_RPG_BGM_AUDIO__ || null;
-
-  function initBgm() {
-    if (bgmAudio) return bgmAudio;
-
-    const el = new Audio(TRACK_SRC);
-    el.loop = true;
-    el.volume = BGM_VOLUME;
-    el.preload = 'auto';
-
-    el.addEventListener('ended', () => {
-      el.currentTime = 0;
-      if (!muted && bgmStarted) {
-        el.play().catch(() => {});
-      }
-    });
-
-    try {
-      const savedTime = parseFloat(sessionStorage.getItem(STORAGE_TIME_KEY) || '0');
-      if (!Number.isNaN(savedTime) && savedTime > 0) {
-        el.addEventListener(
-          'loadedmetadata',
-          () => {
-            if (el.duration && savedTime < el.duration) {
-              el.currentTime = savedTime;
-            }
-          },
-          { once: true }
-        );
-      }
-    } catch (e) {}
-
-    window.__OUR_RPG_BGM_AUDIO__ = el;
-    bgmAudio = el;
-    return bgmAudio;
-  }
-
   function ensureContext() {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+
     if (!ctx) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) {
-        ctx = new AudioCtx();
-      }
+      ctx = new AudioCtx();
     }
-    if (ctx && ctx.state === 'suspended') {
+    if (ctx.state === 'suspended') {
       ctx.resume().catch(() => {});
     }
     return ctx;
   }
 
-  function syncBgmState() {
-    const el = initBgm();
-    el.volume = BGM_VOLUME;
-    el.loop = true;
+  function syncAudioToggleUI() {
+    const btn = document.getElementById('audio-toggle');
+    if (!btn) return;
+    btn.textContent = muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
+    btn.classList.toggle('muted', muted);
+  }
 
-    if (muted) {
-      el.pause();
+  function bindAudioToggleButton() {
+    const btn = document.getElementById('audio-toggle');
+    if (!btn || btn.dataset.audioBound === '1') {
+      syncAudioToggleUI();
       return;
     }
+    btn.dataset.audioBound = '1';
+    syncAudioToggleUI();
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMute();
+    });
+  }
 
-    if (bgmStarted && el.paused) {
-      el.play().catch(() => {});
+  function saveBgmState() {
+    if (!bgmAudio) return;
+    try {
+      if (currentTrackSrc) {
+        sessionStorage.setItem(STORAGE_TRACK_KEY, currentTrackSrc);
+      }
+      if (!Number.isNaN(bgmAudio.currentTime)) {
+        sessionStorage.setItem(STORAGE_TIME_KEY, String(bgmAudio.currentTime));
+      }
+    } catch (e) {}
+  }
+
+  function createOrUpdateBgm(trackSrc, volume = DEFAULT_BGM_VOLUME) {
+    if (!trackSrc) return;
+
+    const trackChanged = currentTrackSrc !== trackSrc;
+    currentTrackSrc = trackSrc;
+
+    if (!bgmAudio) {
+      bgmAudio = new Audio();
+      bgmAudio.loop = true;
+      bgmAudio.preload = 'auto';
+
+      bgmAudio.addEventListener('ended', () => {
+        bgmAudio.currentTime = 0;
+        if (!muted && userInteracted) {
+          bgmAudio.play().catch(() => {});
+        }
+      });
+
+      setInterval(() => {
+        if (bgmAudio && !bgmAudio.paused) {
+          saveBgmState();
+        }
+      }, 600);
+    }
+
+    bgmAudio.volume = Math.max(0, Math.min(1, volume));
+    bgmAudio.loop = true;
+
+    if (trackChanged) {
+      bgmAudio.pause();
+      bgmAudio.src = trackSrc;
+      bgmAudio.load();
+
+      try {
+        const savedTrack = sessionStorage.getItem(STORAGE_TRACK_KEY);
+        const savedTime = parseFloat(sessionStorage.getItem(STORAGE_TIME_KEY) || '0');
+        if (savedTrack === trackSrc && !Number.isNaN(savedTime) && savedTime > 0) {
+          bgmAudio.addEventListener(
+            'loadedmetadata',
+            () => {
+              if (bgmAudio.duration && savedTime < bgmAudio.duration) {
+                bgmAudio.currentTime = savedTime;
+              }
+            },
+            { once: true }
+          );
+        }
+      } catch (e) {}
+    }
+
+    if (muted) {
+      bgmAudio.pause();
+    } else if (userInteracted && bgmAudio.paused) {
+      bgmAudio.play().catch(() => {});
     }
   }
 
-  function unlock() {
-    bgmStarted = true;
-    ensureContext();
-    syncBgmState();
+  function setTrack(trackSrc, volume = DEFAULT_BGM_VOLUME) {
+    createOrUpdateBgm(trackSrc, volume);
   }
 
   function stopBgm(savePosition = true) {
     if (!bgmAudio) return;
-    if (savePosition && !Number.isNaN(bgmAudio.currentTime)) {
-      try {
-        sessionStorage.setItem(STORAGE_TIME_KEY, String(bgmAudio.currentTime));
-      } catch (e) {}
-    }
+    if (savePosition) saveBgmState();
     bgmAudio.pause();
+  }
+
+  function unlock() {
+    userInteracted = true;
+    ensureContext();
+    if (!muted && bgmAudio && currentTrackSrc && bgmAudio.paused) {
+      bgmAudio.play().catch(() => {});
+    }
   }
 
   function setMuted(nextMuted) {
@@ -104,12 +146,16 @@ const GameAudio = (() => {
       sessionStorage.setItem(STORAGE_MUTE_KEY, muted ? '1' : '0');
     } catch (e) {}
 
+    syncAudioToggleUI();
+
     if (muted) {
       stopBgm(true);
     } else {
-      bgmStarted = true;
+      userInteracted = true;
       ensureContext();
-      syncBgmState();
+      if (bgmAudio && currentTrackSrc) {
+        bgmAudio.play().catch(() => {});
+      }
       playUiTick();
     }
   }
@@ -123,30 +169,38 @@ const GameAudio = (() => {
     return muted;
   }
 
-  function playTone(freq, duration = 0.2, type = 'sine', gainPeak = 0.06, delay = 0, slideTo = null) {
+  function playTone(freq, duration = 0.2, type = 'sine', gainPeak = 0.08, delay = 0, slideTo = null) {
     if (muted) return;
     const c = ensureContext();
     if (!c) return;
 
-    const now = c.currentTime + delay;
-    const osc = c.createOscillator();
-    const gain = c.createGain();
+    const trigger = () => {
+      const now = c.currentTime + delay;
+      const osc = c.createOscillator();
+      const gain = c.createGain();
 
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, now);
-    if (slideTo) {
-      osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      if (slideTo) {
+        osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+      }
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(gainPeak, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(c.destination);
+
+      osc.start(now);
+      osc.stop(now + duration + 0.02);
+    };
+
+    if (c.state === 'suspended') {
+      c.resume().then(trigger).catch(() => {});
+    } else {
+      trigger();
     }
-
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(gainPeak, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-    osc.connect(gain);
-    gain.connect(c.destination);
-
-    osc.start(now);
-    osc.stop(now + duration + 0.02);
   }
 
   // Stride-synced footsteps matching a 900ms walk/run cycle
@@ -180,79 +234,93 @@ const GameAudio = (() => {
       if (phase >= targetPhase && stepStamp > lastStepCycle) {
         lastStepCycle = stepStamp;
         stepFlip = !stepFlip;
-        const baseFreq = stepFlip ? 96 : 108;
-        playTone(baseFreq, 0.08, 'sine', 0.032, 0, baseFreq * 0.58);
+        const baseFreq = stepFlip ? 115 : 132;
+        playTone(baseFreq, 0.085, 'triangle', 0.055, 0, baseFreq * 0.55);
       }
     });
   }
 
+  // --- Sound Effects ---
   function playUiTick() {
-    playTone(620, 0.06, 'sine', 0.04, 0, 760);
+    playTone(640, 0.065, 'sine', 0.06, 0, 780);
   }
 
   function playPageTurn() {
-    playTone(440, 0.08, 'triangle', 0.035, 0, 587.33);
+    playTone(440, 0.09, 'triangle', 0.055, 0, 587.33);
   }
 
   function playChoiceChime() {
-    playTone(587.33, 0.12, 'triangle', 0.055, 0);
-    playTone(880.00, 0.18, 'sine', 0.05, 0.07);
+    playTone(587.33, 0.13, 'triangle', 0.075, 0);
+    playTone(880.00, 0.19, 'sine', 0.07, 0.07);
+  }
+
+  function playItemPickup() {
+    playTone(659.25, 0.13, 'triangle', 0.08, 0);
+    playTone(987.77, 0.2, 'sine', 0.08, 0.07);
+  }
+
+  function playBlacksmithAnvil() {
+    playTone(980, 0.14, 'triangle', 0.085, 0, 620);
+    playTone(1480, 0.22, 'sine', 0.06, 0.02, 880);
   }
 
   function playFlowerPick() {
-    playTone(523.25, 0.14, 'triangle', 0.07, 0);
-    playTone(659.25, 0.14, 'triangle', 0.07, 0.07);
-    playTone(783.99, 0.22, 'sine', 0.075, 0.14);
+    playTone(523.25, 0.14, 'triangle', 0.08, 0);
+    playTone(659.25, 0.14, 'triangle', 0.08, 0.07);
+    playTone(783.99, 0.22, 'sine', 0.085, 0.14);
   }
 
   function playBouquetComplete() {
     [523.25, 659.25, 783.99, 1046.50].forEach((n, i) => {
-      playTone(n, 0.28, 'triangle', 0.075, i * 0.09);
+      playTone(n, 0.28, 'triangle', 0.085, i * 0.09);
     });
   }
 
   function playSuccess() {
     [587.33, 739.99, 880.00].forEach((n, i) => {
-      playTone(n, 0.2, 'triangle', 0.06, i * 0.08);
+      playTone(n, 0.2, 'triangle', 0.075, i * 0.08);
     });
   }
 
   function playAlert() {
-    playTone(330, 0.11, 'sine', 0.05, 0, 261.63);
+    playTone(330, 0.12, 'sine', 0.07, 0, 261.63);
   }
 
   function playBlockedThud() {
-    playTone(190, 0.14, 'sawtooth', 0.04, 0, 125);
+    playTone(190, 0.15, 'sawtooth', 0.055, 0, 125);
   }
 
   function playPrincessCall() {
-    playTone(783.99, 0.14, 'sine', 0.06, 0);
-    playTone(987.77, 0.22, 'sine', 0.065, 0.11);
+    playTone(783.99, 0.14, 'sine', 0.075, 0);
+    playTone(987.77, 0.22, 'sine', 0.08, 0.11);
   }
 
   function playEndingCadence() {
     [523.25, 659.25, 783.99, 987.77, 1318.51].forEach((n, i) => {
-      playTone(n, 0.75, 'sine', 0.055, i * 0.14);
+      playTone(n, 0.75, 'sine', 0.07, i * 0.14);
     });
   }
 
+  window.addEventListener('DOMContentLoaded', bindAudioToggleButton);
   window.addEventListener('pointerdown', unlock, { passive: true });
   window.addEventListener('keydown', unlock, { passive: true });
   window.addEventListener('pagehide', () => stopBgm(true));
   window.addEventListener('beforeunload', () => stopBgm(true));
 
-  initBgm();
-
   const api = {
     unlock,
+    setTrack,
     stopBgm,
     setMuted,
     toggleMute,
     isMuted,
+    syncAudioToggleUI,
     updateStrideFootsteps,
     playUiTick,
     playPageTurn,
     playChoiceChime,
+    playItemPickup,
+    playBlacksmithAnvil,
     playFlowerPick,
     playBouquetComplete,
     playSuccess,
