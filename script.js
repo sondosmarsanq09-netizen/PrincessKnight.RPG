@@ -9,6 +9,7 @@ const knight = document.getElementById('knight');
 const princess = document.getElementById('princess');
 const gameBody = document.getElementById('game-body');
 const objectiveText = document.getElementById('objective');
+const audioToggleBtn = document.getElementById('audio-toggle');
 
 let sceneVignette = document.createElement('div');
 sceneVignette.id = 'scene-vignette';
@@ -58,6 +59,190 @@ let princessEmote = document.createElement('div');
 princessEmote.className = 'emote-bubble hidden';
 document.body.appendChild(princessEmote);
 
+// --- WEB AUDIO SOUND EFFECTS (CH3 PATTERN) ---
+let audioCtx = null;
+let isMuted = false;
+let lastStepSoundAt = 0;
+let stepParity = false;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function unlockAudio() {
+  const ctx = getAudioCtx();
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+}
+
+function syncAudioToggleLabel() {
+  if (!audioToggleBtn) return;
+  audioToggleBtn.textContent = isMuted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
+}
+
+function playStepSound() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    stepParity = !stepParity;
+
+    // Armored step thud
+    const thudOsc = ctx.createOscillator();
+    const thudGain = ctx.createGain();
+    thudOsc.type = 'triangle';
+    const baseFreq = currentScene === 2 ? (stepParity ? 115 : 128) : (stepParity ? 132 : 148);
+    thudOsc.frequency.setValueAtTime(baseFreq, now);
+    thudOsc.frequency.exponentialRampToValueAtTime(42, now + 0.11);
+    thudGain.gain.setValueAtTime(0.14, now);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    thudOsc.connect(thudGain);
+    thudGain.connect(ctx.destination);
+    thudOsc.start(now);
+    thudOsc.stop(now + 0.125);
+
+    // Subtle boot/stone transient
+    const tapOsc = ctx.createOscillator();
+    const tapGain = ctx.createGain();
+    tapOsc.type = 'sine';
+    tapOsc.frequency.setValueAtTime(stepParity ? 520 : 590, now + 0.015);
+    tapOsc.frequency.exponentialRampToValueAtTime(240, now + 0.075);
+    tapGain.gain.setValueAtTime(0.045, now + 0.015);
+    tapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    tapOsc.connect(tapGain);
+    tapGain.connect(ctx.destination);
+    tapOsc.start(now + 0.015);
+    tapOsc.stop(now + 0.085);
+  } catch (e) {}
+}
+
+function playUiClickSound() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(640, now);
+    osc.frequency.exponentialRampToValueAtTime(860, now + 0.07);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } catch (e) {}
+}
+
+function playItemPickupSound() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [587.33, 880, 1174.66].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+      gain.gain.setValueAtTime(0.09, now + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.26);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.08);
+      osc.stop(now + idx * 0.08 + 0.27);
+    });
+  } catch (e) {}
+}
+
+function playChoiceSound() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [523.25, 783.99].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+      gain.gain.setValueAtTime(0.09, now + idx * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.07);
+      osc.stop(now + idx * 0.07 + 0.23);
+    });
+  } catch (e) {}
+}
+
+function playAlertSound() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [330, 246.94].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+      gain.gain.setValueAtTime(0.08, now + idx * 0.11);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.24);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + idx * 0.11);
+      osc.stop(now + idx * 0.11 + 0.25);
+    });
+  } catch (e) {}
+}
+
+function playSceneTransitionSound() {
+  if (isMuted) return;
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(440, now + 0.22);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } catch (e) {}
+}
+
+if (audioToggleBtn) {
+  syncAudioToggleLabel();
+  audioToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    unlockAudio();
+    isMuted = !isMuted;
+    syncAudioToggleLabel();
+    if (!isMuted) {
+      playUiClickSound();
+    }
+  });
+}
+
 let kX = 200;
 let kY = 400;
 let pX = 500;
@@ -72,13 +257,15 @@ let dialogueIndex = 0;
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
-  if (window.GameAudio) GameAudio.unlock();
+  unlockAudio();
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', ' '].includes(k)) {
     e.preventDefault();
   }
   keys[k] = true;
 });
+
+window.addEventListener('pointerdown', unlockAudio, { passive: true });
 
 window.addEventListener('keyup', (e) => {
   keys[e.key.toLowerCase()] = false;
@@ -113,21 +300,25 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
-    if (window.GameAudio) {
-      GameAudio.updateStrideFootsteps(kMoving);
+    if (kMoving) {
+      const now = performance.now();
+      if (now - lastStepSoundAt > 240) {
+        lastStepSoundAt = now;
+        playStepSound();
+      }
     }
 
     if (currentScene === 1) {
       if (!hasRing && kX >= window.innerWidth - 200) {
         hasRing = true;
-        if (window.GameAudio) GameAudio.playItemPickup();
+        playItemPickupSound();
         if (objectiveText) {
           objectiveText.textContent = "Objective: Got the item from the smith! Walk left across town to the fountain gates.";
         }
       }
       if (hasRing && kX <= 10) {
         currentScene = 2;
-        if (window.GameAudio) GameAudio.playPageTurn();
+        playSceneTransitionSound();
 
         if (blacksmith) {
           blacksmith.classList.add('hidden');
@@ -206,7 +397,7 @@ function triggerEmote(element, symbol) {
 function startEncounter() {
   inDialogue = true;
   knight.classList.remove('running');
-  if (window.GameAudio) GameAudio.playAlert();
+  playAlertSound();
   if (objectiveText) {
     objectiveText.textContent = "Event: Unexpected Encounter by the Fountain";
   }
@@ -245,7 +436,7 @@ function showDialogueStep() {
 
 nextArrow.onclick = () => {
   if (dialogueIndex < 2) {
-    if (window.GameAudio) GameAudio.playUiTick();
+    playUiClickSound();
     dialogueIndex++;
     showDialogueStep();
   }
@@ -253,7 +444,7 @@ nextArrow.onclick = () => {
 
 prevArrow.onclick = () => {
   if (dialogueIndex > 0) {
-    if (window.GameAudio) GameAudio.playUiTick();
+    playUiClickSound();
     dialogueIndex--;
     choiceContainer.classList.add('hidden');
     showDialogueStep();
@@ -277,7 +468,7 @@ function presentChoices() {
     btn.className = 'choice-btn';
     btn.textContent = opt.text;
     btn.onclick = () => {
-      if (window.GameAudio) GameAudio.playChoiceChime();
+      playChoiceSound();
       choiceContainer.classList.add('hidden');
       nextArrow.style.display = 'flex';
       prevArrow.style.display = 'flex';
@@ -335,7 +526,7 @@ function resolveChoice(type) {
 gameLoop();
 
 function transitionToNextChapter(nextChapterFilename) {
-  if (window.GameAudio) GameAudio.playPageTurn();
+  playSceneTransitionSound();
   const overlay = document.getElementById('transition-overlay');
   overlay.classList.add('active');
 
