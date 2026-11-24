@@ -19,13 +19,11 @@ const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
-// Knight spawns in Dragon's Hall on the ground line
 let kX = 400;
 let kY = 560;
 const speed = 6;
-let currentArea = 'hall'; // 'hall' -> 'garden'
+let currentArea = 'hall';
 
-// Princess autonomous state in the garden (feet aligned on the ground)
 let pX = window.innerWidth + 120;
 let pY = 560;
 let princessActive = false;
@@ -38,11 +36,6 @@ let inDialogue = false;
 let sceneComplete = false;
 let isFadingOut = false;
 
-// Scene Stages:
-// 0 = In Dragon's Hall: player walks Knight right to the Royal Garden
-// 1 = In Royal Garden: Princess walks slightly onto the right side, calls Knight over -> "Talk to Princess" task
-// 2 = Multi-choice flirting, date ask, (Knight's Internal) & sneak-out plan
-// 3 = Princess walks away, turns back with a kiss (💋 lingering +0.3s), exits -> Knight panics & Chapter ends
 let sceneStage = 0;
 let canInteract = false;
 let popupTimeout = null;
@@ -67,7 +60,6 @@ const dialogueText = document.getElementById('dialogue-text');
 const dialogueChoices = document.getElementById('dialogue-choices');
 const dialogueHint = document.getElementById('dialogue-hint');
 
-// Lower-right < and > buttons inside dialogue-box
 const navControls = document.createElement('div');
 navControls.className = 'nav-controls';
 const prevArrow = document.createElement('button');
@@ -145,11 +137,11 @@ function showActionFeedback(message, targetX = kX + 60, targetY = kY - 185) {
   }, 2200);
 }
 
-// Pure black fade-out to end Chapter 2 and transition into Chapter 3
 function fadeOutEndOfChapter(nextUrl = 'CH3.html') {
   if (isFadingOut) return;
   isFadingOut = true;
 
+  if (window.GameAudio) GameAudio.playPageTurn();
   if (interactionPrompt) interactionPrompt.classList.add('hidden');
   if (taskMarker) taskMarker.classList.add('hidden');
   if (thoughtBox) thoughtBox.classList.add('hidden');
@@ -209,7 +201,6 @@ function renderNode() {
     dialogueSpeaker.textContent = 'Knight';
   }
 
-  // Only show (Knight's Internal) when the Knight isn't actively speaking a line
   if (node.thought && isPrincess) {
     thoughtBox.textContent = node.thought;
     thoughtBox.classList.remove('hidden');
@@ -269,6 +260,7 @@ function selectChoice(choice) {
   if (!waitingForChoice) return;
   waitingForChoice = false;
   dialogueChoices.classList.add('hidden');
+  if (window.GameAudio) GameAudio.playChoiceChime();
 
   if (choice.knightEmote !== undefined) {
     triggerEmote('knight', choice.knightEmote, choice.knightEmoteDuration || 0);
@@ -286,6 +278,7 @@ function selectChoice(choice) {
 
 function advanceDialogue() {
   if (!inDialogue || waitingForChoice) return;
+  if (window.GameAudio) GameAudio.playUiTick();
   nodeIndex++;
   if (nodeIndex >= currentNodes.length) {
     closeDialogue();
@@ -296,6 +289,7 @@ function advanceDialogue() {
 
 function rewindDialogue() {
   if (!inDialogue || waitingForChoice || nodeIndex <= 0) return;
+  if (window.GameAudio) GameAudio.playUiTick();
   nodeIndex--;
   renderNode();
 }
@@ -439,18 +433,17 @@ const knightAfterDeparturePanicNodes = [
 function enterRoyalGardenFromLeft() {
   currentArea = 'garden';
   sceneStage = 1;
+  if (window.GameAudio) GameAudio.playPageTurn();
 
   if (arrowRight) arrowRight.style.display = 'none';
   if (gameBody) gameBody.style.backgroundImage = "url('RoyalGarden.png')";
   if (locationBanner) locationBanner.textContent = "📍 Royal Garden";
 
-  // Knight enters from the left on the garden ground line
   kX = 70;
   kY = 560;
   knight.classList.add('facing-right');
   knight.classList.remove('facing-left');
 
-  // Princess enters from the right edge and stops slightly into the right section of the garden
   princessActive = true;
   princessWalkingToRightSpot = true;
   princessReadyToTalk = false;
@@ -469,11 +462,11 @@ function triggerEncounterDialogue() {
   sceneStage = 2;
   princessReadyToTalk = false;
   canInteract = false;
+  if (window.GameAudio) GameAudio.playChoiceChime();
   if (taskMarker) taskMarker.classList.add('hidden');
   if (interactionPrompt) interactionPrompt.classList.add('hidden');
 
   startDialogue(gardenEncounterNodes, () => {
-    // Princess starts walking away to the right, then turns back to leave the kiss
     sceneStage = 3;
     princessWalkingAway = true;
     princessTurnedBack = false;
@@ -483,7 +476,6 @@ function triggerEncounterDialogue() {
   });
 }
 
-// Initial Dragon's Hall setup & opening footsteps message
 if (gameBody) gameBody.style.backgroundImage = "url('PolishDragon.png')";
 if (locationBanner) locationBanner.textContent = "📍 Dragon's Hall";
 if (objectiveText) objectiveText.textContent = "Objective: Footsteps outside—walk right to check who is in the Royal Garden.";
@@ -496,6 +488,7 @@ setTimeout(() => {
 const keys = {};
 
 window.addEventListener('keydown', (e) => {
+  if (window.GameAudio) GameAudio.unlock();
   const k = e.key.toLowerCase();
   if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(k)) {
     e.preventDefault();
@@ -514,7 +507,6 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
-  // Talk to Princess once she calls the Knight over on the right side of the garden
   if (k === 'e' && canInteract && !isFadingOut) {
     if (currentArea === 'garden' && sceneStage === 1 && princessReadyToTalk) {
       triggerEncounterDialogue();
@@ -531,7 +523,6 @@ function gameLoop() {
   let pMoving = false;
 
   if (!inDialogue && !isFadingOut) {
-    // Player-controlled Knight movement
     if (keys['w'] || keys['arrowup']) {
       kY -= speed;
       kMoving = true;
@@ -541,7 +532,6 @@ function gameLoop() {
       kMoving = true;
     }
 
-    // Clamp vertical movement to ground/walkable path
     const minWalkY = currentArea === 'garden' ? 465 : 440;
     const maxWalkY = Math.min(window.innerHeight - 55, 620);
     if (kY < minWalkY) kY = minWalkY;
@@ -560,9 +550,10 @@ function gameLoop() {
       knight.classList.add('facing-right');
     }
 
-    if (kX < 10) kX = 10;
+    if (window.GameAudio) {
+      GameAudio.updateStrideFootsteps(kMoving);
+    }
 
-    // Area transition: Player walks Knight to the right edge of Dragon's Hall -> Royal Garden
     if (currentArea === 'hall') {
       if (arrowRight) {
         arrowRight.style.display = 'flex';
@@ -581,7 +572,6 @@ function gameLoop() {
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
     }
 
-    // Princess enters from the right and stops just a little way into the right section of the garden
     if (currentArea === 'garden' && princessActive && princessWalkingToRightSpot) {
       const rightGardenStopX = Math.max(520, window.innerWidth * 0.72);
 
@@ -596,6 +586,7 @@ function gameLoop() {
         princessReadyToTalk = true;
         pMoving = false;
 
+        if (window.GameAudio) GameAudio.playPrincessCall();
         triggerEmote('princess', '💕');
         triggerEmote('knight', '❗');
         showActionFeedback("Sir Knight! Over here!", pX + 48, pY - 155);
@@ -603,7 +594,6 @@ function gameLoop() {
       }
     }
 
-    // --- TASK MARKER & PROMPT FOR "TALK TO PRINCESS" ---
     canInteract = false;
     if (taskMarker) taskMarker.classList.add('hidden');
     if (interactionPrompt) interactionPrompt.classList.add('hidden');
@@ -632,7 +622,6 @@ function gameLoop() {
       }
     }
 
-    // Princess walks away to the right, turns back to leave the kiss, then finishes exiting
     if (currentArea === 'garden' && princessActive && princessWalkingAway) {
       if (!princessTurnedBack) {
         princess.classList.remove('facing-left');
@@ -644,9 +633,9 @@ function gameLoop() {
           princessTurnedBack = true;
           princessWalkingAway = false;
           pMoving = false;
-          // Turn back toward the Knight to leave the kiss
           princess.classList.remove('facing-right');
           princess.classList.add('facing-left');
+          if (window.GameAudio) GameAudio.playPrincessCall();
           startDialogue(princessTurnBackKissNodes, () => {
             princess.classList.remove('facing-left');
             princess.classList.add('facing-right');
@@ -660,13 +649,13 @@ function gameLoop() {
         pMoving = true;
 
         if (pX > window.innerWidth + 120) {
-          // Out of sight -> Knight panics and Chapter 2 ends into Chapter 3
           princessActive = false;
           princessWalkingAway = false;
           princess.classList.add('hidden');
           sceneComplete = true;
           objectiveText.textContent = "✅ Chapter 2 Complete — A midnight plan is set...";
 
+          if (window.GameAudio) GameAudio.playAlert();
           startDialogue(knightAfterDeparturePanicNodes, () => {
             fadeOutEndOfChapter('CH3.html');
           });
