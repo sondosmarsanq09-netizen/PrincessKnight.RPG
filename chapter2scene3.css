@@ -16,6 +16,26 @@ body {
   font-family: monospace;
 }
 
+.audio-btn {
+  position: absolute;
+  top: 56px;
+  right: 20px;
+  background: rgba(15, 17, 26, 0.85);
+  color: #fdf6e2;
+  border: 1px solid rgba(253, 246, 226, 0.35);
+  border-radius: 6px;
+  padding: 7px 13px;
+  font-family: monospace;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 120;
+}
+
+.audio-btn:hover {
+  background: rgba(35, 40, 58, 0.95);
+  border-color: #fdf6e2;
+}
+
 /* --- KNIGHT SPRITE (EXACT SCENE 1 SETUP) --- */
 #knight {
   width: 120px;
