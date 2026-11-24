@@ -15,6 +15,26 @@ body {
   position: relative;
 }
 
+.audio-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(20, 20, 30, 0.85);
+  color: #fdf6e2;
+  border: 1px solid rgba(255, 223, 0, 0.5);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+  z-index: 120;
+}
+
+.audio-btn:hover {
+  background: rgba(35, 35, 52, 0.95);
+  border-color: #ffdf00;
+}
+
 #knight {
   width: 120px;
   height: 80px;
