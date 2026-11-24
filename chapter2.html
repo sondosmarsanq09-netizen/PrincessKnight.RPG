@@ -9,6 +9,9 @@
 <body id="game-body">
   <div id="transition-overlay" class="fade-overlay active"></div>
 
+  <!-- Shared Audio Mute Button -->
+  <button id="audio-toggle" class="audio-btn" type="button" title="Toggle Sound">🔊 Sound: ON</button>
+
   <!-- UI & Objectives -->
   <div id="location-banner">📍 Dragon's Hall</div>
   <div id="objective">Objective: Head to the Forge Chambers to inspect the anvil.</div>
@@ -33,6 +36,7 @@
   <!-- Knight Element -->
   <div id="knight"></div>
 
+  <script src="game-audio.js"></script>
   <script src="chapter2.js"></script>
 </body>
 </html>
