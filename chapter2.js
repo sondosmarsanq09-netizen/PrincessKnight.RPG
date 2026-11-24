@@ -15,19 +15,36 @@ const taskMarker = document.getElementById('task-marker');
 const interactionPrompt = document.getElementById('interaction-prompt');
 const actionPopup = document.getElementById('action-popup');
 
+const vfxFlash = document.createElement('div');
+Object.assign(vfxFlash.style, {
+  position: 'fixed',
+  inset: '0',
+  pointerEvents: 'none',
+  opacity: '0',
+  transition: 'opacity 240ms ease-out',
+  zIndex: '45'
+});
+document.body.appendChild(vfxFlash);
+
+function triggerFlash(color = 'rgba(255, 224, 140, 0.24)') {
+  vfxFlash.style.background = color;
+  vfxFlash.style.opacity = '1';
+  setTimeout(() => {
+    vfxFlash.style.opacity = '0';
+  }, 90);
+}
+
 let kX = 400;
 let kY = 450;
 const speed = 6;
 let currentArea = 'hall';
 let inDialogue = false;
 
-// Task System State
 let taskStage = 0;
 let canInteract = false;
 
 function showActionFeedback(message) {
   actionPopup.textContent = "✨ " + message + " ✨";
-
   actionPopup.style.left = (kX + 60) + 'px';
   actionPopup.style.top = (kY - 10) + 'px';
 
@@ -58,16 +75,19 @@ window.addEventListener('keydown', (e) => {
         GameAudio.playBlacksmithAnvil();
         GameAudio.playItemPickup();
       }
+      triggerFlash('rgba(255, 190, 110, 0.28)');
       showActionFeedback("Anvil Inspected! +1 Forged Steel");
       objectiveText.textContent = "Objective: Head right to the Royal Garden to harvest a Moonbloom flower.";
     } else if (taskStage === 1) {
       taskStage = 2;
       if (window.GameAudio) GameAudio.playFlowerPick();
+      triggerFlash('rgba(155, 235, 255, 0.25)');
       showActionFeedback("Moonbloom Harvested Successfully!");
       objectiveText.textContent = "Objective: Return to Dragon's Hall and salute the grand statue.";
     } else if (taskStage === 2) {
       taskStage = 3;
       if (window.GameAudio) GameAudio.playSuccess();
+      triggerFlash('rgba(255, 236, 165, 0.3)');
       showActionFeedback("Grand Statue Saluted! Duties Complete!");
       objectiveText.textContent = "✅ All Chapter 2 palace duties completed successfully!";
 
@@ -144,12 +164,14 @@ function gameLoop() {
       if (kX <= 10) {
         currentArea = 'workspace';
         if (window.GameAudio) GameAudio.playPageTurn();
+        triggerFlash('rgba(255, 195, 120, 0.16)');
         gameBody.style.backgroundImage = "url('WorkSpace.png')";
         locationBanner.textContent = "📍 Forge Chambers";
         kX = window.innerWidth - 150;
       } else if (kX >= window.innerWidth - 130) {
         currentArea = 'garden';
         if (window.GameAudio) GameAudio.playPageTurn();
+        triggerFlash('rgba(160, 240, 200, 0.16)');
         gameBody.style.backgroundImage = "url('RoyalGarden.png')";
         locationBanner.textContent = "📍 Royal Garden";
         kX = 20;
@@ -174,7 +196,6 @@ function gameLoop() {
       if (kX > window.innerWidth - 130) kX = window.innerWidth - 130;
     }
 
-    // --- TASK LOGIC & MARKERS ---
     canInteract = false;
     taskMarker.classList.add('hidden');
     interactionPrompt.classList.add('hidden');
@@ -221,12 +242,7 @@ function gameLoop() {
   if (knight) {
     knight.style.left = kX + 'px';
     knight.style.top = kY + 'px';
-
-    if (kMoving) {
-      knight.classList.add('running');
-    } else {
-      knight.classList.remove('running');
-    }
+    knight.classList.toggle('running', kMoving);
   }
 
   requestAnimationFrame(gameLoop);
