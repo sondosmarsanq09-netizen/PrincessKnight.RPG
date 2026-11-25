@@ -6,7 +6,14 @@ function removeOverlay() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', removeOverlay);
+window.addEventListener('DOMContentLoaded', () => {
+  removeOverlay();
+  if (window.GameAudio) {
+    isMuted = window.GameAudio.isMuted();
+    syncAudioToggleLabel();
+    window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
+  }
+});
 setTimeout(removeOverlay, 50);
 
 const princess = document.getElementById('princess');
@@ -44,6 +51,9 @@ function unlockAudio() {
   const ctx = getAudioCtx();
   if (ctx && ctx.state === 'suspended') {
     ctx.resume().catch(() => {});
+  }
+  if (window.GameAudio) {
+    window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
   }
 }
 
@@ -183,6 +193,7 @@ if (audioToggleBtn) {
     e.stopPropagation();
     unlockAudio();
     isMuted = !isMuted;
+    if (window.GameAudio) window.GameAudio.setMuted(isMuted);
     syncAudioToggleLabel();
   });
 }
@@ -222,6 +233,7 @@ function fadeToScene3(nextSceneUrl = 'chapter2scene3.html') {
   isFadingOut = true;
 
   playSuccessChime();
+  if (window.GameAudio) window.GameAudio.prepareSceneTransition();
   taskMarker.classList.add('hidden');
   interactionPrompt.classList.add('hidden');
 
