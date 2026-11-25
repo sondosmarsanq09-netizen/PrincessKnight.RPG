@@ -3,6 +3,11 @@ window.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     overlay.classList.remove('active');
   }, 100);
+  if (window.GameAudio) {
+    isMuted = window.GameAudio.isMuted();
+    syncAudioToggleLabel();
+    window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
+  }
 });
 
 const knight = document.getElementById('knight');
@@ -85,6 +90,9 @@ function unlockAudio() {
   const ctx = getAudioCtx();
   if (ctx && ctx.state === 'suspended') {
     ctx.resume().catch(() => {});
+  }
+  if (window.GameAudio) {
+    window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
   }
 }
 
@@ -318,6 +326,7 @@ if (audioToggleBtn) {
     e.stopPropagation();
     unlockAudio();
     isMuted = !isMuted;
+    if (window.GameAudio) window.GameAudio.setMuted(isMuted);
     syncAudioToggleLabel();
   });
 }
@@ -599,6 +608,7 @@ gameLoop();
 
 function transitionToNextChapter(nextChapterFilename) {
   playSuccessChime();
+  if (window.GameAudio) window.GameAudio.prepareSceneTransition();
   const overlay = document.getElementById('transition-overlay');
   overlay.classList.add('active');
 
