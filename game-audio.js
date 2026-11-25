@@ -1,192 +1,194 @@
-const GameAudio = (() => {
-  if (window.__OUR_RPG_GAME_AUDIO__) {
-    return window.__OUR_RPG_GAME_AUDIO__;
-  }
+(function () {
+  const DEFAULT_TRACK = '683268__migfus20__relaxing-chiptune-music.mp3';
+  const TARGET_VOLUME = 0.14; // Soft background level
+  const STORAGE_TIME_KEY = 'rpg_bgm_time_v1';
+  const STORAGE_TRACK_KEY = 'rpg_bgm_track_v1';
+  const STORAGE_MUTED_KEY = 'rpg_muted_v1';
 
-  let ctx = null;
-  let muted = false;
-
-  function ensureContext() {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return null;
-    if (!ctx) {
-      ctx = new AudioCtx();
-    }
-    if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
-    return ctx;
-  }
-
-  function syncAudioToggleUI() {
-    const btn = document.getElementById('audio-toggle');
-    if (!btn) return;
-    btn.textContent = muted ? '🔇 Sound: OFF' : '🔊 Sound: ON';
-    btn.classList.toggle('muted', muted);
-  }
-
-  function bindAudioToggleButton() {
-    const btn = document.getElementById('audio-toggle');
-    if (!btn || btn.dataset.audioBound === '1') {
-      syncAudioToggleUI();
-      return;
-    }
-    btn.dataset.audioBound = '1';
-    syncAudioToggleUI();
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleMute();
-    });
-  }
-
-  function unlock() {
-    const c = ensureContext();
-    if (c && c.state === 'suspended') {
-      c.resume().catch(() => {});
+  function readMutedPref() {
+    try {
+      return sessionStorage.getItem(STORAGE_MUTED_KEY) === '1';
+    } catch (e) {
+      return false;
     }
   }
 
-  function setMuted(nextMuted) {
-    muted = Boolean(nextMuted);
-    syncAudioToggleUI();
-    if (!muted) {
-      unlock();
-      playUiTick();
+  function writeMutedPref(muted) {
+    try {
+      sessionStorage.setItem(STORAGE_MUTED_KEY, muted ? '1' : '0');
+    } catch (e) {}
+  }
+
+  function readSavedTime(trackSrc) {
+    try {
+      const savedTrack = sessionStorage.getItem(STORAGE_TRACK_KEY);
+      if (savedTrack !== trackSrc) return 0;
+      const raw = parseFloat(sessionStorage.getItem(STORAGE_TIME_KEY) || '0');
+      return Number.isFinite(raw) && raw >= 0 ? raw : 0;
+    } catch (e) {
+      return 0;
     }
   }
 
-  function toggleMute() {
-    setMuted(!muted);
-    return muted;
+  function writeSavedTime(trackSrc, currentTime) {
+    if (!Number.isFinite(currentTime) || currentTime < 0) return;
+    try {
+      sessionStorage.setItem(STORAGE_TRACK_KEY, trackSrc);
+      sessionStorage.setItem(STORAGE_TIME_KEY, currentTime.toFixed(3));
+    } catch (e) {}
   }
 
-  function playTone(freq, duration = 0.14, type = 'triangle', peak = 0.16, delay = 0, slideTo = null) {
-    if (muted) return;
-    const c = ensureContext();
-    if (!c) return;
+  class SharedMusicController {
+    constructor() {
+      this.trackSrc = DEFAULT_TRACK;
+      this.targetVolume = TARGET_VOLUME;
+      this.muted = readMutedPref();
+      this.audio = null;
+      this.hasRestoredTime = false;
+      this.fadeTimer = null;
+      this.saveTimer = null;
 
-    const run = () => {
-      const start = c.currentTime + delay;
-      const osc = c.createOscillator();
-      const gain = c.createGain();
+      this._createAudio(this.trackSrc);
+      this._bindLifecycleEvents();
+    }
 
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, start);
-      if (slideTo) {
-        osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), start + duration);
+    _createAudio(src) {
+      if (this.audio) {
+        this.audio.pause();
+      }
+      const el = new Audio(src);
+      el.loop = true;
+      el.preload = 'auto';
+      el.volume = 0;
+      this.audio = el;
+      this.hasRestoredTime = false;
+
+      const applyResumePosition = () => {
+        if (this.hasRestoredTime) return;
+        const saved = readSavedTime(src);
+        if (saved > 0 && el.duration && saved < el.duration - 0.25) {
+          try {
+            el.currentTime = saved;
+          } catch (e) {}
+        }
+        this.hasRestoredTime = true;
+      };
+
+      el.addEventListener('loadedmetadata', applyResumePosition, { once: true });
+      el.addEventListener('canplay', applyResumePosition, { once: true });
+    }
+
+    _fadeTo(targetVol, durationMs = 450) {
+      if (!this.audio) return;
+      clearInterval(this.fadeTimer);
+      const startVol = this.audio.volume;
+      const delta = targetVol - startVol;
+      if (Math.abs(delta) < 0.002 || durationMs <= 0) {
+        this.audio.volume = Math.max(0, Math.min(1, targetVol));
+        return;
       }
 
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.linearRampToValueAtTime(peak, start + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      const steps = Math.max(1, Math.round(durationMs / 30));
+      let step = 0;
+      this.fadeTimer = setInterval(() => {
+        step++;
+        const progress = Math.min(1, step / steps);
+        const eased = 1 - Math.pow(1 - progress, 2);
+        this.audio.volume = Math.max(0, Math.min(1, startVol + delta * eased));
+        if (progress >= 1) {
+          clearInterval(this.fadeTimer);
+          this.fadeTimer = null;
+        }
+      }, 30);
+    }
 
-      osc.connect(gain);
-      gain.connect(c.destination);
+    start(src = this.trackSrc, volume = this.targetVolume) {
+      this.targetVolume = volume;
+      if (src && src !== this.trackSrc) {
+        this.savePositionNow();
+        this.trackSrc = src;
+        this._createAudio(src);
+      }
 
-      osc.start(start);
-      osc.stop(start + duration + 0.02);
-    };
+      if (!this.audio) return;
+      if (!this.hasRestoredTime && this.audio.readyState >= 1) {
+        const saved = readSavedTime(this.trackSrc);
+        if (saved > 0 && this.audio.duration && saved < this.audio.duration - 0.25) {
+          try {
+            this.audio.currentTime = saved;
+          } catch (e) {}
+        }
+        this.hasRestoredTime = true;
+      }
 
-    if (c.state === 'suspended') {
-      c.resume().then(run).catch(() => {});
-    } else {
-      run();
+      if (this.muted) {
+        this.audio.volume = 0;
+        return;
+      }
+
+      if (this.audio.paused) {
+        const playPromise = this.audio.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {});
+        }
+      }
+      this._fadeTo(this.targetVolume, 450);
+    }
+
+    setMuted(muted) {
+      this.muted = Boolean(muted);
+      writeMutedPref(this.muted);
+      this.savePositionNow();
+
+      if (!this.audio) return;
+      if (this.muted) {
+        this._fadeTo(0, 180);
+      } else {
+        if (this.audio.paused) {
+          const playPromise = this.audio.play();
+          if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {});
+          }
+        }
+        this._fadeTo(this.targetVolume, 350);
+      }
+    }
+
+    isMuted() {
+      return this.muted;
+    }
+
+    savePositionNow() {
+      if (!this.audio) return;
+      writeSavedTime(this.trackSrc, this.audio.currentTime);
+    }
+
+    prepareSceneTransition() {
+      this.savePositionNow();
+      if (this.audio && !this.muted) {
+        this._fadeTo(this.targetVolume * 0.65, 350);
+      }
+    }
+
+    _bindLifecycleEvents() {
+      clearInterval(this.saveTimer);
+      this.saveTimer = setInterval(() => {
+        if (this.audio && !this.audio.paused) {
+          this.savePositionNow();
+        }
+      }, 250);
+
+      window.addEventListener('pagehide', () => this.savePositionNow());
+      window.addEventListener('beforeunload', () => this.savePositionNow());
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          this.savePositionNow();
+        } else if (!this.muted && this.audio && this.audio.paused) {
+          this.start(this.trackSrc, this.targetVolume);
+        }
+      });
     }
   }
 
-  // Crisp stepping sound while moving
-  const STEP_INTERVAL_MS = 230;
-  let lastStepAt = 0;
-  let alternateFoot = false;
-
-  function playStepSound() {
-    alternateFoot = !alternateFoot;
-    const base = alternateFoot ? 155 : 185;
-    playTone(base, 0.08, 'triangle', 0.16, 0, base * 0.48);
-    playTone(base * 2.1, 0.035, 'sine', 0.05, 0.005, base * 1.1);
-  }
-
-  function updateStrideFootsteps(isMoving) {
-    if (!isMoving) {
-      return;
-    }
-    if (muted) return;
-    unlock();
-
-    const now = performance.now();
-    if (now - lastStepAt >= STEP_INTERVAL_MS) {
-      lastStepAt = now;
-      playStepSound();
-    }
-  }
-
-  // Interaction & UI noises
-  function playUiTick() {
-    playTone(660, 0.07, 'sine', 0.14, 0, 860);
-  }
-
-  function playPageTurn() {
-    playTone(392, 0.09, 'triangle', 0.13, 0, 587.33);
-  }
-
-  function playChoiceChime() {
-    playTone(587.33, 0.12, 'triangle', 0.15, 0);
-    playTone(880, 0.2, 'sine', 0.16, 0.07);
-  }
-
-  function playItemPickup() {
-    playTone(659.25, 0.12, 'triangle', 0.17, 0);
-    playTone(987.77, 0.22, 'sine', 0.17, 0.07);
-  }
-
-  function playBlacksmithAnvil() {
-    playTone(1046.5, 0.14, 'triangle', 0.18, 0, 620);
-    playTone(1567.98, 0.22, 'sine', 0.12, 0.02, 920);
-  }
-
-  function playFlowerPick() {
-    playTone(523.25, 0.12, 'triangle', 0.15, 0);
-    playTone(659.25, 0.12, 'triangle', 0.15, 0.06);
-    playTone(783.99, 0.2, 'sine', 0.16, 0.12);
-  }
-
-  function playSuccess() {
-    [587.33, 739.99, 880, 1174.66].forEach((freq, i) => {
-      playTone(freq, 0.18, 'triangle', 0.15, i * 0.075);
-    });
-  }
-
-  function playAlert() {
-    playTone(340, 0.13, 'sawtooth', 0.12, 0, 220);
-  }
-
-  function playPrincessCall() {
-    playTone(783.99, 0.13, 'sine', 0.15, 0);
-    playTone(1046.5, 0.22, 'sine', 0.16, 0.1);
-  }
-
-  window.addEventListener('DOMContentLoaded', bindAudioToggleButton);
-  window.addEventListener('pointerdown', unlock, { passive: true });
-  window.addEventListener('keydown', unlock, { passive: true });
-
-  const api = {
-    unlock,
-    setMuted,
-    toggleMute,
-    syncAudioToggleUI,
-    playStepSound,
-    updateStrideFootsteps,
-    playUiTick,
-    playPageTurn,
-    playChoiceChime,
-    playItemPickup,
-    playBlacksmithAnvil,
-    playFlowerPick,
-    playSuccess,
-    playAlert,
-    playPrincessCall
-  };
-
-  window.__OUR_RPG_GAME_AUDIO__ = api;
-  return api;
+  window.GameAudio = new SharedMusicController();
 })();
