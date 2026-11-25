@@ -5,7 +5,14 @@ function removeFadeOverlay() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', removeFadeOverlay);
+window.addEventListener('DOMContentLoaded', () => {
+  removeFadeOverlay();
+  if (window.GameAudio) {
+    SoundEngine.syncMutedFromShared();
+    window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
+    syncAudioButton();
+  }
+});
 setTimeout(removeFadeOverlay, 60);
 
 // Optional carryover from Chapter 3 Scene 2
@@ -42,28 +49,11 @@ const dialogueChoices = document.getElementById('dialogue-choices');
 const dialogueHint = document.getElementById('dialogue-hint');
 
 // =========================================================
-// SOUNDTRACKS & SOUND EFFECTS ENGINE (WEB AUDIO API)
+// SOUND EFFECTS ENGINE + SHARED BACKGROUND MUSIC BRIDGE
 // =========================================================
 const SoundEngine = (() => {
   let ctx = null;
   let muted = false;
-  let bgmTimer = null;
-  let stepIndex = 0;
-  let currentTrack = 'dawn'; // 'dawn' | 'romance'
-
-  const DAWN_MELODY = [
-    523.25, 659.25, 783.99, 659.25, // C5, E5, G5, E5
-    587.33, 698.46, 880.00, 698.46, // D5, F5, A5, F5
-    493.88, 587.33, 783.99, 587.33, // B4, D5, G5, D5
-    523.25, 659.25, 783.99, 1046.50 // C5, E5, G5, C6
-  ];
-
-  const ROMANCE_MELODY = [
-    659.25, 783.99, 987.77, 880.00, // E5, G5, B5, A5
-    783.99, 659.25, 587.33, 659.25, // G5, E5, D5, E5
-    523.25, 659.25, 783.99, 659.25, // C5, E5, G5, E5
-    493.88, 587.33, 783.99, 987.77  // B4, D5, G5, B5
-  ];
 
   function ensureContext() {
     if (!ctx) {
@@ -104,46 +94,39 @@ const SoundEngine = (() => {
     osc.stop(now + duration + 0.02);
   }
 
-  function tickBgm() {
-    if (muted || !ctx || ctx.state !== 'running') return;
-    const seq = currentTrack === 'romance' ? ROMANCE_MELODY : DAWN_MELODY;
-    const note = seq[stepIndex % seq.length];
-    const wave = currentTrack === 'romance' ? 'sine' : 'triangle';
-    const vol = currentTrack === 'romance' ? 0.032 : 0.024;
-    playTone(note, 0.55, wave, vol, 0);
-    stepIndex++;
-  }
-
-  function startBgmLoop() {
-    if (bgmTimer) return;
-    bgmTimer = setInterval(tickBgm, 560);
-  }
-
-  function setTrack(trackName) {
-    if (currentTrack !== trackName) {
-      currentTrack = trackName;
-      stepIndex = 0;
+  function syncMutedFromShared() {
+    if (window.GameAudio) {
+      muted = window.GameAudio.isMuted();
     }
-    ensureContext();
-    startBgmLoop();
+  }
+
+  function setTrack(_trackName) {
+    if (window.GameAudio) {
+      window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
+    }
   }
 
   function unlock() {
     ensureContext();
-    startBgmLoop();
+    if (window.GameAudio) {
+      window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
+    }
   }
 
   function toggleMute() {
     muted = !muted;
+    if (window.GameAudio) {
+      window.GameAudio.setMuted(muted);
+    }
     if (!muted) {
       ensureContext();
-      startBgmLoop();
       playUiTick();
     }
     return muted;
   }
 
   function isMuted() {
+    if (window.GameAudio) return window.GameAudio.isMuted();
     return muted;
   }
 
@@ -198,6 +181,7 @@ const SoundEngine = (() => {
   }
 
   return {
+    syncMutedFromShared,
     unlock,
     setTrack,
     toggleMute,
@@ -641,7 +625,6 @@ function setArea(nextArea, nextX, nextY) {
     syncPrincessTreePosition();
     SoundEngine.setTrack('romance');
 
-    // Let the player walk up while the Princess calls the Knight over
     if (!princessCalledKnight) {
       princessCalledKnight = true;
       if (objectiveText) {
@@ -1089,11 +1072,6 @@ function gameLoop() {
       SoundEngine.playFootstep();
     }
 
-    // Map transitions:
-    // Meadow Clearing (left -> Princess Spot, right -> Woodland Path from left)
-    // Woodland Path (left -> Meadow Clearing, right -> Sunlit Grove from left)
-    // Sunlit Grove (left -> Woodland Path)
-    // Princess Spot (right -> Meadow Clearing)
     if (currentArea === 'flower_quest') {
       if (kX <= 45) {
         if (!isBouquetComplete()) {
@@ -1141,7 +1119,6 @@ function gameLoop() {
     }
   }
 
-  // Interaction prompts: Talk to Princess or Pick Flower
   canTalkToPrincess = false;
   const nearFlower = getNearbyFlower();
 
