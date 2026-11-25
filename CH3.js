@@ -8,8 +8,19 @@ function removeOverlay() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', removeOverlay);
+function initSharedMusic() {
+  if (window.GameAudio) {
+    window.GameAudio.start('683268__migfus20__relaxing-chiptune-music.mp3', 0.14);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  removeOverlay();
+  initSharedMusic();
+});
 setTimeout(removeOverlay, 50);
+window.addEventListener('keydown', initSharedMusic, { passive: true });
+window.addEventListener('pointerdown', initSharedMusic, { passive: true });
 
 const princess = document.getElementById('princess');
 const princessEmote = document.getElementById('princess-emote');
@@ -369,7 +380,6 @@ function playCaughtSting() {
       const gain = ctx.createGain();
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
       gain.gain.setValueAtTime(0.16, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
       osc.connect(gain);
@@ -451,6 +461,7 @@ closeMapBtn.addEventListener('click', closeEscapeMap);
 
 // --- SCENE 1 -> SCENE 2 TRANSITION ---
 function transitionToScene2() {
+  if (window.GameAudio) window.GameAudio.prepareSceneTransition();
   try {
     sessionStorage.setItem(
       'ch3_s2_carryover',
